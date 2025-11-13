@@ -1,0 +1,7 @@
+drjit==0.4.4
+matplotlib==3.10.7
+mitsuba==3.5.0
+numpy==2.3.4
+plotly==6.4.0
+torch==2.8.0
+tqdm==4.67.1
