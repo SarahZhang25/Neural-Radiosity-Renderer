@@ -1,0 +1,45 @@
+# Model Configuration (Local Settings)
+
+encoder:
+  input_dim: 12  # dist_vec(3) + velocity(3) + rel_pos(3) + normal(3)
+  hidden_dims: [2048, 2048]
+  output_dim: 512
+  backbone_dim: 800
+  fusion_hidden_dim: 800
+  use_batch_norm: true
+  pooling_type: hierarchical
+  num_hierarchical_levels: 5
+  use_physics_params: true
+
+state:
+  num_tokens: 8  # 2×2×2 grid
+  token_dim: 512
+  learnable_init: true
+  init_scale: 0.02
+
+decoder:
+  num_layers: 3
+  num_heads: 4
+  hidden_dim: 512
+  feedforward_dim: null  # Auto-compute as 2.5x hidden_dim for SwiGLU
+  dropout: 0.1
+  activation: swiglu
+  return_all_layers: true
+  use_self_attention: true
+  norm_type: rms_norm
+  qk_norm: true
+  num_register_tokens: 4
+
+predictor:
+  input_dim: 15  # query(12) + ref_pose(3)
+  hidden_dim: 512
+  num_heads: 4
+  output_dim: 3
+  activation: swiglu
+  dropout: 0.1
+  use_ref_pose: true
+  norm_type: rms_norm
+  qk_norm: true
+
+# Anchor sampling
+anchor_k: 8  # Number of FPS anchor points per object
