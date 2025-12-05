@@ -1,0 +1,52 @@
+# Model Configuration (Local Settings)
+
+encoder:
+  input_dim: 12  # dist_vec(3) + velocity(3) + rel_pos(3) + normal(3)
+  hidden_dims: [2048, 2048]
+  output_dim: 512
+  backbone_dim: 800
+  fusion_hidden_dim: 800
+  use_batch_norm: true
+  pooling_type: hierarchical
+  num_hierarchical_levels: 5
+  property_encoder_hidden_dim: 128
+  emitter_type_dim: 16
+
+state:
+  num_tokens: 8  # 2×2×2 grid
+  token_dim: 512
+  learnable_init: true
+  init_scale: 0.02
+
+decoder:
+  num_layers: 3
+  num_heads: 4
+  hidden_dim: 512
+  feedforward_dim: null  # Auto-compute as 2.5x hidden_dim for SwiGLU
+  dropout: 0.1
+  activation: swiglu
+  return_all_layers: true
+  use_self_attention: true
+  norm_type: rms_norm
+  qk_norm: true
+  num_register_tokens: 4
+
+predictor:
+  hidden_dim: 512
+  num_heads: 4
+  output_dim: 3
+  activation: swiglu
+  dropout: 0.1
+  norm_type: rms_norm
+  qk_norm: true
+
+ray_encoder:
+  pe_type: 'rope'
+  vertex_pe_num_freqs: 12
+  vdir_pe_type: 'nerf'
+  vdir_num_freqs: 0
+  patch_size: 16
+  norm_type: rms_norm
+  view_transformer_latent_dim: 768 #NOTE:Need to update....
+  view_transformer_n_heads: 4 #NOTE:Where does this come from...
+#TODO: scene description?

@@ -23,34 +23,47 @@ class ObjectPropertyEncoder(nn.Module):
         self.object_type = object_type
         self.emitter_type_dim = emitter_type_dim
 
-        # for modifers, input represents diffuse value (R,G,B)
-        # for emitters, input represents radiance intensity (R,G,B)
-        self.property_encoder = nn.Linear(3, 128, bias=not use_batch_norm)
-
         # if use_physics_params:
         if object_type == 'emitter':
             self.emitter_type_embed = nn.Embedding(
                 num_embeddings=4, # Support 4 light types for now? Point, Area, Spot, Directional/Sun
-                embedding_dim=self.type_dim
+                embedding_dim=emitter_type_dim
             )
+            self.property_layer = nn.Linear(3, hidden_dim - emitter_type_dim, bias=not use_batch_norm)
+        elif object_type == 'modifier':
+            self.property_layer = nn.Linear(3, hidden_dim, bias=not use_batch_norm)
 
         self.encoder = nn.Sequential(
-            nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
+            nn.BatchNorm1d(hidden_dim) if use_batch_norm else nn.Identity(),
             nn.SiLU(),
-            nn.Linear(128, output_dim, bias=not use_batch_norm),
+            nn.Linear(hidden_dim, output_dim, bias=not use_batch_norm),
             nn.BatchNorm1d(output_dim) if use_batch_norm else nn.Identity(),
             nn.SiLU()
         )
     
     def forward(
         self,
+        properties: torch.Tensor, # (Batch, N, 3) -> e.g. [r, g, b]
+        v_type: Optional[torch.LongTensor] = None, # (Batch, N) -> e.g., [0, 1, 0, 3...]
+    ) -> torch.Tensor:
+        """
+        Args:
+            properties:
+                for modifers, represents diffuse value (R,G,B)
+                for emitters, represents radiance intensity (R,G,B)
+            v_type: 
 
-    ):
-        # TODO:
-        # send rgb through property encoder -> vec
-        # if emitter, embed the type and concat w/ vec
-        # send vec through encoder
+        """
+        emb = self.property_layer(properties)
 
+        # For emitter, concat type embedding with property layer  
+        # before passing through rest of encoder
+        if self.object_type == 'emitter':
+            type_vec = self.type_embed(v_type)
+            emb = torch.cat([emb, type_vec], dim=-1)
+
+        emb = self.encoder(emb) # (B, N, output_dim)
+        return emb
 
 
 class PointNetEncoder(nn.Module):
@@ -69,11 +82,11 @@ class PointNetEncoder(nn.Module):
         hidden_dims: list = [2048, 2048],
         output_dim: int = 512,
         backbone_dim: int = 800,
-        fusion_hidden_dim: int = 800,
+        # fusion_hidden_dim: int = 800,
         use_batch_norm: bool = True,
         pooling_type: str = 'hierarchical', # or 'max'
         num_hierarchical_levels: int = 5,
-        object_type: str = "modifier", # or 'emitter'
+        property_encoder_hidden_dim: int = 128,
         emitter_type_dim: int = 16
     ):
         super().__init__()
@@ -82,8 +95,10 @@ class PointNetEncoder(nn.Module):
         self.output_dim = output_dim
         self.backbone_dim = backbone_dim
         self.pooling_type = pooling_type
+        
         self.object_type = object_type
         self.emitter_type_dim = emitter_type_dim
+        self.property_encoder_hidden_dim = property_encoder_hidden_dim
 
         # Geometry path: PointNet backbone
         layers = []
@@ -114,28 +129,22 @@ class PointNetEncoder(nn.Module):
             total_feat_dim = backbone_dim * 2 * (1 + num_hierarchical_levels)
             self.hierarchical_proj = nn.Linear(total_feat_dim, backbone_dim)
 
-        ###
-        # for modifers, input represents diffuse value (R,G,B)
-        # for emitters, input represents radiance intensity (R,G,B)
-        self.property_encoder = nn.Linear(3, 128, bias=not use_batch_norm)
-
-        # if use_physics_params:
-        if object_type == 'emitter':
-            self.emitter_type_embed = nn.Embedding(
-                num_embeddings=4, # Support 4 light types for now? Point, Area, Spot, Directional/Sun
-                embedding_dim=self.type_dim
-            )
-
-        self.physics_encoder = nn.Sequential(
-            nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
-            nn.SiLU(),
-            nn.Linear(128, output_dim, bias=not use_batch_norm),
-            nn.BatchNorm1d(output_dim) if use_batch_norm else nn.Identity(),
-            nn.SiLU()
+        # Separate property encoders for each object type
+        self.modifier_property_encoder = ObjectPropertyEncoder(
+            input_dim=3,
+            hidden_dim=property_encoder_hidden_dim,
+            output_dim=output_dim,
+            object_type='modifier',
+            use_batch_norm=use_batch_norm
         )
-        ###
-        self.property_encoder = ObjectPropertyEncoder(
-
+        
+        self.emitter_property_encoder = ObjectPropertyEncoder(
+            input_dim=3,
+            hidden_dim=property_encoder_hidden_dim,
+            output_dim=output_dim,
+            object_type='emitter',
+            emitter_type_dim=emitter_type_dim,
+            use_batch_norm=use_batch_norm
         )
 
         # Fusion MLP: Combine geometry and physics
@@ -154,29 +163,27 @@ class PointNetEncoder(nn.Module):
 
     def forward(
         self,
-        dist_vec: torch.Tensor,
-        velocity: torch.Tensor,
-        relative_pos: torch.Tensor,
+        surface_pos: torch.Tensor,
         normals: Optional[torch.Tensor] = None,
-        physics_params: Optional[torch.Tensor] = None
+        properties: Optional[torch.Tensor] = None,
+        object_type: str = "modifier", # or 'emitter'
+        emitter_types: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
         Encode point cloud features.
 
         Args:
-            dist_vec: Distance to nearest point on other objects (B, N, 3)
-            velocity: Point velocities (B, N, 3)
-            relative_pos: Position relative to reference (B, N, 3)
+            surface_pos: sampled positions from object surface (B, N, 3)
             normals: Optional surface normals (B, N, 3)
-            physics_params: Optional physics parameters [mass, friction, restitution] (B, 3)
+            properties: diffuse [r,g,b] (B, 3) if modifier; intensity [r,g,b] [type] (B, 4) if emitter
 
         Returns:
             Encoded features (B, output_dim)
         """
-        B, N, _ = dist_vec.shape
+        B, N, _ = surface_pos.shape
 
         # Concatenate input features
-        features = [dist_vec, velocity, relative_pos]
+        features = [surface_pos]
         if normals is not None:
             features.append(normals)
 
@@ -217,16 +224,15 @@ class PointNetEncoder(nn.Module):
         else:
             raise ValueError(f"Unknown pooling type: {self.pooling_type}")
 
-        # Dual-path fusion
-        if self.use_physics_params and physics_params is not None:
-            # Encode physics
-            physics_token = self.physics_encoder(physics_params)  # (B, output_dim)
-
-            # Fuse geometry and physics
-            combined = torch.cat([geometry_token, physics_token], dim=-1)  # (B, backbone_dim + output_dim)
-            output = self.fusion_mlp(combined)  # (B, output_dim)
+        # Fuse geometry and physical properties      
+        # Branch on object type
+        if object_type == 'modifier':
+            properties_token = self.modifier_property_encoder(properties)
+        elif object_type == 'emitter':
+            properties_token = self.emitter_property_encoder(properties, emitter_types)
         else:
-            # Direct projection
-            output = self.geometry_proj(geometry_token) if hasattr(self, 'geometry_proj') else geometry_token
+            raise ValueError(f"Unknown object_type: {object_type}")
+        combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, backbone_dim + output_dim)
+        output = self.fusion_mlp(combined)  # (B, output_dim)
 
         return output  # (B, output_dim)
