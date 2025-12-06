@@ -1,6 +1,7 @@
 """
 Unit tests for PointNetEncoder module.
-Run with: pytest tests/test_encoder.py -v
+Run with: 
+pytest tests/encoder_test.py -v
 """
 
 import pytest
@@ -265,13 +266,17 @@ class TestPointNetEncoder:
         with pytest.raises(ValueError, match="Unknown pooling type"):
             encoder(surface_pos, normals, properties, 'modifier')
     
-    def test_batch_size_one(self, hierarchical_encoder, num_points, output_dim):
+    def test_batch_size_one_eval(self, hierarchical_encoder, num_points, output_dim):
         """Test edge case with batch size of 1."""
+        hierarchical_encoder.eval()  # Set to eval mode to use running stats
+
         surface_pos = torch.randn(1, num_points, 3)
         normals = torch.nn.functional.normalize(torch.randn(1, num_points, 3), dim=-1)
         properties = torch.rand(1, 3)
         
-        output = hierarchical_encoder(surface_pos, normals, properties, 'modifier')
+        with torch.no_grad():
+            output = hierarchical_encoder(surface_pos, normals, properties, 'modifier')
+    
         assert output.shape == (1, output_dim)
     
     def test_deterministic_output(self, hierarchical_encoder, batch_size, num_points):

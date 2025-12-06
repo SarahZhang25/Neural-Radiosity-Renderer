@@ -59,7 +59,7 @@ class ObjectPropertyEncoder(nn.Module):
         # For emitter, concat type embedding with property layer  
         # before passing through rest of encoder
         if self.object_type == 'emitter':
-            type_vec = self.type_embed(v_type)
+            type_vec = self.emitter_type_embed(v_type)
             emb = torch.cat([emb, type_vec], dim=-1)
 
         emb = self.encoder(emb) # (B, N, output_dim)
@@ -96,7 +96,6 @@ class PointNetEncoder(nn.Module):
         self.backbone_dim = backbone_dim
         self.pooling_type = pooling_type
         
-        self.object_type = object_type
         self.emitter_type_dim = emitter_type_dim
         self.property_encoder_hidden_dim = property_encoder_hidden_dim
 
@@ -166,7 +165,7 @@ class PointNetEncoder(nn.Module):
         surface_pos: torch.Tensor,
         normals: Optional[torch.Tensor] = None,
         properties: Optional[torch.Tensor] = None,
-        object_type: str = "modifier", # or 'emitter'
+        object_types: torch.Tensor = None,
         emitter_types: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
@@ -176,6 +175,8 @@ class PointNetEncoder(nn.Module):
             surface_pos: sampled positions from object surface (B, N, 3)
             normals: Optional surface normals (B, N, 3)
             properties: diffuse [r,g,b] (B, 3) if modifier; intensity [r,g,b] [type] (B, 4) if emitter
+            object_types: (B,) tensor with 0=modifier, 1=emitter
+            emitter_types: (B,) tensor with light type indices, only used for emitters
 
         Returns:
             Encoded features (B, output_dim)
@@ -224,14 +225,29 @@ class PointNetEncoder(nn.Module):
         else:
             raise ValueError(f"Unknown pooling type: {self.pooling_type}")
 
-        # Fuse geometry and physical properties      
-        # Branch on object type
-        if object_type == 'modifier':
-            properties_token = self.modifier_property_encoder(properties)
-        elif object_type == 'emitter':
-            properties_token = self.emitter_property_encoder(properties, emitter_types)
-        else:
-            raise ValueError(f"Unknown object_type: {object_type}")
+        # Process properties based on object type for each item in batch
+        properties_token = torch.zeros(B, self.output_dim, device=surface_pos.device)
+        
+        # Get modifier and emitter masks
+        modifier_mask = (object_types == 0)
+        emitter_mask = (object_types == 1)
+        
+        # Process modifiers
+        if modifier_mask.any():
+            modifier_props = properties[modifier_mask]
+            modifier_tokens = self.modifier_property_encoder(modifier_props)
+            properties_token[modifier_mask] = modifier_tokens
+        
+        # Process emitters
+        if emitter_mask.any():
+            emitter_props = properties[emitter_mask]
+            if emitter_types is None:
+                raise ValueError("emitter_types must be provided when batch contains emitters.")
+            emitter_type_indices = emitter_types[emitter_mask]
+            emitter_tokens = self.emitter_property_encoder(emitter_props, emitter_type_indices)
+            properties_token[emitter_mask] = emitter_tokens
+        
+        # Fuse geometry and physical properties
         combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, backbone_dim + output_dim)
         output = self.fusion_mlp(combined)  # (B, output_dim)
 

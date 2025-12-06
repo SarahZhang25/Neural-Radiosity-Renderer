@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from encodings.nerf_encoding import NeRFEncoding
+from pos_encodings.nerf_encoding import NeRFEncoding
 from einops import rearrange
 
 

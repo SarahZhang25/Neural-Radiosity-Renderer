@@ -1,6 +1,6 @@
 """
 Minimal sanity tests for RadiancePredictor.
-Run with: pytest tests/test_predictor.py -v
+Run with: pytest tests/predictor_test.py -v
 """
 
 import pytest

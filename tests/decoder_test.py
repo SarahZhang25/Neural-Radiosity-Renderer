@@ -1,6 +1,6 @@
 """
 Unit tests for TransformerDecoder module.
-Run with: pytest tests/test_decoder.py -v
+Run with: pytest tests/decoder_test.py -v
 """
 
 import pytest

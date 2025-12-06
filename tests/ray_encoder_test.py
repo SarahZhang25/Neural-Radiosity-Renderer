@@ -1,6 +1,6 @@
 """
 Minimal sanity tests for RayEncoder.
-Run with: pytest tests/test_ray_encoder.py -v
+Run with: pytest tests/ray_encoder_test.py -v
 """
 
 import pytest
