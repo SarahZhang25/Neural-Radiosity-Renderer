@@ -124,6 +124,8 @@ class TransformerDecoder(nn.Module):
         return all_state_layers, all_obj_layers
 
 
+from pos_encodings.rope import apply_rotary_emb
+
 class TransformerDecoderLayer(nn.Module):
     """
     Single layer of bidirectional cross-attention.
@@ -143,6 +145,8 @@ class TransformerDecoderLayer(nn.Module):
         super().__init__()
 
         self.use_self_attention = use_self_attention
+        self.d_model = d_model
+        self.nhead = nhead
 
         # Normalization layers
         if norm_type == 'rms_norm':
@@ -204,15 +208,21 @@ class TransformerDecoderLayer(nn.Module):
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Forward pass through one decoder layer."""
 
+        # NOTE: Position tensors (state_pos, obj_pos) are accepted for future RoPE integration
+        # but are currently ignored in this baseline implementation.
+        # We use standard MultiheadAttention which is optimized but does not support RoPE.
+
         # Optional self-attention for state tokens
         if self.use_self_attention:
             state_norm = self.norm_state_self(state_tokens)
+            # Standard self-attention   
             state_attn, _ = self.self_attn_state(state_norm, state_norm, state_norm)
             state_tokens = state_tokens + state_attn
 
         # Cross-attention: state queries object
         state_norm = self.norm_state1(state_tokens)
         obj_norm = self.norm_obj1(obj_tokens)
+        
         state_attn, _ = self.cross_attn_state_to_obj(
             state_norm, obj_norm, obj_norm,
             key_padding_mask=mask if mask is not None else None

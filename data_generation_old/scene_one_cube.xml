@@ -1,0 +1,50 @@
+<scene version='3.0.0'>
+    <default name="spp" value="1024"/>
+    <default name="res" value="512"/>
+
+    <integrator type='path'/>
+
+    <sensor type="perspective" id="sensor">
+        <transform name="to_world">
+            <lookat target="0.0, 0.0, 1.0"
+                    origin="3.0, 3.0, 3.0"
+                    up    ="0.0, 0.0, 1.0"/>
+        </transform>
+        <sampler type="independent">
+            <integer name="sample_count" value="$spp"/>
+        </sampler>
+        <film type="hdrfilm">
+            <rfilter type="box"/>
+            <integer name="width"  value="$res"/>
+            <integer name="height" value="$res"/>
+        </film>
+    </sensor>
+
+    <!-- Cube -->
+    <shape type="cube">
+        <transform name="to_world">
+            <translate x="0.0" y="0.0" z="1.0"/>
+            <scale value="0.6"/>
+        </transform>
+        <bsdf type="diffuse">
+            <rgb name="reflectance" value="0.8, 0.8, 0.8"/>
+        </bsdf>
+    </shape>
+
+    <!-- Ground plane
+    <shape type="cube">
+        <transform name="to_world">
+            <translate x="0.0" y="0.0" z="-1.0"/>
+            <scale x="5.0" y="5.0" z="0.1"/>
+        </transform>
+        <bsdf type="diffuse">
+            <rgb name="reflectance" value="0.5, 0.5, 0.5"/>
+        </bsdf>
+    </shape> -->
+
+    <!-- Direct light source -->
+    <emitter type="point" id="light">
+        <point name="position" x="2.0" y="2.0" z="4.0"/>
+        <rgb name="intensity" value="50.0"/>
+    </emitter>
+</scene>
