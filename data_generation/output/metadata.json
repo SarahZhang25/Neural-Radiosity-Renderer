@@ -1,1 +1,62 @@
-[]
+[
+  {
+    "class_id": "cube",
+    "class_name": "cube",
+    "shape_id": "cube",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0,
+    "num_object_patches": 12,
+    "num_wall_patches": 641
+  },
+  {
+    "class_id": "cylinder",
+    "class_name": "cylinder",
+    "shape_id": "cylinder",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0,
+    "num_object_patches": 128,
+    "num_wall_patches": 641
+  },
+  {
+    "class_id": "torus",
+    "class_name": "torus",
+    "shape_id": "torus",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0,
+    "num_object_patches": 2048,
+    "num_wall_patches": 641
+  },
+  {
+    "class_id": "sphere",
+    "class_name": "sphere",
+    "shape_id": "sphere",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0,
+    "num_object_patches": 5120,
+    "num_wall_patches": 641
+  }
+]

@@ -102,7 +102,7 @@ def select_random_shapes(num_per_class: int = 4) -> List[Tuple[str, str, str]]:
                 print("  Reached desired number of shapes for this class.")
                 break
 
-            obj_path = os.path.join(class_dir, shape_id, "models", "model_normalized.ply")#obj")
+            obj_path = os.path.join(class_dir, shape_id, "models", "model_normalized.ply")
             if not os.path.exists(obj_path):
                 print(f"  Skipping {obj_path}: OBJ file not found")
                 continue

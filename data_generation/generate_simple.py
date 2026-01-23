@@ -35,20 +35,21 @@ from renderer_mitsuba import render_mitsuba, Camera as MitsubaCamera
 MITSUBA_AVAILABLE = True
 
 # Configuration
-SHAPENET_ROOT = "/home/sazhang/Neural-Radiosity-Renderer/data_generation/output/raw_meshes"
+SHAPENET_ROOT = "/home/sazhang/Neural-Radiosity-Renderer/data_generation/output/raw_meshes/simple_objects"
+
+# SHAPENET_ROOT = "/home/sazhang/Neural-Radiosity-Renderer/data_generation/output/raw_meshes"
 # SHAPENET_ROOT = "/home/sazhang/.cache/kagglehub/datasets/hajareddagni/shapenetcorev2/versions/1/ShapeNetCore.v2/ShapeNetCore.v2"
 # TETWILD_PATH = os.path.join(RADIOSITY_DIR, "../TetWild/build/TetWild")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
 SURFACE_MESHES_DIR = os.path.join(SCRIPT_DIR, "output/raw_meshes")  # Normalized meshes (unit cube, zero-centered)
 TET_MESHES_DIR = os.path.join(SCRIPT_DIR, "output/tet_meshes")
 
-# ShapeNet class IDs
+#  simple objects
 CLASS_IDS = {
-    # "02691156": "airplane",
-    # "02958343": "car",
-    # "04379243": "table",
-    # "04530566": "vessel",
-    "cube": "cube"
+    "cube": "cube",
+    "sphere": "sphere",
+    "torus": "torus",
+    "cylinder": "cylinder"
 }
 
 # Number of shapes per class
@@ -64,9 +65,9 @@ PREDEFINED_COLORS = [
     # np.array([0.75, 0.55, 0.3]),   # Champagne Gold
     # np.array([0.85, 0.5, 0.1]),    # Orange Metallic
     # np.array([0.4, 0.2, 0.5]),     # Purple Metallic
-    # np.array([0.2, 0.4, 0.6]),     # Sky Blue
+    np.array([0.2, 0.4, 0.6]),     # Sky Blue
     # np.array([0.9, 0.75, 0.1]),    # Yellow Gold
-    np.array([0.7, 0.1, 0.1]),     # Bright Red
+    # np.array([0.7, 0.1, 0.1]),     # Bright Red
 ]
 
 # Rotations around up-axis (in degrees)
@@ -78,7 +79,6 @@ NUM_COLORS = 1
 
 MAX_TRIANGLES = 100000  # Skip and resample meshes with more triangles
 
-
 def select_random_shapes(num_per_class: int = 4) -> List[Tuple[str, str, str]]:
     """Select random shapes from each class.
 
@@ -88,44 +88,78 @@ def select_random_shapes(num_per_class: int = 4) -> List[Tuple[str, str, str]]:
     selected = []
 
     for class_id, class_name in CLASS_IDS.items():
-        class_dir = os.path.join(SHAPENET_ROOT, class_id)
-        shape_ids = [d for d in os.listdir(class_dir)
-                     if os.path.isdir(os.path.join(class_dir, d)) and not d.startswith('.')]
-        print(f"Selecting shapes for class {class_name} ({class_id}): total available = {len(shape_ids)}")
+        # For simple objects, the file is directly in SHAPENET_ROOT
+        obj_path = os.path.join(SHAPENET_ROOT, f"{class_name}.obj")
+        
+        if not os.path.exists(obj_path):
+            print(f"  Skipping {class_name}: OBJ file not found at {obj_path}")
+            continue
 
-        # Randomly select shapes
-        random.seed(42)  # For reproducibility
-        random.shuffle(shape_ids)
-
-        # Select shapes, skipping those with too many triangles
-        chosen_count = 0
-        for shape_id in shape_ids:
-            if chosen_count >= num_per_class:
-                print("  Reached desired number of shapes for this class.")
-                break
-
-            obj_path = os.path.join(class_dir, shape_id, "model_normalized.obj")
-            if not os.path.exists(obj_path):
-                print(f"  Skipping {obj_path}: OBJ file not found")
+        # Check triangle count
+        try:
+            mesh = trimesh.load(obj_path, file_type="obj", force='mesh')
+            num_triangles = len(mesh.faces)
+            if num_triangles > MAX_TRIANGLES:
+                print(f"  Skipping {class_name}: {num_triangles} triangles > {MAX_TRIANGLES}")
                 continue
+        except Exception as e:
+            print(f"  Skipping {class_name}: failed to load mesh - {e}")
+            continue
 
-            # Check triangle count
-            try:
-                mesh = trimesh.load(obj_path, file_type="obj", force='mesh')
-                # mesh = trimesh.exchange.ply.load_ply(obj_path, force='mesh')
-                num_triangles = len(mesh.faces)
-                if num_triangles > MAX_TRIANGLES:
-                    print(f"  Skipping {class_name}/{shape_id}: {num_triangles} triangles > {MAX_TRIANGLES}")
-                    continue
-            except Exception as e:
-                print(f"  Skipping {class_name}/{shape_id}: failed to load mesh - {e}")
-                continue
-
-            selected.append((class_id, shape_id, obj_path))
-            print(f"  Selected: {class_name}/{shape_id} ({num_triangles} triangles)")
-            chosen_count += 1
+        # Use class_name as both class_id and shape_id for simple objects
+        selected.append((class_id, class_name, obj_path))
+        print(f"  Selected: {class_name} ({num_triangles} triangles)")
 
     return selected
+
+# def select_random_shapes(num_per_class: int = 4) -> List[Tuple[str, str, str]]:
+#     """Select random shapes from each class.
+
+#     Returns:
+#         List of (class_id, shape_id, obj_path) tuples
+#     """
+#     selected = []
+
+#     for class_id, class_name in CLASS_IDS.items():
+#         class_dir = os.path.join(SHAPENET_ROOT, class_id)
+#         shape_ids = [d for d in os.listdir(class_dir)
+#                      if os.path.isdir(os.path.join(class_dir, d)) and not d.startswith('.')]
+#         print(f"Selecting shapes for class {class_name} ({class_id}): total available = {len(shape_ids)}")
+
+#         # Randomly select shapes
+#         random.seed(42)  # For reproducibility
+#         random.shuffle(shape_ids)
+
+#         # Select shapes, skipping those with too many triangles
+#         chosen_count = 0
+#         for shape_id in shape_ids:
+#             if chosen_count >= num_per_class:
+#                 print("  Reached desired number of shapes for this class.")
+#                 break
+
+#             # obj_path = os.path.join(class_dir, shape_id, "model_normalized.obj")
+#             obj_path = os.path.join(class_dir, f"{class_name}.obj")
+#             if not os.path.exists(obj_path):
+#                 print(f"  Skipping {obj_path}: OBJ file not found")
+#                 continue
+
+#             # Check triangle count
+#             try:
+#                 mesh = trimesh.load(obj_path, file_type="obj", force='mesh')
+#                 # mesh = trimesh.exchange.ply.load_ply(obj_path, force='mesh')
+#                 num_triangles = len(mesh.faces)
+#                 if num_triangles > MAX_TRIANGLES:
+#                     print(f"  Skipping {class_name}/{shape_id}: {num_triangles} triangles > {MAX_TRIANGLES}")
+#                     continue
+#             except Exception as e:
+#                 print(f"  Skipping {class_name}/{shape_id}: failed to load mesh - {e}")
+#                 continue
+
+#             selected.append((class_id, shape_id, obj_path))
+#             print(f"  Selected: {class_name}/{shape_id} ({num_triangles} triangles)")
+#             chosen_count += 1
+
+#     return selected
 
 
 def copy_mesh(input_obj: str, output_obj: str) -> bool:
@@ -160,7 +194,7 @@ def render_single_case(args):
             object_color=color,
             rotation_deg=rotation,
             light_intensity=50.0,
-            car_scale=1.0
+            car_scale=0.4 #1.0
         )
 
         # Params

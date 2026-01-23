@@ -34,8 +34,8 @@ class RayGenerator(nn.Module):
             indexing='xy')
         cx = cy = img_res / 2
         fx = fy = img_res / 2 / torch.tan(.5 * fov[..., 0, None, None])
-        x = x[None].repeat(*batch_shape, 1, 1)
-        y = y[None].repeat(*batch_shape, 1, 1)
+        x = x.expand(*batch_shape, img_res, img_res)
+        y = y.expand(*batch_shape, img_res, img_res)
         dirs = torch.stack([
             (x - cx) / fx,
             -(y - cy) / fy,

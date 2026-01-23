@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import torchvision
+from datetime import datetime
 
 from model.global_illumination_model import GlobalIlluminationModel
 from training.dataset import RadiosityDataset
@@ -58,7 +59,11 @@ def train(config_path):
     criterion = nn.MSELoss() # Pixel-wise L2
     
     # 5. Logging
-    log_dir = config['training']['log_dir']
+    log_dir_root = config['training']['log_dir']
+    # Create a unique timestamped directory for this run
+    run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir = os.path.join(log_dir_root, run_id)
+    
     checkpoint_dir = config['training']['checkpoint_dir']
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
@@ -159,7 +164,7 @@ def train(config_path):
                 # Stack them: [Target, Prediction]
                 vis_img = torch.cat([fixed_val_batch['target_image'], pred_fixed], dim=3) # Concatenate width-wise
                 grid = torchvision.utils.make_grid(vis_img, nrow=1, normalize=True, value_range=(0,1))
-                writer.add_image('Visual/Val_Epoch_{}'.format(epoch+1), grid, epoch)
+                writer.add_image('Visual/Validation', grid, epoch)
 
     writer.close()
     print("Training Complete.")
