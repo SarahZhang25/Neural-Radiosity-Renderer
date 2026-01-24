@@ -5,7 +5,7 @@ encoder:
   hidden_dims: [128, 256, 512] # Reduced for simple scene
   output_dim: 512
   backbone_dim: 512
-  pooling_type: 'max' # 'hierarchical' is heavier, start simple
+  pooling_type: 'hierarchical' #'max' 
   num_hierarchical_levels: 3 # ignored if max
 
 state:
