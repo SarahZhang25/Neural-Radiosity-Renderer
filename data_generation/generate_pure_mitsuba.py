@@ -140,14 +140,6 @@ def process_case(case_idx, shape_name, color, rotation, light_intensity: float, 
         
     # Position: Center horizontally, Bottom on floor
     bounds = mesh.bounds
-    object_height = bounds[1][1] - bounds[0][1]
-    floor_y = 0 + (object_height / 2) # mesh center
-    # Wait, apply_translation moves centroid.
-    # We want bottom of bounding box at y=0.
-    # Current centroid y: mesh.centroid[1]
-    # Current bottom y: bounds[0][1]
-    # We want bounds[0][1] = 0.
-    # diff = 0 - bounds[0][1].
     translation = np.zeros(3)
     translation[1] = -bounds[0][1] # Move bottom to 0
     

@@ -49,12 +49,17 @@ class RadiancePredictor(nn.Module):
             num_layers=num_layers
         )
 
-        # Output projection: hidden_dim -> 3 RGB channels × patch_size²
-        self.out_proj = nn.Linear(hidden_dim, 3 * patch_size * patch_size)
+        # Output projection:  -> 3 RGB channels × patch_size × patch_size
+        self.out_proj = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 3 * patch_size * patch_size)
+        )
         
-        # Initialize with small weights for stable training
-        nn.init.xavier_uniform_(self.out_proj.weight, gain=0.01)
-        nn.init.zeros_(self.out_proj.bias)
+        # Initialize last layer with small weights for stable training
+        last_layer = self.out_proj[-1]
+        nn.init.xavier_uniform_(last_layer.weight, gain=0.01)
+        nn.init.zeros_(last_layer.bias)
 
     def forward(
         self,

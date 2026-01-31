@@ -1,5 +1,6 @@
 import os
 import argparse
+import shutil
 import yaml
 import torch
 import torch.nn as nn
@@ -64,9 +65,11 @@ def train(config_path):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     log_dir = os.path.join(log_dir_root, run_id)
     
-    checkpoint_dir = config['training']['checkpoint_dir']
+    checkpoint_dir = os.path.join(log_dir, 'checkpoints')
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
+    shutil.copy(config_path, os.path.join(log_dir, 'config.yaml'))
+
     writer = SummaryWriter(log_dir=log_dir)
 
     # 6. Training Loop
@@ -141,14 +144,15 @@ def train(config_path):
                 writer.add_scalar('Loss/val', avg_val_loss, epoch)
                 print(f"Epoch {epoch+1}: Val Loss {avg_val_loss:.6f}")
 
-                # Save Checkpoint
-                ckpt_path = os.path.join(checkpoint_dir, f"checkpoint_epoch_{epoch+1}.pt")
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'loss': avg_val_loss,
-                }, ckpt_path)
+                # Save model at end of training
+                if epoch == config['training']['num_epochs']:
+                    ckpt_path = os.path.join(checkpoint_dir, f"checkpoint_epoch_{epoch+1}.pt")
+                    torch.save({
+                        'epoch': epoch,
+                        'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict(),
+                        'loss': avg_val_loss,
+                    }, ckpt_path)
 
                 # Visual Inspection (Fixed Batch)
                 pred_fixed = model(

@@ -1,26 +1,30 @@
 # Training Configuration
 
+# Change: no change
+# Hyperparams: increase batch size to entire training dataset (10, from 4),
+#     and increase LR and # epochs to provide comparable # updates
+
 encoder:
   input_dim: 3  # Position (x,y,z)
-  hidden_dims: [128, 256, 512] # Reduced for simple scene
-  output_dim: 512
-  backbone_dim: 512
-  pooling_type: 'hierarchical' #'max' 
-  num_hierarchical_levels: 3 # ignored if max
+  hidden_dims: [512, 1024, 2048] # Massive capacity for memorization
+  output_dim: 1024 # Increased
+  backbone_dim: 1024
+  pooling_type: 'max' # Simpler than hierarchical for pure memorization
+  num_hierarchical_levels: 3 # Ignored
 
 state:
   num_tokens: 64  # 4x4x4 grid
-  token_dim: 512 # Match encoder output
+  token_dim: 1024 # Match encoder output
   learnable_init: true
-  init_scale: 0.02
+  init_scale: 0.1
 
 decoder:
-  hidden_dim: 512
-  num_layers: 2
-  num_heads: 4
-  feedforward_dim: 512
-  dropout: 0.1
-  activation: 'gelu' # simpler than swiglu for now
+  hidden_dim: 1024
+  num_layers: 4 # Slightly deeper
+  num_heads: 8
+  feedforward_dim: 2048
+  dropout: 0.0
+  activation: 'gelu'
   return_all_layers: true
   use_self_attention: true
   norm_type: 'layer_norm'
@@ -34,22 +38,22 @@ ray_encoder:
   vdir_num_freqs: 4
   patch_size: 16
   norm_type: 'layer_norm'
-  view_transformer_latent_dim: 512 # Must match predictor hidden_dim
+  view_transformer_latent_dim: 1024 # Must match predictor hidden_dim
   view_transformer_n_heads: 4
 
 predictor:
-  hidden_dim: 512
-  num_heads: 4
-  num_layers: 2
-  dropout: 0.1
+  hidden_dim: 1024
+  num_heads: 8
+  num_layers: 4
+  dropout: 0
   activation: 'gelu'
   norm_type: 'layer_norm'
 
 training:
   batch_size: 4
   learning_rate: 1.0e-4
-  num_epochs: 200
-  save_interval: 10
+  num_epochs: 500
+  save_interval: 50
   image_res: 128
   data_dir: "data_generation/output/renders"
   log_dir: "training/logs"

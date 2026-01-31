@@ -11,7 +11,8 @@ from dataclasses import dataclass
 
 # Set variant once
 try:
-    mi.set_variant('llvm_ad_rgb')
+#     mi.set_variant('llvm_ad_rgb')
+    mi.set_variant("cuda_ad_rgb")
 except Exception:
     pass # Might be already set
 
