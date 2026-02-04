@@ -64,6 +64,7 @@ def train(config_path):
     # Create a unique timestamped directory for this run
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     log_dir = os.path.join(log_dir_root, run_id)
+    print("Logging to:", log_dir)
     
     checkpoint_dir = os.path.join(log_dir, 'checkpoints')
     os.makedirs(log_dir, exist_ok=True)
@@ -83,6 +84,22 @@ def train(config_path):
     fixed_val_batch = next(iter(val_loader))
     fixed_val_batch = {k: v.to(device) for k, v in fixed_val_batch.items()}
 
+    # Save a fixed training batch for visualization (Collect Entire Dataset)
+    all_train_batches = []
+    for batch in train_loader:
+        all_train_batches.append(batch)
+    
+    fixed_train_batch = {}
+    if len(all_train_batches) > 0:
+        # Concatenate all batches 
+        for k in all_train_batches[0].keys():
+            if isinstance(all_train_batches[0][k], torch.Tensor):
+                fixed_train_batch[k] = torch.cat([b[k] for b in all_train_batches], dim=0).to(device)
+    else:
+        # Fallback
+        fixed_train_batch = next(iter(train_loader))
+        fixed_train_batch = {k: v.to(device) for k, v in fixed_train_batch.items()}
+
     for epoch in range(start_epoch, num_epochs):
         model.train()
         train_loss = 0.0
@@ -93,6 +110,7 @@ def train(config_path):
                 rays_o = batch['rays_o'].to(device)
                 rays_d = batch['rays_d'].to(device)
                 positions = batch['obj_positions'].to(device)
+                normals = batch['obj_normals'].to(device)
                 properties = batch['obj_properties'].to(device)
                 class_ids = batch['obj_class_ids'].to(device)
                 target = batch['target_image'].to(device)
@@ -107,7 +125,8 @@ def train(config_path):
                         obj_positions=positions,
                         obj_properties=properties,
                         obj_class_ids=class_ids,
-                        ray_map=rays_d # Using rays_d as ray_map
+                        ray_map=rays_d, # Using rays_d as ray_map
+                        obj_normals=normals
                     )
                     
                     loss = criterion(pred_radiance, target)
@@ -132,11 +151,12 @@ def train(config_path):
                     rays_o = batch['rays_o'].to(device)
                     rays_d = batch['rays_d'].to(device)
                     positions = batch['obj_positions'].to(device)
+                    normals = batch['obj_normals'].to(device)
                     properties = batch['obj_properties'].to(device)
                     class_ids = batch['obj_class_ids'].to(device)
                     target = batch['target_image'].to(device)
 
-                    pred = model(rays_o, rays_d, positions, properties, class_ids, rays_d)
+                    pred = model(rays_o, rays_d, positions, properties, class_ids, rays_d, obj_normals=normals)
                     loss = criterion(pred, target)
                     val_loss += loss.item()
                 
@@ -145,7 +165,8 @@ def train(config_path):
                 print(f"Epoch {epoch+1}: Val Loss {avg_val_loss:.6f}")
 
                 # Save model at end of training
-                if epoch == config['training']['num_epochs']:
+                if (epoch + 1 ) == config['training']['num_epochs']:
+                    print("saving model...")
                     ckpt_path = os.path.join(checkpoint_dir, f"checkpoint_epoch_{epoch+1}.pt")
                     torch.save({
                         'epoch': epoch,
@@ -154,14 +175,15 @@ def train(config_path):
                         'loss': avg_val_loss,
                     }, ckpt_path)
 
-                # Visual Inspection (Fixed Batch)
+                # Visual Inspection (Fixed Val Batch)
                 pred_fixed = model(
                     fixed_val_batch['rays_o'],
                     fixed_val_batch['rays_d'],
                     fixed_val_batch['obj_positions'],
                     fixed_val_batch['obj_properties'],
                     fixed_val_batch['obj_class_ids'],
-                    fixed_val_batch['rays_d']
+                    fixed_val_batch['rays_d'],
+                    obj_normals=fixed_val_batch['obj_normals']
                 )
                 
                 # Log images: Target vs Prediction
@@ -169,6 +191,28 @@ def train(config_path):
                 vis_img = torch.cat([fixed_val_batch['target_image'], pred_fixed], dim=3) # Concatenate width-wise
                 grid = torchvision.utils.make_grid(vis_img, nrow=1, normalize=True, value_range=(0,1))
                 writer.add_image('Visual/Validation', grid, epoch)
+
+                # Visual Inspection (Fixed Training Batch)=
+                pred_train_fixed = model(
+                    fixed_train_batch['rays_o'],
+                    fixed_train_batch['rays_d'],
+                    fixed_train_batch['obj_positions'],
+                    fixed_train_batch['obj_properties'],
+                    fixed_train_batch['obj_class_ids'],
+                    fixed_train_batch['rays_d'],
+                    obj_normals=fixed_train_batch['obj_normals']
+                )
+
+                # Stack them: [Target, Prediction]
+                # Note: We visualize the first 4 samples if batch is large to save space, or all if small
+                vis_train_limit = fixed_train_batch['target_image'].shape[0] # 4 
+                vis_train_img = torch.cat([
+                    fixed_train_batch['target_image'][:vis_train_limit], 
+                    pred_train_fixed[:vis_train_limit]
+                ], dim=3)
+                
+                grid_train = torchvision.utils.make_grid(vis_train_img, nrow=1, normalize=True, value_range=(0,1))
+                writer.add_image('Visual/Training', grid_train, epoch)
 
     writer.close()
     print("Training Complete.")

@@ -94,6 +94,7 @@ class GlobalIlluminationModel(nn.Module):
         obj_properties: torch.Tensor,
         obj_class_ids: torch.Tensor,
         ray_map: Optional[torch.Tensor] = None, # Added ray_map for RayEncoder
+        obj_normals: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
         Forward pass to predict radiance.
@@ -105,6 +106,7 @@ class GlobalIlluminationModel(nn.Module):
             obj_properties: Object properties (B, N_obj, 3) (e.g. RGB)
             obj_class_ids: Object class IDs (B, N_obj)
             ray_map: Ray tokens map (B, H, W, 3) - Represents camera rays/directions per pixel
+            obj_normals: Object normals (B, N_obj, N_vertices, 3)
 
         Returns:
             radiance: Predicted RGB image (B, 3, H, W)
@@ -116,12 +118,11 @@ class GlobalIlluminationModel(nn.Module):
         # 1. Encode Objects
         # Flatten batch and objects for encoder: (B*N_obj, N_v, 3)
         flat_positions = obj_positions.view(B * N_obj, N_v, 3)
-        # Compute normals - simplified here, assuming pre-computed or on-the-fly
-        # For this refactor, let's assume normals are handled or optional. 
-        # PointNetEncoder expects normals. Let's create dummy normals or compute simple ones.
-        # Alternatively, assume flat_positions includes normals? No, signature says (..., 3).
-        # We'll pass None for normals for now as they are optional in encoder forward.
         
+        flat_normals = None
+        if obj_normals is not None:
+             flat_normals = obj_normals.view(B * N_obj, N_v, 3)
+
         flat_props = obj_properties.view(B * N_obj, 3)
         flat_ids = obj_class_ids.view(B * N_obj)
         
@@ -129,7 +130,7 @@ class GlobalIlluminationModel(nn.Module):
             surface_pos=flat_positions,
             properties=flat_props,
             object_class_ids=flat_ids,
-            normals=None # Optional
+            normals=flat_normals
         )
         
         # Reshape back: (B, N_obj, D)

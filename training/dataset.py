@@ -91,21 +91,28 @@ class RadiosityDataset(Dataset):
         # 2. Process Point Clouds
         # Object 0: The central object
         obj_verts = data['object_vertices'] # (N, 3)
+        obj_normals = data['object_normals'] if 'object_normals' in data else np.zeros_like(obj_verts)
         obj_color = data['color'] # (3,)
         
         # Object 1: The box walls
         wall_verts = data['wall_vertices'] # (M, 3)
+        wall_normals = data['wall_normals'] if 'wall_normals' in data else np.zeros_like(wall_verts)
         wall_color = np.array([0.9, 0.9, 0.9]) # Placeholder white walls
         
         # Resample/Pad Point Clouds
-        obj_verts = self._sample_points(obj_verts, self.num_points)
-        wall_verts = self._sample_points(wall_verts, self.num_points)
+        obj_verts, obj_normals = self._sample_points(obj_verts, self.num_points, normals=obj_normals)
+        wall_verts, wall_normals = self._sample_points(wall_verts, self.num_points, normals=wall_normals)
         
         # Prepare Tensors
         # Shape: (N_obj, N_v, 3) -> (2, N_v, 3)
         positions = torch.stack([
             torch.from_numpy(obj_verts).float(),
             torch.from_numpy(wall_verts).float()
+        ])
+
+        normals = torch.stack([
+            torch.from_numpy(obj_normals).float(),
+            torch.from_numpy(wall_normals).float()
         ])
         
         # Properties: (N_obj, 3) -> (2, 3)
@@ -127,22 +134,26 @@ class RadiosityDataset(Dataset):
              
         # rays_d is (H, W, 3), we need it channel last?
         # Model expects rays_o (3,) and ray_map (H, W, 3)
-        # RayGenerator returns rays_d as (H, W, 3) -> Perfect.
+        # RayGenerator returns rays_d as (H, W, 3)
         
         return {
             'rays_o': rays_o,                  # (3,)
             'rays_d': rays_d,                  # (H, W, 3) - used as ray_map
             'obj_positions': positions,        # (2, N_p, 3)
+            'obj_normals': normals,            # (2, N_p, 3)
             'obj_properties': properties,      # (2, 3)
             'obj_class_ids': class_ids,        # (2,)
             'target_image': image_tensor       # (3, H, W)
         }
 
-    def _sample_points(self, points, num_points):
+    def _sample_points(self, points, num_points, normals=None):
         """Randomly sample points to fix size."""
         N = points.shape[0]
         if N >= num_points:
             indices = np.random.choice(N, num_points, replace=False)
         else:
             indices = np.random.choice(N, num_points, replace=True)
+        
+        if normals is not None:
+            return points[indices], normals[indices]
         return points[indices]

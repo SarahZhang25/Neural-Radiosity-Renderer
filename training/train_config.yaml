@@ -1,11 +1,12 @@
 # Training Configuration
 
-# Change: no change
-# Hyperparams: increase batch size to entire training dataset (10, from 4),
-#     and increase LR and # epochs to provide comparable # updates
+# Change: Use vertex only dataset for comparison
+# Hyperparams: revert to batch size 4, lower LR
+# Added visualization for training images.
+
 
 encoder:
-  input_dim: 3  # Position (x,y,z)
+  input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
   hidden_dims: [512, 1024, 2048] # Massive capacity for memorization
   output_dim: 1024 # Increased
   backbone_dim: 1024
@@ -55,6 +56,5 @@ training:
   num_epochs: 500
   save_interval: 50
   image_res: 128
-  data_dir: "data_generation/output/renders"
+  data_dir: "data_generation/output/datasets/spheres_12_vertices_saved"
   log_dir: "training/logs"
-  checkpoint_dir: "training/checkpoints"

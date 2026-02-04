@@ -101,7 +101,9 @@ def get_walls_point_cloud(box_meshes, n_points=2048):
         box_meshes['floor'], box_meshes['ceiling'], 
         box_meshes['back'], box_meshes['left'], box_meshes['right']
     ])
-    return combined.sample(n_points)
+    points, face_indices = trimesh.sample.sample_surface(combined, n_points)
+    normals = combined.face_normals[face_indices]
+    return points, normals
 
 
 def process_case(case_idx, shape_name, color, rotation, light_intensity: float, light_size_ratio: float, exposure: float, scale_min: float, scale_max: float, pos_variation: float, random_seed: int):
@@ -168,13 +170,17 @@ def process_case(case_idx, shape_name, color, rotation, light_intensity: float, 
     save_image(image, png_path, tone_mapping="reinhard", exposure=exposure)
     
     # Point Clouds
-    obj_pc = mesh.sample(2048)
-    wall_pc = get_walls_point_cloud(box_meshes, 2048)
+    obj_pc, obj_face_idx = trimesh.sample.sample_surface(mesh, 2048)
+    obj_normals = mesh.face_normals[obj_face_idx]
+    
+    wall_pc, wall_normals = get_walls_point_cloud(box_meshes, 2048)
     
     np.savez(
         npz_path,
         object_vertices=obj_pc,
+        object_normals=obj_normals,
         wall_vertices=wall_pc,
+        wall_normals=wall_normals,
         color=color,
         rotation=rotation,
         scale_ratio=scale_ratio,
