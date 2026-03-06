@@ -55,6 +55,7 @@ class RadiancePredictor(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, 3 * patch_size * patch_size)
         )
+        self.out_proj_act = nn.ELU(alpha=1e-3)
         
         # Initialize last layer with small weights for stable training
         last_layer = self.out_proj[-1]
@@ -114,6 +115,7 @@ class RadiancePredictor(nn.Module):
 
         # Decode to RGB per patch
         patches = self.out_proj(ray_features)  # (B, N_patches, 3*P*P)
+        patches = self.out_proj_act(patches)
 
         # Reshape to image format
         radiances = rearrange(

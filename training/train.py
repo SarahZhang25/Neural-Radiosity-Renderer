@@ -10,9 +10,29 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import torchvision
 from datetime import datetime
+from lpips import LPIPS
 
 from model.global_illumination_model import GlobalIlluminationModel
 from training.dataset import RadiosityDataset
+
+def log_transform(x):
+    """
+    Applies a log transform to the input image tensor for better handling of HDR values in L1 loss.
+    Add 1e-5 to prevent log(0) from producing -inf / NaN gradients.
+    """
+    return torch.log(x + 1e-5)
+
+# RenderFormer LPIPS Tone-mapping: "clamp (log I / log 2, 0, 1)"
+# Note: log(I) / log(2) is mathematically identical to log2(I).
+def tone_map_lpips(x):
+    """
+    Tone mapping to apply before LPIPS
+    """
+    # We clamp the input to a minimum of 1.0 before log2 so that log2(1) = 0.
+    # This maps the darkest areas to 0, and specular highlights (up to 2.0) to 1.
+    # Then scale to [-1, 1] for LPIPS input.
+    log2_x = torch.log2(torch.clamp(x, min=1.0))
+    return torch.clamp(log2_x, min=0.0, max=1.0) * 2 - 1
 
 def train(config_path):
 
@@ -37,7 +57,6 @@ def train(config_path):
         image_res=config['training']['image_res'],
         split='val'
     )
-
     train_loader = DataLoader(
         train_dataset, 
         batch_size=config['training']['batch_size'], 
@@ -57,7 +76,30 @@ def train(config_path):
 
     # 4. Setup Optimizer & Loss
     optimizer = optim.AdamW(model.parameters(), lr=config['training']['learning_rate'])
-    criterion = nn.MSELoss() # Pixel-wise L2
+    lpips_weight = config['training'].get('lpips_loss_weighting', 0)
+    primary_loss = config['training'].get('primary_loss', 'mse')
+    if primary_loss == 'mse':
+        core_loss_fn = nn.MSELoss() # Pixel-wise L2
+    elif primary_loss == 'mae':
+        core_loss_fn = nn.L1Loss() # Pixel-wise L1
+    else:
+        raise ValueError(f"Unsupported primary loss type: {primary_loss}")
+    
+    if lpips_weight > 0:
+        lpips_loss_fn = LPIPS(net=config['training']['lpips_backbone']).to(device)
+        def criterion(pred, target):
+            # Base core loss on log-transformed HDR predictions
+            loss_l1 = core_loss_fn(log_transform(pred), log_transform(target))
+            loss_l1 = core_loss_fn(pred, target)
+            # LPIPS loss on tone-mapped LDR predictions
+            pred_mapped = tone_map_lpips(pred)
+            target_mapped = tone_map_lpips(target)
+            loss_lpips = lpips_loss_fn(pred_mapped, target_mapped).mean()
+            # Final combined loss
+            return loss_l1 + lpips_weight * loss_lpips
+    else:
+        def criterion(pred, target):
+            return core_loss_fn(pred, target)
     
     # 5. Logging
     log_dir_root = config['training']['log_dir']
@@ -80,25 +122,22 @@ def train(config_path):
     # Setup mixed precision training
     scaler = torch.amp.GradScaler('cuda')
     
-    # Save a fixed validation batch for consistent visual progress
-    fixed_val_batch = next(iter(val_loader))
-    fixed_val_batch = {k: v.to(device) for k, v in fixed_val_batch.items()}
+    # Seeded batch retrieve for consistency
+    def get_seeded_batch(dataset, batch_size, seed=42):
+        g = torch.Generator()
+        g.manual_seed(seed)
+        loader = DataLoader(
+            dataset, 
+            batch_size=batch_size, 
+            shuffle=True, # Shuffle to get variety
+            num_workers=4,
+            generator=g   # Use seeded generator for consistency
+        )
+        batch = next(iter(loader))
+        return {k: v.to(device) for k, v in batch.items()}
 
-    # Save a fixed training batch for visualization (Collect Entire Dataset)
-    all_train_batches = []
-    for batch in train_loader:
-        all_train_batches.append(batch)
-    
-    fixed_train_batch = {}
-    if len(all_train_batches) > 0:
-        # Concatenate all batches 
-        for k in all_train_batches[0].keys():
-            if isinstance(all_train_batches[0][k], torch.Tensor):
-                fixed_train_batch[k] = torch.cat([b[k] for b in all_train_batches], dim=0).to(device)
-    else:
-        # Fallback
-        fixed_train_batch = next(iter(train_loader))
-        fixed_train_batch = {k: v.to(device) for k, v in fixed_train_batch.items()}
+    fixed_val_batch = get_seeded_batch(val_dataset, min(16, config['training']['batch_size']), seed=123)
+    fixed_train_batch = get_seeded_batch(train_dataset, min(16, config['training']['batch_size']), seed=456)
 
     for epoch in range(start_epoch, num_epochs):
         model.train()
@@ -205,7 +244,7 @@ def train(config_path):
 
                 # Stack them: [Target, Prediction]
                 # Note: We visualize the first 4 samples if batch is large to save space, or all if small
-                vis_train_limit = fixed_train_batch['target_image'].shape[0] # 4 
+                vis_train_limit = 32 # fixed_train_batch['target_image'].shape[0] # 4 
                 vis_train_img = torch.cat([
                     fixed_train_batch['target_image'][:vis_train_limit], 
                     pred_train_fixed[:vis_train_limit]

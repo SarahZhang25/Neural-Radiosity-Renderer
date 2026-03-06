@@ -27,6 +27,145 @@ class Camera:
         if self.up is None:
             self.up = np.array([0.0, 1.0, 0.0])
 
+def render_mitsuba_standard(
+    scene: Scene,
+    camera: Camera,
+    object_color: np.ndarray,
+    roughness: float = 0.3,
+    spp: int = 256,
+    smooth_object: bool = True,
+) -> np.ndarray:
+    """
+    Render scene using Mitsuba 3 Path Tracer.
+    Uses patch reflectance and emission directly, ignoring patch.radiosity.
+    """
+    patch_verts = np.array([p.vertices for p in scene.patches], dtype=object)
+    patch_reflectance = np.array([p.reflectance for p in scene.patches])
+    patch_emission = np.array([p.emission for p in scene.patches])
+
+    # Identify object vs wall patches
+    is_emissive = np.sum(patch_emission, axis=1) > 0
+    # Object: Matches object_color and not emissive
+    is_object = np.all(np.abs(patch_reflectance - object_color) < 0.001, axis=1) & ~is_emissive
+
+    def build_mesh(indices):
+        if len(indices) == 0:
+            return None, None
+        
+        all_tri_verts = []
+        for idx in indices:
+            verts = patch_verts[idx]
+            n_v = len(verts)
+            if n_v == 3:
+                all_tri_verts.append(verts)
+            elif n_v == 4:
+                all_tri_verts.append(verts[[0, 1, 2]])
+                all_tri_verts.append(verts[[0, 2, 3]])
+        
+        if not all_tri_verts:
+            return None, None
+
+        all_tri_verts = np.array(all_tri_verts) #(N, 3, 3)
+        
+        # Weld vertices
+        flat_verts = all_tri_verts.reshape(-1, 3)
+        rounded = np.round(flat_verts, decimals=5)
+        unique_verts, inverse = np.unique(rounded, axis=0, return_inverse=True)
+        faces = inverse.reshape(-1, 3).astype(np.uint32)
+        
+        return unique_verts.astype(np.float32), faces
+
+    scene_dict = {
+        'type': 'scene',
+        'integrator': {'type': 'path', 'max_depth': 6},
+        'sensor': {
+            'type': 'perspective',
+            'fov': camera.fov,
+            'to_world': mi.ScalarTransform4f.look_at(
+                origin=camera.position.tolist(),
+                target=camera.look_at.tolist(),
+                up=camera.up.tolist()
+            ),
+            'film': {
+                'type': 'hdrfilm',
+                'width': camera.width,
+                'height': camera.height,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            },
+            'sampler': {'type': 'independent', 'sample_count': spp},
+        },
+    }
+
+    # Process Wall Patches (Group by Material + Emission)
+    wall_indices = np.where(~is_object)[0]
+    
+    wall_groups = {}
+    for idx in wall_indices:
+        ref = tuple(np.round(patch_reflectance[idx], 3))
+        emi = tuple(np.round(patch_emission[idx], 3))
+        key = (ref, emi)
+        if key not in wall_groups:
+            wall_groups[key] = []
+        wall_groups[key].append(idx)
+        
+    for i, (key, indices) in enumerate(wall_groups.items()):
+        verts, faces = build_mesh(indices)
+        if verts is None: continue
+        
+        ref, emi = key
+        filename = f'/tmp/mitsuba_std_part_{i}.ply'
+        # reuse _save_ply_binary with dummy colors
+        dummy_colors = np.zeros((len(verts), 3), dtype=np.float32)
+        _save_ply_binary(filename, verts, faces, dummy_colors)
+
+        bsdf = {
+            'type': 'diffuse', 
+            'reflectance': {'type': 'rgb', 'value': list(ref)}
+        }
+        
+        obj_dict = {
+            'type': 'ply',
+            'filename': filename,
+            'face_normals': False,
+            'bsdf': bsdf
+        }
+        
+        if np.sum(emi) > 0:
+            obj_dict['emitter'] = {
+                'type': 'area',
+                'radiance': {'type': 'rgb', 'value': list(emi)}
+            }
+            
+        scene_dict[f'part_{i}'] = obj_dict
+        
+    # Process Object
+    obj_indices = np.where(is_object)[0]
+    if len(obj_indices) > 0:
+        verts, faces = build_mesh(obj_indices)
+        if verts is not None:
+            filename = '/tmp/mitsuba_std_object.ply'
+            dummy_colors = np.zeros((len(verts), 3), dtype=np.float32)
+            _save_ply_binary(filename, verts, faces, dummy_colors)
+             
+            scene_dict['object'] = {
+                'type': 'ply',
+                'filename': filename,
+                'face_normals': False,  # Always use vertex normals (now embedded)
+                #  'face_normals': not smooth_object,
+                'bsdf': {
+                    'type': 'twosided', # fix backface culling/black faces issue
+                    'material_interior': {
+                        'type': 'diffuse',
+                        'reflectance': {'type': 'rgb', 'value': object_color.tolist()},
+                    }
+                },
+            }
+
+    mi_scene = mi.load_dict(scene_dict)
+    image = mi.render(mi_scene)
+    image_np = np.array(image)
+    return image_np
 
 def render_mitsuba(
     scene: Scene,
@@ -218,11 +357,30 @@ def render_mitsuba(
 
 
 def _save_ply_binary(filename: str, vertices: np.ndarray, faces: np.ndarray, colors: np.ndarray):
-    """Save binary PLY with vertex colors (fully vectorized)."""
+    """Save binary PLY with vertex colors and normals (fully vectorized)."""
     n_verts = len(vertices)
     n_faces = len(faces)
     # Keep HDR values, don't clamp to [0,1]
     colors = np.maximum(colors, 0).astype(np.float32)
+
+    # Compute smooth vertex normals
+    face_verts = vertices[faces]  # (n_faces, 3, 3)
+    v0 = face_verts[:, 0, :]
+    v1 = face_verts[:, 1, :]
+    v2 = face_verts[:, 2, :]
+    
+    # Face normals (unweighted for now)
+    face_normals = np.cross(v1 - v0, v2 - v0)
+    
+    # Accumulate normals per vertex
+    vertex_normals = np.zeros((n_verts, 3), dtype=np.float32)
+    for f_idx, face in enumerate(faces):
+        for v_idx in face:
+            vertex_normals[v_idx] += face_normals[f_idx]
+    
+    # Normalize
+    norms = np.linalg.norm(vertex_normals, axis=1, keepdims=True)
+    vertex_normals = vertex_normals / np.maximum(norms, 1e-6)
 
     with open(filename, 'wb') as f:
         # Header
@@ -232,6 +390,9 @@ element vertex {n_verts}
 property float x
 property float y
 property float z
+property float nx
+property float ny
+property float nz
 property float red
 property float green
 property float blue
@@ -241,8 +402,8 @@ end_header
 """
         f.write(header.encode('ascii'))
 
-        # Vertices with colors (interleaved) - single write
-        vertex_data = np.column_stack([vertices, colors]).astype(np.float32)
+        # Vertices with colors and normals - single write
+        vertex_data = np.column_stack([vertices, vertex_normals, colors]).astype(np.float32)
         f.write(vertex_data.tobytes())
 
         # Faces - build as structured array for single write

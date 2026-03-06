@@ -1,20 +1,26 @@
 # Training Configuration
 
-# Change: Use vertex only dataset for comparison
-# Hyperparams: revert to batch size 4, lower LR
-# Added visualization for training images.
-
+# Run notes (changes from last run): training loss
+# Model: 
+#
+# Dataset: using ~1k points shapenet objects dataset: 
+#     data_generation/output/datasets/shapenet_take3_table_vessel_chair_guitar_motorbike_car_airplane
+# Hyperparams: batch size 64
+# Training: 
+#   change loss to follow renderformer:
+#   change to L1 loss instead of L2
+#   apply log transform for L1 input and tone-mapping for lpips input as per renderformer
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
-  hidden_dims: [512, 1024, 2048] # Massive capacity for memorization
+  hidden_dims: [512, 1024, 2048] # Increase capacity for memorization
   output_dim: 1024 # Increased
   backbone_dim: 1024
-  pooling_type: 'max' # Simpler than hierarchical for pure memorization
+  pooling_type: 'hierarchical' # Simpler than hierarchical for pure memorization
   num_hierarchical_levels: 3 # Ignored
 
 state:
-  num_tokens: 64  # 4x4x4 grid
+  num_tokens: 216  # 8x8x8 grid
   token_dim: 1024 # Match encoder output
   learnable_init: true
   init_scale: 0.1
@@ -34,10 +40,10 @@ decoder:
 
 ray_encoder:
   pe_type: 'nerf' # simpler than rope for ray queries initially
-  vertex_pe_num_freqs: 6
+  vertex_pe_num_freqs: 8
   vdir_pe_type: 'nerf'
-  vdir_num_freqs: 4
-  patch_size: 16
+  vdir_num_freqs: 8
+  patch_size: 8
   norm_type: 'layer_norm'
   view_transformer_latent_dim: 1024 # Must match predictor hidden_dim
   view_transformer_n_heads: 4
@@ -51,10 +57,13 @@ predictor:
   norm_type: 'layer_norm'
 
 training:
-  batch_size: 4
+  batch_size: 64
   learning_rate: 1.0e-4
   num_epochs: 500
   save_interval: 50
-  image_res: 128
-  data_dir: "data_generation/output/datasets/spheres_12_vertices_saved"
+  image_res: 256
+  data_dir: "data_generation/output/datasets/shapenet_take3_table_vessel_chair_guitar_motorbike_car_airplane"
   log_dir: "training/logs"
+  primary_loss: 'mae' # 'mse'
+  lpips_backbone: 'alex' # 'vgg'
+  lpips_loss_weighting: 0.05

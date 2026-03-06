@@ -3,10 +3,12 @@
 Pure Mitsuba data generation utils.
 """
 
+from fileinput import filename
 import numpy as np
 import mitsuba as mi
 import trimesh
 import os
+import tempfile
 from dataclasses import dataclass
 
 # Set variant once
@@ -31,7 +33,7 @@ class Camera:
 
 def _save_mesh_to_ply(mesh: trimesh.Trimesh, filename: str):
     """Save a Trimesh object to a binary PLY file."""
-    mesh.export(filename, file_type='ply')
+    mesh.export(filename, file_type='obj')
 
 def render_pure_mitsuba_scene(
     box_meshes: dict,
@@ -39,7 +41,7 @@ def render_pure_mitsuba_scene(
     object_color: np.ndarray,
     camera: Camera,
     spp: int = 256,
-    light_intensity: float = 15.0
+    light_intensity: float = 10.0
 ) -> np.ndarray:
     """
     Render a scene with a Cornell box and a central object using Mitsuba.
@@ -54,91 +56,89 @@ def render_pure_mitsuba_scene(
     """
     
     # Create temporary directory for meshes
-    temp_dir = "/tmp/mitsuba_pure_gen"
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    scene_dict = {
-        'type': 'scene',
-        'integrator': {
-            'type': 'path', # Use path tracer for global illumination
-            'max_depth': 6,
-        },
-        'sensor': {
-            'type': 'perspective',
-            'fov': camera.fov,
-            'to_world': mi.ScalarTransform4f.look_at(
-                origin=camera.position.tolist(),
-                target=camera.look_at.tolist(),
-                up=camera.up.tolist()
-            ),
-            'film': {
-                'type': 'hdrfilm',
-                'width': camera.width,
-                'height': camera.height,
-                'pixel_format': 'rgb',
-                'component_format': 'float32',
-            },
-            'sampler': {'type': 'independent', 'sample_count': spp},
-        },
-    }
-
-    # Helper to add a mesh to the scene dict
-    def add_mesh_to_dict(name, mesh, bsdf, emitter=None):
-        filename = os.path.join(temp_dir, f"{name}.ply")
-        _save_mesh_to_ply(mesh, filename)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # os.makedirs(temp_dir, exist_ok=True) # created by TemporaryDirectory
         
-        obj_dict = {
-            'type': 'ply',
-            'filename': filename,
-            'bsdf': bsdf
+        scene_dict = {
+            'type': 'scene',
+            'integrator': {
+                'type': 'path', # Use path tracer for global illumination
+                'max_depth': 6,
+            },
+            'sensor': {
+                'type': 'perspective',
+                'fov': camera.fov,
+                'to_world': mi.ScalarTransform4f.look_at(
+                    origin=camera.position.tolist(),
+                    target=camera.look_at.tolist(),
+                    up=camera.up.tolist()
+                ),
+                'film': {
+                    'type': 'hdrfilm',
+                    'width': camera.width,
+                    'height': camera.height,
+                    'pixel_format': 'rgb',
+                    'component_format': 'float32',
+                },
+                'sampler': {'type': 'independent', 'sample_count': spp},
+            },
         }
-        if emitter:
-            obj_dict['emitter'] = emitter
+
+        # Helper to add a mesh to the scene dict
+        def add_mesh_to_dict(name, mesh, bsdf, emitter=None):
+            filename = os.path.join(temp_dir, f"{name}.obj")
+            _save_mesh_to_ply(mesh, filename)
             
-        scene_dict[name] = obj_dict
+            obj_dict = {
+                'type': 'obj',
+                'filename': filename,
+                'bsdf': bsdf
+            }
+            if emitter:
+                obj_dict['emitter'] = emitter
+                
+            scene_dict[name] = obj_dict
 
-    # Materials
-    # Cornell Box colors (approximate)
-    white_bsdf = {'type': 'diffuse', 'reflectance': {'type': 'rgb', 'value': [0.76, 0.75, 0.50]}}
-    red_bsdf = {'type': 'diffuse', 'reflectance': {'type': 'rgb', 'value': [0.63, 0.06, 0.04]}}
-    green_bsdf = {'type': 'diffuse', 'reflectance': {'type': 'rgb', 'value': [0.14, 0.45, 0.09]}}
-    
-    # Add Walls
-    if 'floor' in box_meshes: add_mesh_to_dict('floor', box_meshes['floor'], white_bsdf)
-    if 'ceiling' in box_meshes: add_mesh_to_dict('ceiling', box_meshes['ceiling'], white_bsdf)
-    if 'back' in box_meshes: add_mesh_to_dict('back', box_meshes['back'], white_bsdf)
-    if 'left' in box_meshes: add_mesh_to_dict('left', box_meshes['left'], red_bsdf)
-    if 'right' in box_meshes: add_mesh_to_dict('right', box_meshes['right'], green_bsdf)
-    
-    # Add Light
-    if 'light' in box_meshes:
-        add_mesh_to_dict('light', box_meshes['light'], 
-                        {'type': 'diffuse', 'reflectance': {'type': 'rgb', 'value': [0, 0, 0]}}, # Black surface
-                        {'type': 'area', 'radiance': {'type': 'rgb', 'value': [light_intensity]*3}}
-        )
+        # Materials
+        # Cornell Box colors (approximate)
+        white_bsdf = {'type': 'diffuse', 'reflectance': {'type': 'rgb', 'value': [0.76, 0.75, 0.50]}}
+        red_bsdf = {'type': 'diffuse', 'reflectance': {'type': 'rgb', 'value': [0.63, 0.06, 0.04]}}
+        green_bsdf = {'type': 'diffuse', 'reflectance': {'type': 'rgb', 'value': [0.14, 0.45, 0.09]}}
+        
+        # Add Walls
+        if 'floor' in box_meshes: add_mesh_to_dict('floor', box_meshes['floor'], white_bsdf)
+        if 'ceiling' in box_meshes: add_mesh_to_dict('ceiling', box_meshes['ceiling'], white_bsdf)
+        if 'back' in box_meshes: add_mesh_to_dict('back', box_meshes['back'], white_bsdf)
+        if 'left' in box_meshes: add_mesh_to_dict('left', box_meshes['left'], red_bsdf)
+        if 'right' in box_meshes: add_mesh_to_dict('right', box_meshes['right'], green_bsdf)
+        
+        # Add Light
+        if 'light' in box_meshes:
+            add_mesh_to_dict('light', box_meshes['light'], 
+                            {'type': 'diffuse', 'reflectance': {'type': 'rgb', 'value': [0, 0, 0]}}, # Black surface
+                            {'type': 'area', 'radiance': {'type': 'rgb', 'value': [light_intensity]*3}}
+            )
 
-    # Add Object
-    # Using a principled BSDF or roughconductor/plastic to look nice
-    # object_bsdf = {
-    #     'type': 'roughplastic',
-    #     'diffuse_reflectance': {'type': 'rgb', 'value': object_color.tolist()},
-    #     'nonlinear': True
-    # }
-    object_bsdf = {
-        'type': 'diffuse', 
-        'reflectance': {'type': 'rgb', 'value': object_color.tolist()}
-    }
-    
-    if object_mesh is not None:
-        add_mesh_to_dict('object', object_mesh, object_bsdf)
+        # Add Object
+        # Using a principled BSDF or roughconductor/plastic to look nice
+        object_bsdf = {
+            'type': 'twosided', # fix backface culling/black faces issue
+            'material_interior': {
+                'type': 'diffuse',
+                'reflectance': {'type': 'rgb', 'value': object_color.tolist()},
+            }
+        }
+        
+        if object_mesh is not None:
+            add_mesh_to_dict('object', object_mesh, object_bsdf)
 
-    # Load and Render
-    mi_scene = mi.load_dict(scene_dict)
-    image = mi.render(mi_scene)
-    
-    # Denoise (Optional, requires OIDN)
-    # image = mi.TensorXf(image) # Already tensor
-    # denoiser = mi.OptixDenoiser(image.shape[:2])
-    # image = denoiser(image)
-    
-    return np.array(image)
+        # Load and Render
+        mi_scene = mi.load_dict(scene_dict)
+        image = mi.render(mi_scene)
+        
+        # Denoise (Optional, requires OIDN)
+        # image = mi.TensorXf(image) # Already tensor
+        # denoiser = mi.OptixDenoiser(image.shape[:2])
+        # image = denoiser(image)
+        
+        return np.array(image)

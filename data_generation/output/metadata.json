@@ -1,8 +1,8 @@
 [
   {
-    "class_id": "cube",
-    "class_name": "cube",
-    "shape_id": "cube",
+    "class_id": "04379243",
+    "class_name": "1b6ea0e8c6785638ad8d9da81848733",
+    "shape_id": "1b6ea0e8c6785638ad8d9da81848733",
     "color": [
       0.2,
       0.4,
@@ -10,44 +10,584 @@
     ],
     "color_idx": 0,
     "rotation": 18.85089558633996,
-    "rotation_idx": 0,
-    "num_object_patches": 12,
-    "num_wall_patches": 641
+    "rotation_idx": 0
   },
   {
-    "class_id": "cylinder",
-    "class_name": "cylinder",
-    "shape_id": "cylinder",
+    "class_id": "04379243",
+    "class_name": "1b6ea0e8c6785638ad8d9da81848733",
+    "shape_id": "1b6ea0e8c6785638ad8d9da81848733",
     "color": [
       0.2,
       0.4,
       0.6
     ],
     "color_idx": 0,
-    "rotation": 18.85089558633996,
-    "rotation_idx": 0,
-    "num_object_patches": 128,
-    "num_wall_patches": 641
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
   },
   {
-    "class_id": "torus",
-    "class_name": "torus",
-    "shape_id": "torus",
+    "class_id": "04379243",
+    "class_name": "1b6ea0e8c6785638ad8d9da81848733",
+    "shape_id": "1b6ea0e8c6785638ad8d9da81848733",
     "color": [
-      0.2,
-      0.4,
-      0.6
+      0.9,
+      0.5,
+      0.1
     ],
-    "color_idx": 0,
+    "color_idx": 1,
     "rotation": 18.85089558633996,
-    "rotation_idx": 0,
-    "num_object_patches": 2048,
-    "num_wall_patches": 641
+    "rotation_idx": 0
   },
   {
-    "class_id": "sphere",
-    "class_name": "sphere",
-    "shape_id": "sphere",
+    "class_id": "04379243",
+    "class_name": "1b6ea0e8c6785638ad8d9da81848733",
+    "shape_id": "1b6ea0e8c6785638ad8d9da81848733",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "1b6ea0e8c6785638ad8d9da81848733",
+    "shape_id": "1b6ea0e8c6785638ad8d9da81848733",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "1b6ea0e8c6785638ad8d9da81848733",
+    "shape_id": "1b6ea0e8c6785638ad8d9da81848733",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "1b6ea0e8c6785638ad8d9da81848733",
+    "shape_id": "1b6ea0e8c6785638ad8d9da81848733",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "1b6ea0e8c6785638ad8d9da81848733",
+    "shape_id": "1b6ea0e8c6785638ad8d9da81848733",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "1b6ea0e8c6785638ad8d9da81848733",
+    "shape_id": "1b6ea0e8c6785638ad8d9da81848733",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "shape_id": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "shape_id": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "shape_id": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "shape_id": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "shape_id": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "shape_id": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "shape_id": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4ceba450382724f7861fea89ab9e083a",
+    "shape_id": "4ceba450382724f7861fea89ab9e083a",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4ceba450382724f7861fea89ab9e083a",
+    "shape_id": "4ceba450382724f7861fea89ab9e083a",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4ceba450382724f7861fea89ab9e083a",
+    "shape_id": "4ceba450382724f7861fea89ab9e083a",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "shape_id": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4ceba450382724f7861fea89ab9e083a",
+    "shape_id": "4ceba450382724f7861fea89ab9e083a",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4ceba450382724f7861fea89ab9e083a",
+    "shape_id": "4ceba450382724f7861fea89ab9e083a",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "shape_id": "e2e3f057399a2b41276b6f6d90ee3a83",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4ceba450382724f7861fea89ab9e083a",
+    "shape_id": "4ceba450382724f7861fea89ab9e083a",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "794395f3e5e2d4f617b431cae0dd70ed",
+    "shape_id": "794395f3e5e2d4f617b431cae0dd70ed",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4ceba450382724f7861fea89ab9e083a",
+    "shape_id": "4ceba450382724f7861fea89ab9e083a",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4ceba450382724f7861fea89ab9e083a",
+    "shape_id": "4ceba450382724f7861fea89ab9e083a",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "794395f3e5e2d4f617b431cae0dd70ed",
+    "shape_id": "794395f3e5e2d4f617b431cae0dd70ed",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4ceba450382724f7861fea89ab9e083a",
+    "shape_id": "4ceba450382724f7861fea89ab9e083a",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "794395f3e5e2d4f617b431cae0dd70ed",
+    "shape_id": "794395f3e5e2d4f617b431cae0dd70ed",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "794395f3e5e2d4f617b431cae0dd70ed",
+    "shape_id": "794395f3e5e2d4f617b431cae0dd70ed",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "794395f3e5e2d4f617b431cae0dd70ed",
+    "shape_id": "794395f3e5e2d4f617b431cae0dd70ed",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "794395f3e5e2d4f617b431cae0dd70ed",
+    "shape_id": "794395f3e5e2d4f617b431cae0dd70ed",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "794395f3e5e2d4f617b431cae0dd70ed",
+    "shape_id": "794395f3e5e2d4f617b431cae0dd70ed",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "794395f3e5e2d4f617b431cae0dd70ed",
+    "shape_id": "794395f3e5e2d4f617b431cae0dd70ed",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "794395f3e5e2d4f617b431cae0dd70ed",
+    "shape_id": "794395f3e5e2d4f617b431cae0dd70ed",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "aa54c2e6850253ffe08dd63aa50202d",
+    "shape_id": "aa54c2e6850253ffe08dd63aa50202d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "aa54c2e6850253ffe08dd63aa50202d",
+    "shape_id": "aa54c2e6850253ffe08dd63aa50202d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "aa54c2e6850253ffe08dd63aa50202d",
+    "shape_id": "aa54c2e6850253ffe08dd63aa50202d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "aa54c2e6850253ffe08dd63aa50202d",
+    "shape_id": "aa54c2e6850253ffe08dd63aa50202d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "aa54c2e6850253ffe08dd63aa50202d",
+    "shape_id": "aa54c2e6850253ffe08dd63aa50202d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "aa54c2e6850253ffe08dd63aa50202d",
+    "shape_id": "aa54c2e6850253ffe08dd63aa50202d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "aa54c2e6850253ffe08dd63aa50202d",
+    "shape_id": "aa54c2e6850253ffe08dd63aa50202d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "aa54c2e6850253ffe08dd63aa50202d",
+    "shape_id": "aa54c2e6850253ffe08dd63aa50202d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "aa54c2e6850253ffe08dd63aa50202d",
+    "shape_id": "aa54c2e6850253ffe08dd63aa50202d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "6449378cb78f081b2369c46027bce7af",
+    "shape_id": "6449378cb78f081b2369c46027bce7af",
     "color": [
       0.2,
       0.4,
@@ -55,8 +595,8183 @@
     ],
     "color_idx": 0,
     "rotation": 18.85089558633996,
-    "rotation_idx": 0,
-    "num_object_patches": 5120,
-    "num_wall_patches": 641
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "6449378cb78f081b2369c46027bce7af",
+    "shape_id": "6449378cb78f081b2369c46027bce7af",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "6449378cb78f081b2369c46027bce7af",
+    "shape_id": "6449378cb78f081b2369c46027bce7af",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "6449378cb78f081b2369c46027bce7af",
+    "shape_id": "6449378cb78f081b2369c46027bce7af",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "6449378cb78f081b2369c46027bce7af",
+    "shape_id": "6449378cb78f081b2369c46027bce7af",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "6449378cb78f081b2369c46027bce7af",
+    "shape_id": "6449378cb78f081b2369c46027bce7af",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "6449378cb78f081b2369c46027bce7af",
+    "shape_id": "6449378cb78f081b2369c46027bce7af",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "6449378cb78f081b2369c46027bce7af",
+    "shape_id": "6449378cb78f081b2369c46027bce7af",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "6449378cb78f081b2369c46027bce7af",
+    "shape_id": "6449378cb78f081b2369c46027bce7af",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "c9ad9501c31fae5c71a782a4379556c7",
+    "shape_id": "c9ad9501c31fae5c71a782a4379556c7",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "c9ad9501c31fae5c71a782a4379556c7",
+    "shape_id": "c9ad9501c31fae5c71a782a4379556c7",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "c9ad9501c31fae5c71a782a4379556c7",
+    "shape_id": "c9ad9501c31fae5c71a782a4379556c7",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "c9ad9501c31fae5c71a782a4379556c7",
+    "shape_id": "c9ad9501c31fae5c71a782a4379556c7",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "c9ad9501c31fae5c71a782a4379556c7",
+    "shape_id": "c9ad9501c31fae5c71a782a4379556c7",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "c9ad9501c31fae5c71a782a4379556c7",
+    "shape_id": "c9ad9501c31fae5c71a782a4379556c7",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "c9ad9501c31fae5c71a782a4379556c7",
+    "shape_id": "c9ad9501c31fae5c71a782a4379556c7",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "c9ad9501c31fae5c71a782a4379556c7",
+    "shape_id": "c9ad9501c31fae5c71a782a4379556c7",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "c9ad9501c31fae5c71a782a4379556c7",
+    "shape_id": "c9ad9501c31fae5c71a782a4379556c7",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "3b8d176f94c0617867dc358060e3c47b",
+    "shape_id": "3b8d176f94c0617867dc358060e3c47b",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "3b8d176f94c0617867dc358060e3c47b",
+    "shape_id": "3b8d176f94c0617867dc358060e3c47b",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "3b8d176f94c0617867dc358060e3c47b",
+    "shape_id": "3b8d176f94c0617867dc358060e3c47b",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "3b8d176f94c0617867dc358060e3c47b",
+    "shape_id": "3b8d176f94c0617867dc358060e3c47b",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "3b8d176f94c0617867dc358060e3c47b",
+    "shape_id": "3b8d176f94c0617867dc358060e3c47b",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "3b8d176f94c0617867dc358060e3c47b",
+    "shape_id": "3b8d176f94c0617867dc358060e3c47b",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "3b8d176f94c0617867dc358060e3c47b",
+    "shape_id": "3b8d176f94c0617867dc358060e3c47b",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "3b8d176f94c0617867dc358060e3c47b",
+    "shape_id": "3b8d176f94c0617867dc358060e3c47b",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "3b8d176f94c0617867dc358060e3c47b",
+    "shape_id": "3b8d176f94c0617867dc358060e3c47b",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "shape_id": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "shape_id": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "shape_id": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "shape_id": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "shape_id": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "shape_id": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "shape_id": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "shape_id": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "shape_id": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "shape_id": "4d484d20a59a18d3fa6df2d54fa43ce",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "shape_id": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "shape_id": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "shape_id": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "shape_id": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "shape_id": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "shape_id": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "shape_id": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "shape_id": "9c87f81ccf8a2559dd33a7e96aec2a56",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "10f1b51f2207766ff11c3739edd52fa3",
+    "shape_id": "10f1b51f2207766ff11c3739edd52fa3",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "10f1b51f2207766ff11c3739edd52fa3",
+    "shape_id": "10f1b51f2207766ff11c3739edd52fa3",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "10f1b51f2207766ff11c3739edd52fa3",
+    "shape_id": "10f1b51f2207766ff11c3739edd52fa3",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "10f1b51f2207766ff11c3739edd52fa3",
+    "shape_id": "10f1b51f2207766ff11c3739edd52fa3",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "10f1b51f2207766ff11c3739edd52fa3",
+    "shape_id": "10f1b51f2207766ff11c3739edd52fa3",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "10f1b51f2207766ff11c3739edd52fa3",
+    "shape_id": "10f1b51f2207766ff11c3739edd52fa3",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "10f1b51f2207766ff11c3739edd52fa3",
+    "shape_id": "10f1b51f2207766ff11c3739edd52fa3",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "10f1b51f2207766ff11c3739edd52fa3",
+    "shape_id": "10f1b51f2207766ff11c3739edd52fa3",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "10f1b51f2207766ff11c3739edd52fa3",
+    "shape_id": "10f1b51f2207766ff11c3739edd52fa3",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "15bcc664de962b04e76bc197b3a3ffc0",
+    "shape_id": "15bcc664de962b04e76bc197b3a3ffc0",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "15bcc664de962b04e76bc197b3a3ffc0",
+    "shape_id": "15bcc664de962b04e76bc197b3a3ffc0",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "15bcc664de962b04e76bc197b3a3ffc0",
+    "shape_id": "15bcc664de962b04e76bc197b3a3ffc0",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "15bcc664de962b04e76bc197b3a3ffc0",
+    "shape_id": "15bcc664de962b04e76bc197b3a3ffc0",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "15bcc664de962b04e76bc197b3a3ffc0",
+    "shape_id": "15bcc664de962b04e76bc197b3a3ffc0",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "15bcc664de962b04e76bc197b3a3ffc0",
+    "shape_id": "15bcc664de962b04e76bc197b3a3ffc0",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "15bcc664de962b04e76bc197b3a3ffc0",
+    "shape_id": "15bcc664de962b04e76bc197b3a3ffc0",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "15bcc664de962b04e76bc197b3a3ffc0",
+    "shape_id": "15bcc664de962b04e76bc197b3a3ffc0",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4da850645da27913a82a6374374c9dbf",
+    "shape_id": "4da850645da27913a82a6374374c9dbf",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4da850645da27913a82a6374374c9dbf",
+    "shape_id": "4da850645da27913a82a6374374c9dbf",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4da850645da27913a82a6374374c9dbf",
+    "shape_id": "4da850645da27913a82a6374374c9dbf",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "15bcc664de962b04e76bc197b3a3ffc0",
+    "shape_id": "15bcc664de962b04e76bc197b3a3ffc0",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4da850645da27913a82a6374374c9dbf",
+    "shape_id": "4da850645da27913a82a6374374c9dbf",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4da850645da27913a82a6374374c9dbf",
+    "shape_id": "4da850645da27913a82a6374374c9dbf",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4da850645da27913a82a6374374c9dbf",
+    "shape_id": "4da850645da27913a82a6374374c9dbf",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4da850645da27913a82a6374374c9dbf",
+    "shape_id": "4da850645da27913a82a6374374c9dbf",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4da850645da27913a82a6374374c9dbf",
+    "shape_id": "4da850645da27913a82a6374374c9dbf",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "4da850645da27913a82a6374374c9dbf",
+    "shape_id": "4da850645da27913a82a6374374c9dbf",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "850564e1e8587f35617092ec6e36103f",
+    "shape_id": "850564e1e8587f35617092ec6e36103f",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "850564e1e8587f35617092ec6e36103f",
+    "shape_id": "850564e1e8587f35617092ec6e36103f",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "850564e1e8587f35617092ec6e36103f",
+    "shape_id": "850564e1e8587f35617092ec6e36103f",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "850564e1e8587f35617092ec6e36103f",
+    "shape_id": "850564e1e8587f35617092ec6e36103f",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "850564e1e8587f35617092ec6e36103f",
+    "shape_id": "850564e1e8587f35617092ec6e36103f",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "850564e1e8587f35617092ec6e36103f",
+    "shape_id": "850564e1e8587f35617092ec6e36103f",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "850564e1e8587f35617092ec6e36103f",
+    "shape_id": "850564e1e8587f35617092ec6e36103f",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "850564e1e8587f35617092ec6e36103f",
+    "shape_id": "850564e1e8587f35617092ec6e36103f",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "shape_id": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "850564e1e8587f35617092ec6e36103f",
+    "shape_id": "850564e1e8587f35617092ec6e36103f",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "shape_id": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "shape_id": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "shape_id": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "shape_id": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "shape_id": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "shape_id": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "shape_id": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04379243",
+    "class_name": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "shape_id": "fd7ed06e2ceb26d766c55b7c01b230bc",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "shape_id": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "shape_id": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "shape_id": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "shape_id": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "shape_id": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "shape_id": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "shape_id": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "shape_id": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "shape_id": "e6d6a78f53ed5a34d0a07165a76e5a8",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "1039c49d2976eb87d5faf4905977884",
+    "shape_id": "1039c49d2976eb87d5faf4905977884",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "1039c49d2976eb87d5faf4905977884",
+    "shape_id": "1039c49d2976eb87d5faf4905977884",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "1039c49d2976eb87d5faf4905977884",
+    "shape_id": "1039c49d2976eb87d5faf4905977884",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "1039c49d2976eb87d5faf4905977884",
+    "shape_id": "1039c49d2976eb87d5faf4905977884",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "1039c49d2976eb87d5faf4905977884",
+    "shape_id": "1039c49d2976eb87d5faf4905977884",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "1039c49d2976eb87d5faf4905977884",
+    "shape_id": "1039c49d2976eb87d5faf4905977884",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "1039c49d2976eb87d5faf4905977884",
+    "shape_id": "1039c49d2976eb87d5faf4905977884",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "1039c49d2976eb87d5faf4905977884",
+    "shape_id": "1039c49d2976eb87d5faf4905977884",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "shape_id": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "1039c49d2976eb87d5faf4905977884",
+    "shape_id": "1039c49d2976eb87d5faf4905977884",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "shape_id": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "shape_id": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "shape_id": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "shape_id": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "shape_id": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "shape_id": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "shape_id": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "shape_id": "9e653d3b0b8f8c6b28f998b2aa4c5983",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "93de96748cab511731205bd848315f04",
+    "shape_id": "93de96748cab511731205bd848315f04",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "93de96748cab511731205bd848315f04",
+    "shape_id": "93de96748cab511731205bd848315f04",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "93de96748cab511731205bd848315f04",
+    "shape_id": "93de96748cab511731205bd848315f04",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "93de96748cab511731205bd848315f04",
+    "shape_id": "93de96748cab511731205bd848315f04",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "93de96748cab511731205bd848315f04",
+    "shape_id": "93de96748cab511731205bd848315f04",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "93de96748cab511731205bd848315f04",
+    "shape_id": "93de96748cab511731205bd848315f04",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "93de96748cab511731205bd848315f04",
+    "shape_id": "93de96748cab511731205bd848315f04",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "93de96748cab511731205bd848315f04",
+    "shape_id": "93de96748cab511731205bd848315f04",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "93de96748cab511731205bd848315f04",
+    "shape_id": "93de96748cab511731205bd848315f04",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "4fbc7c634bd4488798b8c800ae001b66",
+    "shape_id": "4fbc7c634bd4488798b8c800ae001b66",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "4fbc7c634bd4488798b8c800ae001b66",
+    "shape_id": "4fbc7c634bd4488798b8c800ae001b66",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "4fbc7c634bd4488798b8c800ae001b66",
+    "shape_id": "4fbc7c634bd4488798b8c800ae001b66",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "4fbc7c634bd4488798b8c800ae001b66",
+    "shape_id": "4fbc7c634bd4488798b8c800ae001b66",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "4fbc7c634bd4488798b8c800ae001b66",
+    "shape_id": "4fbc7c634bd4488798b8c800ae001b66",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "4fbc7c634bd4488798b8c800ae001b66",
+    "shape_id": "4fbc7c634bd4488798b8c800ae001b66",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "4fbc7c634bd4488798b8c800ae001b66",
+    "shape_id": "4fbc7c634bd4488798b8c800ae001b66",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "4fbc7c634bd4488798b8c800ae001b66",
+    "shape_id": "4fbc7c634bd4488798b8c800ae001b66",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "4fbc7c634bd4488798b8c800ae001b66",
+    "shape_id": "4fbc7c634bd4488798b8c800ae001b66",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "a230c555488ec2664b07b7d8c0d68c50",
+    "shape_id": "a230c555488ec2664b07b7d8c0d68c50",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "a230c555488ec2664b07b7d8c0d68c50",
+    "shape_id": "a230c555488ec2664b07b7d8c0d68c50",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "a230c555488ec2664b07b7d8c0d68c50",
+    "shape_id": "a230c555488ec2664b07b7d8c0d68c50",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "a230c555488ec2664b07b7d8c0d68c50",
+    "shape_id": "a230c555488ec2664b07b7d8c0d68c50",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "a230c555488ec2664b07b7d8c0d68c50",
+    "shape_id": "a230c555488ec2664b07b7d8c0d68c50",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "a230c555488ec2664b07b7d8c0d68c50",
+    "shape_id": "a230c555488ec2664b07b7d8c0d68c50",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "a230c555488ec2664b07b7d8c0d68c50",
+    "shape_id": "a230c555488ec2664b07b7d8c0d68c50",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "a230c555488ec2664b07b7d8c0d68c50",
+    "shape_id": "a230c555488ec2664b07b7d8c0d68c50",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "a230c555488ec2664b07b7d8c0d68c50",
+    "shape_id": "a230c555488ec2664b07b7d8c0d68c50",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "shape_id": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "shape_id": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "shape_id": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "shape_id": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "shape_id": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "shape_id": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "shape_id": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "shape_id": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "shape_id": "d214cdddcfaeb0cbcf8dc8d39d90900d",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "aee93c0ff8dcf746ece2f98c4b805551",
+    "shape_id": "aee93c0ff8dcf746ece2f98c4b805551",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "aee93c0ff8dcf746ece2f98c4b805551",
+    "shape_id": "aee93c0ff8dcf746ece2f98c4b805551",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "aee93c0ff8dcf746ece2f98c4b805551",
+    "shape_id": "aee93c0ff8dcf746ece2f98c4b805551",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "aee93c0ff8dcf746ece2f98c4b805551",
+    "shape_id": "aee93c0ff8dcf746ece2f98c4b805551",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "aee93c0ff8dcf746ece2f98c4b805551",
+    "shape_id": "aee93c0ff8dcf746ece2f98c4b805551",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "aee93c0ff8dcf746ece2f98c4b805551",
+    "shape_id": "aee93c0ff8dcf746ece2f98c4b805551",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "aee93c0ff8dcf746ece2f98c4b805551",
+    "shape_id": "aee93c0ff8dcf746ece2f98c4b805551",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "aee93c0ff8dcf746ece2f98c4b805551",
+    "shape_id": "aee93c0ff8dcf746ece2f98c4b805551",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "aee93c0ff8dcf746ece2f98c4b805551",
+    "shape_id": "aee93c0ff8dcf746ece2f98c4b805551",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "shape_id": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "shape_id": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "shape_id": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "shape_id": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "shape_id": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "shape_id": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "shape_id": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "shape_id": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "efa85ab5aa4704d299429033f40f0f8b",
+    "shape_id": "efa85ab5aa4704d299429033f40f0f8b",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "shape_id": "cfb7ca78b0b65c4f2d615e80824301ca",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "efa85ab5aa4704d299429033f40f0f8b",
+    "shape_id": "efa85ab5aa4704d299429033f40f0f8b",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "efa85ab5aa4704d299429033f40f0f8b",
+    "shape_id": "efa85ab5aa4704d299429033f40f0f8b",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "efa85ab5aa4704d299429033f40f0f8b",
+    "shape_id": "efa85ab5aa4704d299429033f40f0f8b",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "efa85ab5aa4704d299429033f40f0f8b",
+    "shape_id": "efa85ab5aa4704d299429033f40f0f8b",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "efa85ab5aa4704d299429033f40f0f8b",
+    "shape_id": "efa85ab5aa4704d299429033f40f0f8b",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "efa85ab5aa4704d299429033f40f0f8b",
+    "shape_id": "efa85ab5aa4704d299429033f40f0f8b",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "efa85ab5aa4704d299429033f40f0f8b",
+    "shape_id": "efa85ab5aa4704d299429033f40f0f8b",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "efa85ab5aa4704d299429033f40f0f8b",
+    "shape_id": "efa85ab5aa4704d299429033f40f0f8b",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "63d91bce2f3d26abdeb3e56da26a6974",
+    "shape_id": "63d91bce2f3d26abdeb3e56da26a6974",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "63d91bce2f3d26abdeb3e56da26a6974",
+    "shape_id": "63d91bce2f3d26abdeb3e56da26a6974",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "63d91bce2f3d26abdeb3e56da26a6974",
+    "shape_id": "63d91bce2f3d26abdeb3e56da26a6974",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "63d91bce2f3d26abdeb3e56da26a6974",
+    "shape_id": "63d91bce2f3d26abdeb3e56da26a6974",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "63d91bce2f3d26abdeb3e56da26a6974",
+    "shape_id": "63d91bce2f3d26abdeb3e56da26a6974",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "63d91bce2f3d26abdeb3e56da26a6974",
+    "shape_id": "63d91bce2f3d26abdeb3e56da26a6974",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "63d91bce2f3d26abdeb3e56da26a6974",
+    "shape_id": "63d91bce2f3d26abdeb3e56da26a6974",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "63d91bce2f3d26abdeb3e56da26a6974",
+    "shape_id": "63d91bce2f3d26abdeb3e56da26a6974",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "63d91bce2f3d26abdeb3e56da26a6974",
+    "shape_id": "63d91bce2f3d26abdeb3e56da26a6974",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "shape_id": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "shape_id": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "shape_id": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "shape_id": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "shape_id": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "shape_id": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "shape_id": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "shape_id": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "shape_id": "78c2790d999b0f9c1403af6fa4ab17f0",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "ae65e1f6bb539fa775e66ae917e551ed",
+    "shape_id": "ae65e1f6bb539fa775e66ae917e551ed",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "ae65e1f6bb539fa775e66ae917e551ed",
+    "shape_id": "ae65e1f6bb539fa775e66ae917e551ed",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "ae65e1f6bb539fa775e66ae917e551ed",
+    "shape_id": "ae65e1f6bb539fa775e66ae917e551ed",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "ae65e1f6bb539fa775e66ae917e551ed",
+    "shape_id": "ae65e1f6bb539fa775e66ae917e551ed",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "ae65e1f6bb539fa775e66ae917e551ed",
+    "shape_id": "ae65e1f6bb539fa775e66ae917e551ed",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "ae65e1f6bb539fa775e66ae917e551ed",
+    "shape_id": "ae65e1f6bb539fa775e66ae917e551ed",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "ae65e1f6bb539fa775e66ae917e551ed",
+    "shape_id": "ae65e1f6bb539fa775e66ae917e551ed",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "ae65e1f6bb539fa775e66ae917e551ed",
+    "shape_id": "ae65e1f6bb539fa775e66ae917e551ed",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "ae65e1f6bb539fa775e66ae917e551ed",
+    "shape_id": "ae65e1f6bb539fa775e66ae917e551ed",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "27476b5c965b010618b731fab8bc3743",
+    "shape_id": "27476b5c965b010618b731fab8bc3743",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "27476b5c965b010618b731fab8bc3743",
+    "shape_id": "27476b5c965b010618b731fab8bc3743",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "27476b5c965b010618b731fab8bc3743",
+    "shape_id": "27476b5c965b010618b731fab8bc3743",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "27476b5c965b010618b731fab8bc3743",
+    "shape_id": "27476b5c965b010618b731fab8bc3743",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "27476b5c965b010618b731fab8bc3743",
+    "shape_id": "27476b5c965b010618b731fab8bc3743",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "27476b5c965b010618b731fab8bc3743",
+    "shape_id": "27476b5c965b010618b731fab8bc3743",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "27476b5c965b010618b731fab8bc3743",
+    "shape_id": "27476b5c965b010618b731fab8bc3743",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "27476b5c965b010618b731fab8bc3743",
+    "shape_id": "27476b5c965b010618b731fab8bc3743",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "27476b5c965b010618b731fab8bc3743",
+    "shape_id": "27476b5c965b010618b731fab8bc3743",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "7b200ae33e01eda467fd076ce612c54",
+    "shape_id": "7b200ae33e01eda467fd076ce612c54",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "7b200ae33e01eda467fd076ce612c54",
+    "shape_id": "7b200ae33e01eda467fd076ce612c54",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "7b200ae33e01eda467fd076ce612c54",
+    "shape_id": "7b200ae33e01eda467fd076ce612c54",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "7b200ae33e01eda467fd076ce612c54",
+    "shape_id": "7b200ae33e01eda467fd076ce612c54",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "7b200ae33e01eda467fd076ce612c54",
+    "shape_id": "7b200ae33e01eda467fd076ce612c54",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "7b200ae33e01eda467fd076ce612c54",
+    "shape_id": "7b200ae33e01eda467fd076ce612c54",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "7b200ae33e01eda467fd076ce612c54",
+    "shape_id": "7b200ae33e01eda467fd076ce612c54",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "7b200ae33e01eda467fd076ce612c54",
+    "shape_id": "7b200ae33e01eda467fd076ce612c54",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "04530566",
+    "class_name": "7b200ae33e01eda467fd076ce612c54",
+    "shape_id": "7b200ae33e01eda467fd076ce612c54",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "73374d8256f79089c308dc58cdbda034",
+    "shape_id": "73374d8256f79089c308dc58cdbda034",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "73374d8256f79089c308dc58cdbda034",
+    "shape_id": "73374d8256f79089c308dc58cdbda034",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "73374d8256f79089c308dc58cdbda034",
+    "shape_id": "73374d8256f79089c308dc58cdbda034",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "73374d8256f79089c308dc58cdbda034",
+    "shape_id": "73374d8256f79089c308dc58cdbda034",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "73374d8256f79089c308dc58cdbda034",
+    "shape_id": "73374d8256f79089c308dc58cdbda034",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "73374d8256f79089c308dc58cdbda034",
+    "shape_id": "73374d8256f79089c308dc58cdbda034",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "73374d8256f79089c308dc58cdbda034",
+    "shape_id": "73374d8256f79089c308dc58cdbda034",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "73374d8256f79089c308dc58cdbda034",
+    "shape_id": "73374d8256f79089c308dc58cdbda034",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "341c9b0583d31770492d9da2668ec34c",
+    "shape_id": "341c9b0583d31770492d9da2668ec34c",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "341c9b0583d31770492d9da2668ec34c",
+    "shape_id": "341c9b0583d31770492d9da2668ec34c",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "73374d8256f79089c308dc58cdbda034",
+    "shape_id": "73374d8256f79089c308dc58cdbda034",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "341c9b0583d31770492d9da2668ec34c",
+    "shape_id": "341c9b0583d31770492d9da2668ec34c",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "341c9b0583d31770492d9da2668ec34c",
+    "shape_id": "341c9b0583d31770492d9da2668ec34c",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "341c9b0583d31770492d9da2668ec34c",
+    "shape_id": "341c9b0583d31770492d9da2668ec34c",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "341c9b0583d31770492d9da2668ec34c",
+    "shape_id": "341c9b0583d31770492d9da2668ec34c",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "341c9b0583d31770492d9da2668ec34c",
+    "shape_id": "341c9b0583d31770492d9da2668ec34c",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "341c9b0583d31770492d9da2668ec34c",
+    "shape_id": "341c9b0583d31770492d9da2668ec34c",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "eb9851403aca75937d395837145ded71",
+    "shape_id": "eb9851403aca75937d395837145ded71",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "341c9b0583d31770492d9da2668ec34c",
+    "shape_id": "341c9b0583d31770492d9da2668ec34c",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "eb9851403aca75937d395837145ded71",
+    "shape_id": "eb9851403aca75937d395837145ded71",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "eb9851403aca75937d395837145ded71",
+    "shape_id": "eb9851403aca75937d395837145ded71",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "eb9851403aca75937d395837145ded71",
+    "shape_id": "eb9851403aca75937d395837145ded71",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "eb9851403aca75937d395837145ded71",
+    "shape_id": "eb9851403aca75937d395837145ded71",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "eb9851403aca75937d395837145ded71",
+    "shape_id": "eb9851403aca75937d395837145ded71",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "eb9851403aca75937d395837145ded71",
+    "shape_id": "eb9851403aca75937d395837145ded71",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "eb9851403aca75937d395837145ded71",
+    "shape_id": "eb9851403aca75937d395837145ded71",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "eb9851403aca75937d395837145ded71",
+    "shape_id": "eb9851403aca75937d395837145ded71",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4344509d0442364d3f9d6e0ade5188b0",
+    "shape_id": "4344509d0442364d3f9d6e0ade5188b0",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4344509d0442364d3f9d6e0ade5188b0",
+    "shape_id": "4344509d0442364d3f9d6e0ade5188b0",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4344509d0442364d3f9d6e0ade5188b0",
+    "shape_id": "4344509d0442364d3f9d6e0ade5188b0",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4344509d0442364d3f9d6e0ade5188b0",
+    "shape_id": "4344509d0442364d3f9d6e0ade5188b0",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4344509d0442364d3f9d6e0ade5188b0",
+    "shape_id": "4344509d0442364d3f9d6e0ade5188b0",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4344509d0442364d3f9d6e0ade5188b0",
+    "shape_id": "4344509d0442364d3f9d6e0ade5188b0",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4344509d0442364d3f9d6e0ade5188b0",
+    "shape_id": "4344509d0442364d3f9d6e0ade5188b0",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4344509d0442364d3f9d6e0ade5188b0",
+    "shape_id": "4344509d0442364d3f9d6e0ade5188b0",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4344509d0442364d3f9d6e0ade5188b0",
+    "shape_id": "4344509d0442364d3f9d6e0ade5188b0",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "3c9747ff49d0da71f91663a74ccd2338",
+    "shape_id": "3c9747ff49d0da71f91663a74ccd2338",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "3c9747ff49d0da71f91663a74ccd2338",
+    "shape_id": "3c9747ff49d0da71f91663a74ccd2338",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "3c9747ff49d0da71f91663a74ccd2338",
+    "shape_id": "3c9747ff49d0da71f91663a74ccd2338",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "3c9747ff49d0da71f91663a74ccd2338",
+    "shape_id": "3c9747ff49d0da71f91663a74ccd2338",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "3c9747ff49d0da71f91663a74ccd2338",
+    "shape_id": "3c9747ff49d0da71f91663a74ccd2338",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "3c9747ff49d0da71f91663a74ccd2338",
+    "shape_id": "3c9747ff49d0da71f91663a74ccd2338",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "3c9747ff49d0da71f91663a74ccd2338",
+    "shape_id": "3c9747ff49d0da71f91663a74ccd2338",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "3c9747ff49d0da71f91663a74ccd2338",
+    "shape_id": "3c9747ff49d0da71f91663a74ccd2338",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "3c9747ff49d0da71f91663a74ccd2338",
+    "shape_id": "3c9747ff49d0da71f91663a74ccd2338",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "a3e3eee0669bec82c9f016d57db96408",
+    "shape_id": "a3e3eee0669bec82c9f016d57db96408",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "a3e3eee0669bec82c9f016d57db96408",
+    "shape_id": "a3e3eee0669bec82c9f016d57db96408",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "a3e3eee0669bec82c9f016d57db96408",
+    "shape_id": "a3e3eee0669bec82c9f016d57db96408",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "a3e3eee0669bec82c9f016d57db96408",
+    "shape_id": "a3e3eee0669bec82c9f016d57db96408",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "a3e3eee0669bec82c9f016d57db96408",
+    "shape_id": "a3e3eee0669bec82c9f016d57db96408",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "a3e3eee0669bec82c9f016d57db96408",
+    "shape_id": "a3e3eee0669bec82c9f016d57db96408",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "a3e3eee0669bec82c9f016d57db96408",
+    "shape_id": "a3e3eee0669bec82c9f016d57db96408",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "a3e3eee0669bec82c9f016d57db96408",
+    "shape_id": "a3e3eee0669bec82c9f016d57db96408",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "a3e3eee0669bec82c9f016d57db96408",
+    "shape_id": "a3e3eee0669bec82c9f016d57db96408",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "99ee0185fa2492859be1712545749b62",
+    "shape_id": "99ee0185fa2492859be1712545749b62",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "99ee0185fa2492859be1712545749b62",
+    "shape_id": "99ee0185fa2492859be1712545749b62",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "99ee0185fa2492859be1712545749b62",
+    "shape_id": "99ee0185fa2492859be1712545749b62",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "99ee0185fa2492859be1712545749b62",
+    "shape_id": "99ee0185fa2492859be1712545749b62",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "99ee0185fa2492859be1712545749b62",
+    "shape_id": "99ee0185fa2492859be1712545749b62",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "99ee0185fa2492859be1712545749b62",
+    "shape_id": "99ee0185fa2492859be1712545749b62",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "99ee0185fa2492859be1712545749b62",
+    "shape_id": "99ee0185fa2492859be1712545749b62",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "99ee0185fa2492859be1712545749b62",
+    "shape_id": "99ee0185fa2492859be1712545749b62",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "shape_id": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "99ee0185fa2492859be1712545749b62",
+    "shape_id": "99ee0185fa2492859be1712545749b62",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "shape_id": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "shape_id": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "shape_id": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "shape_id": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "shape_id": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "shape_id": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "shape_id": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "shape_id": "7e6b4a7b4dd60c40cc8bd7a04c9659f1",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "10709332176024ce9e47e7a22e24daa3",
+    "shape_id": "10709332176024ce9e47e7a22e24daa3",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "10709332176024ce9e47e7a22e24daa3",
+    "shape_id": "10709332176024ce9e47e7a22e24daa3",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "10709332176024ce9e47e7a22e24daa3",
+    "shape_id": "10709332176024ce9e47e7a22e24daa3",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "10709332176024ce9e47e7a22e24daa3",
+    "shape_id": "10709332176024ce9e47e7a22e24daa3",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "10709332176024ce9e47e7a22e24daa3",
+    "shape_id": "10709332176024ce9e47e7a22e24daa3",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "10709332176024ce9e47e7a22e24daa3",
+    "shape_id": "10709332176024ce9e47e7a22e24daa3",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "10709332176024ce9e47e7a22e24daa3",
+    "shape_id": "10709332176024ce9e47e7a22e24daa3",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "10709332176024ce9e47e7a22e24daa3",
+    "shape_id": "10709332176024ce9e47e7a22e24daa3",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "248e014f31771b31d3ddfaaa242f81a1",
+    "shape_id": "248e014f31771b31d3ddfaaa242f81a1",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "10709332176024ce9e47e7a22e24daa3",
+    "shape_id": "10709332176024ce9e47e7a22e24daa3",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "248e014f31771b31d3ddfaaa242f81a1",
+    "shape_id": "248e014f31771b31d3ddfaaa242f81a1",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "248e014f31771b31d3ddfaaa242f81a1",
+    "shape_id": "248e014f31771b31d3ddfaaa242f81a1",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "248e014f31771b31d3ddfaaa242f81a1",
+    "shape_id": "248e014f31771b31d3ddfaaa242f81a1",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "248e014f31771b31d3ddfaaa242f81a1",
+    "shape_id": "248e014f31771b31d3ddfaaa242f81a1",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "248e014f31771b31d3ddfaaa242f81a1",
+    "shape_id": "248e014f31771b31d3ddfaaa242f81a1",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "248e014f31771b31d3ddfaaa242f81a1",
+    "shape_id": "248e014f31771b31d3ddfaaa242f81a1",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "248e014f31771b31d3ddfaaa242f81a1",
+    "shape_id": "248e014f31771b31d3ddfaaa242f81a1",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "248e014f31771b31d3ddfaaa242f81a1",
+    "shape_id": "248e014f31771b31d3ddfaaa242f81a1",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "shape_id": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "shape_id": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "shape_id": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "shape_id": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "shape_id": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "shape_id": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "shape_id": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "shape_id": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "shape_id": "96c0ecd1ef80e818c8687ff9b0b4e4ac",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "5e94fe6e318670d310da6117f2797a4c",
+    "shape_id": "5e94fe6e318670d310da6117f2797a4c",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "5e94fe6e318670d310da6117f2797a4c",
+    "shape_id": "5e94fe6e318670d310da6117f2797a4c",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "5e94fe6e318670d310da6117f2797a4c",
+    "shape_id": "5e94fe6e318670d310da6117f2797a4c",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "5e94fe6e318670d310da6117f2797a4c",
+    "shape_id": "5e94fe6e318670d310da6117f2797a4c",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "5e94fe6e318670d310da6117f2797a4c",
+    "shape_id": "5e94fe6e318670d310da6117f2797a4c",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "5e94fe6e318670d310da6117f2797a4c",
+    "shape_id": "5e94fe6e318670d310da6117f2797a4c",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "5e94fe6e318670d310da6117f2797a4c",
+    "shape_id": "5e94fe6e318670d310da6117f2797a4c",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "5e94fe6e318670d310da6117f2797a4c",
+    "shape_id": "5e94fe6e318670d310da6117f2797a4c",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "shape_id": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "shape_id": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "5e94fe6e318670d310da6117f2797a4c",
+    "shape_id": "5e94fe6e318670d310da6117f2797a4c",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "shape_id": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "shape_id": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "shape_id": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "shape_id": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "shape_id": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "shape_id": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "shape_id": "1fc918b0e5c7cf2da5c25aecef10278f",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "shape_id": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "shape_id": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "shape_id": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "shape_id": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "shape_id": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "shape_id": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "shape_id": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "shape_id": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "shape_id": "4bd7a49e63e0e97936e3b2fa8d1eb4eb",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "81ba974369a343d3946b850f0cd29857",
+    "shape_id": "81ba974369a343d3946b850f0cd29857",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "81ba974369a343d3946b850f0cd29857",
+    "shape_id": "81ba974369a343d3946b850f0cd29857",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "81ba974369a343d3946b850f0cd29857",
+    "shape_id": "81ba974369a343d3946b850f0cd29857",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "81ba974369a343d3946b850f0cd29857",
+    "shape_id": "81ba974369a343d3946b850f0cd29857",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "81ba974369a343d3946b850f0cd29857",
+    "shape_id": "81ba974369a343d3946b850f0cd29857",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "81ba974369a343d3946b850f0cd29857",
+    "shape_id": "81ba974369a343d3946b850f0cd29857",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "81ba974369a343d3946b850f0cd29857",
+    "shape_id": "81ba974369a343d3946b850f0cd29857",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "81ba974369a343d3946b850f0cd29857",
+    "shape_id": "81ba974369a343d3946b850f0cd29857",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "shape_id": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "shape_id": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "shape_id": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03001627",
+    "class_name": "81ba974369a343d3946b850f0cd29857",
+    "shape_id": "81ba974369a343d3946b850f0cd29857",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "shape_id": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "shape_id": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "shape_id": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "shape_id": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "shape_id": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "shape_id": "1c8c6874c0cb9bc73429c1c21d77499d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "shape_id": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "shape_id": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "shape_id": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "shape_id": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "shape_id": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "shape_id": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "shape_id": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "shape_id": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "shape_id": "ad2711786f1bd2f3bece9f494cab1c6d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "a591dc6d2760a4654177e158c403ccd5",
+    "shape_id": "a591dc6d2760a4654177e158c403ccd5",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "a591dc6d2760a4654177e158c403ccd5",
+    "shape_id": "a591dc6d2760a4654177e158c403ccd5",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "a591dc6d2760a4654177e158c403ccd5",
+    "shape_id": "a591dc6d2760a4654177e158c403ccd5",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "a591dc6d2760a4654177e158c403ccd5",
+    "shape_id": "a591dc6d2760a4654177e158c403ccd5",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "a591dc6d2760a4654177e158c403ccd5",
+    "shape_id": "a591dc6d2760a4654177e158c403ccd5",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "a591dc6d2760a4654177e158c403ccd5",
+    "shape_id": "a591dc6d2760a4654177e158c403ccd5",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "a591dc6d2760a4654177e158c403ccd5",
+    "shape_id": "a591dc6d2760a4654177e158c403ccd5",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "a591dc6d2760a4654177e158c403ccd5",
+    "shape_id": "a591dc6d2760a4654177e158c403ccd5",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "a591dc6d2760a4654177e158c403ccd5",
+    "shape_id": "a591dc6d2760a4654177e158c403ccd5",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "83e4f00f3c5b50ceb470346f25b26583",
+    "shape_id": "83e4f00f3c5b50ceb470346f25b26583",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "83e4f00f3c5b50ceb470346f25b26583",
+    "shape_id": "83e4f00f3c5b50ceb470346f25b26583",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "83e4f00f3c5b50ceb470346f25b26583",
+    "shape_id": "83e4f00f3c5b50ceb470346f25b26583",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "83e4f00f3c5b50ceb470346f25b26583",
+    "shape_id": "83e4f00f3c5b50ceb470346f25b26583",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "83e4f00f3c5b50ceb470346f25b26583",
+    "shape_id": "83e4f00f3c5b50ceb470346f25b26583",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "83e4f00f3c5b50ceb470346f25b26583",
+    "shape_id": "83e4f00f3c5b50ceb470346f25b26583",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "83e4f00f3c5b50ceb470346f25b26583",
+    "shape_id": "83e4f00f3c5b50ceb470346f25b26583",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "83e4f00f3c5b50ceb470346f25b26583",
+    "shape_id": "83e4f00f3c5b50ceb470346f25b26583",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "83e4f00f3c5b50ceb470346f25b26583",
+    "shape_id": "83e4f00f3c5b50ceb470346f25b26583",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "8b005f829bec6bf263e148e250c0340d",
+    "shape_id": "8b005f829bec6bf263e148e250c0340d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "8b005f829bec6bf263e148e250c0340d",
+    "shape_id": "8b005f829bec6bf263e148e250c0340d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "8b005f829bec6bf263e148e250c0340d",
+    "shape_id": "8b005f829bec6bf263e148e250c0340d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "8b005f829bec6bf263e148e250c0340d",
+    "shape_id": "8b005f829bec6bf263e148e250c0340d",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "8b005f829bec6bf263e148e250c0340d",
+    "shape_id": "8b005f829bec6bf263e148e250c0340d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "8b005f829bec6bf263e148e250c0340d",
+    "shape_id": "8b005f829bec6bf263e148e250c0340d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "8b005f829bec6bf263e148e250c0340d",
+    "shape_id": "8b005f829bec6bf263e148e250c0340d",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "8b005f829bec6bf263e148e250c0340d",
+    "shape_id": "8b005f829bec6bf263e148e250c0340d",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "8b005f829bec6bf263e148e250c0340d",
+    "shape_id": "8b005f829bec6bf263e148e250c0340d",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "shape_id": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "shape_id": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "shape_id": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "shape_id": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "shape_id": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "shape_id": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "shape_id": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "shape_id": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "cb99963122f01a92e8bcbdd9e5145d74",
+    "shape_id": "cb99963122f01a92e8bcbdd9e5145d74",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "shape_id": "6e65c6b79bd8df3184ce60b118ccc0b3",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "cb99963122f01a92e8bcbdd9e5145d74",
+    "shape_id": "cb99963122f01a92e8bcbdd9e5145d74",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "cb99963122f01a92e8bcbdd9e5145d74",
+    "shape_id": "cb99963122f01a92e8bcbdd9e5145d74",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "cb99963122f01a92e8bcbdd9e5145d74",
+    "shape_id": "cb99963122f01a92e8bcbdd9e5145d74",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "cb99963122f01a92e8bcbdd9e5145d74",
+    "shape_id": "cb99963122f01a92e8bcbdd9e5145d74",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "cb99963122f01a92e8bcbdd9e5145d74",
+    "shape_id": "cb99963122f01a92e8bcbdd9e5145d74",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "cb99963122f01a92e8bcbdd9e5145d74",
+    "shape_id": "cb99963122f01a92e8bcbdd9e5145d74",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "cb99963122f01a92e8bcbdd9e5145d74",
+    "shape_id": "cb99963122f01a92e8bcbdd9e5145d74",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "cb99963122f01a92e8bcbdd9e5145d74",
+    "shape_id": "cb99963122f01a92e8bcbdd9e5145d74",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "65b6279a17e7ace2df17c838e7147b58",
+    "shape_id": "65b6279a17e7ace2df17c838e7147b58",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "65b6279a17e7ace2df17c838e7147b58",
+    "shape_id": "65b6279a17e7ace2df17c838e7147b58",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "65b6279a17e7ace2df17c838e7147b58",
+    "shape_id": "65b6279a17e7ace2df17c838e7147b58",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "65b6279a17e7ace2df17c838e7147b58",
+    "shape_id": "65b6279a17e7ace2df17c838e7147b58",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "65b6279a17e7ace2df17c838e7147b58",
+    "shape_id": "65b6279a17e7ace2df17c838e7147b58",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "65b6279a17e7ace2df17c838e7147b58",
+    "shape_id": "65b6279a17e7ace2df17c838e7147b58",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "65b6279a17e7ace2df17c838e7147b58",
+    "shape_id": "65b6279a17e7ace2df17c838e7147b58",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "65b6279a17e7ace2df17c838e7147b58",
+    "shape_id": "65b6279a17e7ace2df17c838e7147b58",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "af69a061bed20d8a2ccb8d77f3823711",
+    "shape_id": "af69a061bed20d8a2ccb8d77f3823711",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "65b6279a17e7ace2df17c838e7147b58",
+    "shape_id": "65b6279a17e7ace2df17c838e7147b58",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "af69a061bed20d8a2ccb8d77f3823711",
+    "shape_id": "af69a061bed20d8a2ccb8d77f3823711",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "af69a061bed20d8a2ccb8d77f3823711",
+    "shape_id": "af69a061bed20d8a2ccb8d77f3823711",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "af69a061bed20d8a2ccb8d77f3823711",
+    "shape_id": "af69a061bed20d8a2ccb8d77f3823711",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "af69a061bed20d8a2ccb8d77f3823711",
+    "shape_id": "af69a061bed20d8a2ccb8d77f3823711",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "af69a061bed20d8a2ccb8d77f3823711",
+    "shape_id": "af69a061bed20d8a2ccb8d77f3823711",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "af69a061bed20d8a2ccb8d77f3823711",
+    "shape_id": "af69a061bed20d8a2ccb8d77f3823711",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "af69a061bed20d8a2ccb8d77f3823711",
+    "shape_id": "af69a061bed20d8a2ccb8d77f3823711",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "af69a061bed20d8a2ccb8d77f3823711",
+    "shape_id": "af69a061bed20d8a2ccb8d77f3823711",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "shape_id": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "shape_id": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "shape_id": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "shape_id": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "shape_id": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "shape_id": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "shape_id": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "shape_id": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "shape_id": "f0ea12f645a1c541ce1a36e7d9d3bee",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "defcf80fcef4b51b3f431ca2c1260d62",
+    "shape_id": "defcf80fcef4b51b3f431ca2c1260d62",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "defcf80fcef4b51b3f431ca2c1260d62",
+    "shape_id": "defcf80fcef4b51b3f431ca2c1260d62",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "defcf80fcef4b51b3f431ca2c1260d62",
+    "shape_id": "defcf80fcef4b51b3f431ca2c1260d62",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "defcf80fcef4b51b3f431ca2c1260d62",
+    "shape_id": "defcf80fcef4b51b3f431ca2c1260d62",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "defcf80fcef4b51b3f431ca2c1260d62",
+    "shape_id": "defcf80fcef4b51b3f431ca2c1260d62",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "defcf80fcef4b51b3f431ca2c1260d62",
+    "shape_id": "defcf80fcef4b51b3f431ca2c1260d62",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "defcf80fcef4b51b3f431ca2c1260d62",
+    "shape_id": "defcf80fcef4b51b3f431ca2c1260d62",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "defcf80fcef4b51b3f431ca2c1260d62",
+    "shape_id": "defcf80fcef4b51b3f431ca2c1260d62",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "defcf80fcef4b51b3f431ca2c1260d62",
+    "shape_id": "defcf80fcef4b51b3f431ca2c1260d62",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "909e86e4a5af7fdf93f0194265a9746c",
+    "shape_id": "909e86e4a5af7fdf93f0194265a9746c",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "909e86e4a5af7fdf93f0194265a9746c",
+    "shape_id": "909e86e4a5af7fdf93f0194265a9746c",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "909e86e4a5af7fdf93f0194265a9746c",
+    "shape_id": "909e86e4a5af7fdf93f0194265a9746c",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "909e86e4a5af7fdf93f0194265a9746c",
+    "shape_id": "909e86e4a5af7fdf93f0194265a9746c",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "909e86e4a5af7fdf93f0194265a9746c",
+    "shape_id": "909e86e4a5af7fdf93f0194265a9746c",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "909e86e4a5af7fdf93f0194265a9746c",
+    "shape_id": "909e86e4a5af7fdf93f0194265a9746c",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "909e86e4a5af7fdf93f0194265a9746c",
+    "shape_id": "909e86e4a5af7fdf93f0194265a9746c",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "909e86e4a5af7fdf93f0194265a9746c",
+    "shape_id": "909e86e4a5af7fdf93f0194265a9746c",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "dbdf45cab0adbded1f260c1b356c52ce",
+    "shape_id": "dbdf45cab0adbded1f260c1b356c52ce",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "909e86e4a5af7fdf93f0194265a9746c",
+    "shape_id": "909e86e4a5af7fdf93f0194265a9746c",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "dbdf45cab0adbded1f260c1b356c52ce",
+    "shape_id": "dbdf45cab0adbded1f260c1b356c52ce",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "dbdf45cab0adbded1f260c1b356c52ce",
+    "shape_id": "dbdf45cab0adbded1f260c1b356c52ce",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "dbdf45cab0adbded1f260c1b356c52ce",
+    "shape_id": "dbdf45cab0adbded1f260c1b356c52ce",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "dbdf45cab0adbded1f260c1b356c52ce",
+    "shape_id": "dbdf45cab0adbded1f260c1b356c52ce",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "dbdf45cab0adbded1f260c1b356c52ce",
+    "shape_id": "dbdf45cab0adbded1f260c1b356c52ce",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "dbdf45cab0adbded1f260c1b356c52ce",
+    "shape_id": "dbdf45cab0adbded1f260c1b356c52ce",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "dbdf45cab0adbded1f260c1b356c52ce",
+    "shape_id": "dbdf45cab0adbded1f260c1b356c52ce",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "dbdf45cab0adbded1f260c1b356c52ce",
+    "shape_id": "dbdf45cab0adbded1f260c1b356c52ce",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "4110ce992cd45b83d3270fc46b08e35e",
+    "shape_id": "4110ce992cd45b83d3270fc46b08e35e",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "4110ce992cd45b83d3270fc46b08e35e",
+    "shape_id": "4110ce992cd45b83d3270fc46b08e35e",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "4110ce992cd45b83d3270fc46b08e35e",
+    "shape_id": "4110ce992cd45b83d3270fc46b08e35e",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "4110ce992cd45b83d3270fc46b08e35e",
+    "shape_id": "4110ce992cd45b83d3270fc46b08e35e",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "4110ce992cd45b83d3270fc46b08e35e",
+    "shape_id": "4110ce992cd45b83d3270fc46b08e35e",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "4110ce992cd45b83d3270fc46b08e35e",
+    "shape_id": "4110ce992cd45b83d3270fc46b08e35e",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "4110ce992cd45b83d3270fc46b08e35e",
+    "shape_id": "4110ce992cd45b83d3270fc46b08e35e",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "4110ce992cd45b83d3270fc46b08e35e",
+    "shape_id": "4110ce992cd45b83d3270fc46b08e35e",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "4110ce992cd45b83d3270fc46b08e35e",
+    "shape_id": "4110ce992cd45b83d3270fc46b08e35e",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "3839f1edddecf07c502e2eeb62a0f66d",
+    "shape_id": "3839f1edddecf07c502e2eeb62a0f66d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "3839f1edddecf07c502e2eeb62a0f66d",
+    "shape_id": "3839f1edddecf07c502e2eeb62a0f66d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "3839f1edddecf07c502e2eeb62a0f66d",
+    "shape_id": "3839f1edddecf07c502e2eeb62a0f66d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "3839f1edddecf07c502e2eeb62a0f66d",
+    "shape_id": "3839f1edddecf07c502e2eeb62a0f66d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "3839f1edddecf07c502e2eeb62a0f66d",
+    "shape_id": "3839f1edddecf07c502e2eeb62a0f66d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "3839f1edddecf07c502e2eeb62a0f66d",
+    "shape_id": "3839f1edddecf07c502e2eeb62a0f66d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "3839f1edddecf07c502e2eeb62a0f66d",
+    "shape_id": "3839f1edddecf07c502e2eeb62a0f66d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "3839f1edddecf07c502e2eeb62a0f66d",
+    "shape_id": "3839f1edddecf07c502e2eeb62a0f66d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03467517",
+    "class_name": "3839f1edddecf07c502e2eeb62a0f66d",
+    "shape_id": "3839f1edddecf07c502e2eeb62a0f66d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8bf620bd023c602b74f7bf9c15b075d9",
+    "shape_id": "8bf620bd023c602b74f7bf9c15b075d9",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8bf620bd023c602b74f7bf9c15b075d9",
+    "shape_id": "8bf620bd023c602b74f7bf9c15b075d9",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8bf620bd023c602b74f7bf9c15b075d9",
+    "shape_id": "8bf620bd023c602b74f7bf9c15b075d9",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8bf620bd023c602b74f7bf9c15b075d9",
+    "shape_id": "8bf620bd023c602b74f7bf9c15b075d9",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8bf620bd023c602b74f7bf9c15b075d9",
+    "shape_id": "8bf620bd023c602b74f7bf9c15b075d9",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8bf620bd023c602b74f7bf9c15b075d9",
+    "shape_id": "8bf620bd023c602b74f7bf9c15b075d9",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8bf620bd023c602b74f7bf9c15b075d9",
+    "shape_id": "8bf620bd023c602b74f7bf9c15b075d9",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8bf620bd023c602b74f7bf9c15b075d9",
+    "shape_id": "8bf620bd023c602b74f7bf9c15b075d9",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8bf620bd023c602b74f7bf9c15b075d9",
+    "shape_id": "8bf620bd023c602b74f7bf9c15b075d9",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "7b58dca40a1e09dd393c2e9c64ac953",
+    "shape_id": "7b58dca40a1e09dd393c2e9c64ac953",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "7b58dca40a1e09dd393c2e9c64ac953",
+    "shape_id": "7b58dca40a1e09dd393c2e9c64ac953",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "7b58dca40a1e09dd393c2e9c64ac953",
+    "shape_id": "7b58dca40a1e09dd393c2e9c64ac953",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "7b58dca40a1e09dd393c2e9c64ac953",
+    "shape_id": "7b58dca40a1e09dd393c2e9c64ac953",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "7b58dca40a1e09dd393c2e9c64ac953",
+    "shape_id": "7b58dca40a1e09dd393c2e9c64ac953",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "7b58dca40a1e09dd393c2e9c64ac953",
+    "shape_id": "7b58dca40a1e09dd393c2e9c64ac953",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "7b58dca40a1e09dd393c2e9c64ac953",
+    "shape_id": "7b58dca40a1e09dd393c2e9c64ac953",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "7b58dca40a1e09dd393c2e9c64ac953",
+    "shape_id": "7b58dca40a1e09dd393c2e9c64ac953",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "7b58dca40a1e09dd393c2e9c64ac953",
+    "shape_id": "7b58dca40a1e09dd393c2e9c64ac953",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "ee0a3213a08a23d27d2d874548544c4e",
+    "shape_id": "ee0a3213a08a23d27d2d874548544c4e",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "ee0a3213a08a23d27d2d874548544c4e",
+    "shape_id": "ee0a3213a08a23d27d2d874548544c4e",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "ee0a3213a08a23d27d2d874548544c4e",
+    "shape_id": "ee0a3213a08a23d27d2d874548544c4e",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "ee0a3213a08a23d27d2d874548544c4e",
+    "shape_id": "ee0a3213a08a23d27d2d874548544c4e",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "ee0a3213a08a23d27d2d874548544c4e",
+    "shape_id": "ee0a3213a08a23d27d2d874548544c4e",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "ee0a3213a08a23d27d2d874548544c4e",
+    "shape_id": "ee0a3213a08a23d27d2d874548544c4e",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "ee0a3213a08a23d27d2d874548544c4e",
+    "shape_id": "ee0a3213a08a23d27d2d874548544c4e",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "ee0a3213a08a23d27d2d874548544c4e",
+    "shape_id": "ee0a3213a08a23d27d2d874548544c4e",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "ee0a3213a08a23d27d2d874548544c4e",
+    "shape_id": "ee0a3213a08a23d27d2d874548544c4e",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e036a72a92033782b9ba8289eb4d47d",
+    "shape_id": "e036a72a92033782b9ba8289eb4d47d",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e036a72a92033782b9ba8289eb4d47d",
+    "shape_id": "e036a72a92033782b9ba8289eb4d47d",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e036a72a92033782b9ba8289eb4d47d",
+    "shape_id": "e036a72a92033782b9ba8289eb4d47d",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e036a72a92033782b9ba8289eb4d47d",
+    "shape_id": "e036a72a92033782b9ba8289eb4d47d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e036a72a92033782b9ba8289eb4d47d",
+    "shape_id": "e036a72a92033782b9ba8289eb4d47d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e036a72a92033782b9ba8289eb4d47d",
+    "shape_id": "e036a72a92033782b9ba8289eb4d47d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e036a72a92033782b9ba8289eb4d47d",
+    "shape_id": "e036a72a92033782b9ba8289eb4d47d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e036a72a92033782b9ba8289eb4d47d",
+    "shape_id": "e036a72a92033782b9ba8289eb4d47d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "shape_id": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e036a72a92033782b9ba8289eb4d47d",
+    "shape_id": "e036a72a92033782b9ba8289eb4d47d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "shape_id": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "shape_id": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "shape_id": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "shape_id": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "shape_id": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "shape_id": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "shape_id": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "shape_id": "97bb8c467f0efadaf2b5d20b1742ee75",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "5131b742dad94f6175dadc997718614d",
+    "shape_id": "5131b742dad94f6175dadc997718614d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "5131b742dad94f6175dadc997718614d",
+    "shape_id": "5131b742dad94f6175dadc997718614d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "5131b742dad94f6175dadc997718614d",
+    "shape_id": "5131b742dad94f6175dadc997718614d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "5131b742dad94f6175dadc997718614d",
+    "shape_id": "5131b742dad94f6175dadc997718614d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "5131b742dad94f6175dadc997718614d",
+    "shape_id": "5131b742dad94f6175dadc997718614d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "5131b742dad94f6175dadc997718614d",
+    "shape_id": "5131b742dad94f6175dadc997718614d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "5131b742dad94f6175dadc997718614d",
+    "shape_id": "5131b742dad94f6175dadc997718614d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "5131b742dad94f6175dadc997718614d",
+    "shape_id": "5131b742dad94f6175dadc997718614d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "5131b742dad94f6175dadc997718614d",
+    "shape_id": "5131b742dad94f6175dadc997718614d",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e7c8dd1efb78b8baba85a673915bd3d",
+    "shape_id": "e7c8dd1efb78b8baba85a673915bd3d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e7c8dd1efb78b8baba85a673915bd3d",
+    "shape_id": "e7c8dd1efb78b8baba85a673915bd3d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e7c8dd1efb78b8baba85a673915bd3d",
+    "shape_id": "e7c8dd1efb78b8baba85a673915bd3d",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e7c8dd1efb78b8baba85a673915bd3d",
+    "shape_id": "e7c8dd1efb78b8baba85a673915bd3d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e7c8dd1efb78b8baba85a673915bd3d",
+    "shape_id": "e7c8dd1efb78b8baba85a673915bd3d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e7c8dd1efb78b8baba85a673915bd3d",
+    "shape_id": "e7c8dd1efb78b8baba85a673915bd3d",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e7c8dd1efb78b8baba85a673915bd3d",
+    "shape_id": "e7c8dd1efb78b8baba85a673915bd3d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e7c8dd1efb78b8baba85a673915bd3d",
+    "shape_id": "e7c8dd1efb78b8baba85a673915bd3d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "e7c8dd1efb78b8baba85a673915bd3d",
+    "shape_id": "e7c8dd1efb78b8baba85a673915bd3d",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8e956bae37beff87c2743f037f439af3",
+    "shape_id": "8e956bae37beff87c2743f037f439af3",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8e956bae37beff87c2743f037f439af3",
+    "shape_id": "8e956bae37beff87c2743f037f439af3",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8e956bae37beff87c2743f037f439af3",
+    "shape_id": "8e956bae37beff87c2743f037f439af3",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8e956bae37beff87c2743f037f439af3",
+    "shape_id": "8e956bae37beff87c2743f037f439af3",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8e956bae37beff87c2743f037f439af3",
+    "shape_id": "8e956bae37beff87c2743f037f439af3",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8e956bae37beff87c2743f037f439af3",
+    "shape_id": "8e956bae37beff87c2743f037f439af3",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8e956bae37beff87c2743f037f439af3",
+    "shape_id": "8e956bae37beff87c2743f037f439af3",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8e956bae37beff87c2743f037f439af3",
+    "shape_id": "8e956bae37beff87c2743f037f439af3",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "efe1456e80e2a8646350c50e0a456641",
+    "shape_id": "efe1456e80e2a8646350c50e0a456641",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8e956bae37beff87c2743f037f439af3",
+    "shape_id": "8e956bae37beff87c2743f037f439af3",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "efe1456e80e2a8646350c50e0a456641",
+    "shape_id": "efe1456e80e2a8646350c50e0a456641",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "efe1456e80e2a8646350c50e0a456641",
+    "shape_id": "efe1456e80e2a8646350c50e0a456641",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "efe1456e80e2a8646350c50e0a456641",
+    "shape_id": "efe1456e80e2a8646350c50e0a456641",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "efe1456e80e2a8646350c50e0a456641",
+    "shape_id": "efe1456e80e2a8646350c50e0a456641",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "efe1456e80e2a8646350c50e0a456641",
+    "shape_id": "efe1456e80e2a8646350c50e0a456641",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "efe1456e80e2a8646350c50e0a456641",
+    "shape_id": "efe1456e80e2a8646350c50e0a456641",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "efe1456e80e2a8646350c50e0a456641",
+    "shape_id": "efe1456e80e2a8646350c50e0a456641",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "efe1456e80e2a8646350c50e0a456641",
+    "shape_id": "efe1456e80e2a8646350c50e0a456641",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "shape_id": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "shape_id": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "shape_id": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "shape_id": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "shape_id": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "shape_id": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "shape_id": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "shape_id": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "shape_id": "abdfb5b2d82e555e3bd003e0bb7a3ed9",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "a2ee365a26f7ec623228b702032404a6",
+    "shape_id": "a2ee365a26f7ec623228b702032404a6",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "a2ee365a26f7ec623228b702032404a6",
+    "shape_id": "a2ee365a26f7ec623228b702032404a6",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "a2ee365a26f7ec623228b702032404a6",
+    "shape_id": "a2ee365a26f7ec623228b702032404a6",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "a2ee365a26f7ec623228b702032404a6",
+    "shape_id": "a2ee365a26f7ec623228b702032404a6",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "a2ee365a26f7ec623228b702032404a6",
+    "shape_id": "a2ee365a26f7ec623228b702032404a6",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "a2ee365a26f7ec623228b702032404a6",
+    "shape_id": "a2ee365a26f7ec623228b702032404a6",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "a2ee365a26f7ec623228b702032404a6",
+    "shape_id": "a2ee365a26f7ec623228b702032404a6",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "a2ee365a26f7ec623228b702032404a6",
+    "shape_id": "a2ee365a26f7ec623228b702032404a6",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "a2ee365a26f7ec623228b702032404a6",
+    "shape_id": "a2ee365a26f7ec623228b702032404a6",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "shape_id": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "shape_id": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "shape_id": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "shape_id": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "shape_id": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "shape_id": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "shape_id": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "shape_id": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "shape_id": "8cf5bd117e04da6d6a3456c0ab5674a9",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "shape_id": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "shape_id": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "shape_id": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "color": [
+      0.6,
+      0.3,
+      0.8
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "shape_id": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "shape_id": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "shape_id": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "shape_id": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "shape_id": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "shape_id": "bb1c9e1346c5262bedb66d5d04c0da43",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "6309c20c1ad258efbb297232fe17fe77",
+    "shape_id": "6309c20c1ad258efbb297232fe17fe77",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "6309c20c1ad258efbb297232fe17fe77",
+    "shape_id": "6309c20c1ad258efbb297232fe17fe77",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "6309c20c1ad258efbb297232fe17fe77",
+    "shape_id": "6309c20c1ad258efbb297232fe17fe77",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "6309c20c1ad258efbb297232fe17fe77",
+    "shape_id": "6309c20c1ad258efbb297232fe17fe77",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "6309c20c1ad258efbb297232fe17fe77",
+    "shape_id": "6309c20c1ad258efbb297232fe17fe77",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "6309c20c1ad258efbb297232fe17fe77",
+    "shape_id": "6309c20c1ad258efbb297232fe17fe77",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "6309c20c1ad258efbb297232fe17fe77",
+    "shape_id": "6309c20c1ad258efbb297232fe17fe77",
+    "color": [
+      0.9,
+      0.75,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "6309c20c1ad258efbb297232fe17fe77",
+    "shape_id": "6309c20c1ad258efbb297232fe17fe77",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "6309c20c1ad258efbb297232fe17fe77",
+    "shape_id": "6309c20c1ad258efbb297232fe17fe77",
+    "color": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "shape_id": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "shape_id": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "shape_id": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "shape_id": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "color": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "color_idx": 0,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "shape_id": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "shape_id": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "color": [
+      0.9,
+      0.5,
+      0.1
+    ],
+    "color_idx": 1,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "shape_id": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 18.85089558633996,
+    "rotation_idx": 0
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "shape_id": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 31.387203908147633,
+    "rotation_idx": 1
+  },
+  {
+    "class_id": "03790512",
+    "class_name": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "shape_id": "acd49452b452cf2f3ab3dfa44f5fab01",
+    "color": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "color_idx": 2,
+    "rotation": 146.6070349213434,
+    "rotation_idx": 2
   }
 ]

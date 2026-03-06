@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import random
+import time
 import subprocess
 import numpy as np
 import trimesh
@@ -25,17 +26,17 @@ RADIOSITY_DIR = SCRIPT_DIR
 sys.path.insert(0, RADIOSITY_DIR)
 
 from scene import create_cornell_box_with_car, Scene, CORNELL_WHITE
-from solver import solve_progressive
+# from solver import solve_progressive
 from renderer import Camera
 from patches import Patch
 from utils import save_image
 
 # Import Mitsuba renderer
-from renderer_mitsuba import render_mitsuba, Camera as MitsubaCamera
+from renderer_mitsuba import render_mitsuba, render_mitsuba_standard, Camera as MitsubaCamera
 MITSUBA_AVAILABLE = True
 
 # Configuration
-SHAPENET_ROOT = "/home/sazhang/.cache/kagglehub/datasets/hajareddagni/shapenetcorev2/versions/1/ShapeNetCore.v2/ShapeNetCore.v2"
+SHAPENET_ROOT = "/home/sazhang/ShapeNetCorev2"
 # TETWILD_PATH = os.path.join(RADIOSITY_DIR, "../TetWild/build/TetWild")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
 SURFACE_MESHES_DIR = os.path.join(SCRIPT_DIR, "output/raw_meshes")  # Normalized meshes (unit cube, zero-centered)
@@ -43,14 +44,16 @@ TET_MESHES_DIR = os.path.join(SCRIPT_DIR, "output/tet_meshes")
 
 # ShapeNet class IDs
 CLASS_IDS = {
-    # "02691156": "airplane",
-    "02958343": "car",
+    "02691156": "airplane",
+    # "02958343": "car",
     # "04379243": "table",
-    # "04530566": "vessel"
+    "04530566": "vessel",
+    "03001627": "chair",
+    "03636649": "lamp"
 }
 
 # Number of shapes per class
-SHAPES_PER_CLASS = 1 #120
+SHAPES_PER_CLASS = 1#5 #120
 
 # Realistic car paint colors (avoiding red/green to not blend with Cornell box walls)
 PREDEFINED_COLORS = [
@@ -64,11 +67,17 @@ PREDEFINED_COLORS = [
     # np.array([0.4, 0.2, 0.5]),     # Purple Metallic
     # np.array([0.2, 0.4, 0.6]),     # Sky Blue
     # np.array([0.9, 0.75, 0.1]),    # Yellow Gold
-    np.array([0.7, 0.1, 0.1]),     # Bright Red
+    # np.array([0.7, 0.1, 0.1]),     # Bright Red
+    np.array([0.1, 0.2, 0.7]),  # blue
+    np.array([0.9, 0.8, 0.2]),  # yellow
+    np.array([0.6, 0.3, 0.8]),  # purple
+    np.array([0.7, 0.7, 0.7]),  # gray
+    np.array([0.9, 0.9, 0.9]),  # white
+    np.array([0.9, 0.5, 0.1]),  # orange
 ]
 
 # Rotations around up-axis (in degrees)
-NUM_ROTATIONS = 1
+NUM_ROTATIONS = 2
 
 # Number of colors per shape
 NUM_COLORS = 1
@@ -102,7 +111,7 @@ def select_random_shapes(num_per_class: int = 4) -> List[Tuple[str, str, str]]:
                 print("  Reached desired number of shapes for this class.")
                 break
 
-            obj_path = os.path.join(class_dir, shape_id, "models", "model_normalized.ply")
+            obj_path = os.path.join(class_dir, shape_id, "models", "model_normalized.obj")
             if not os.path.exists(obj_path):
                 print(f"  Skipping {obj_path}: OBJ file not found")
                 continue
@@ -221,14 +230,14 @@ def render_and_save(
     exposure: float = 1.0,
     object_color: np.ndarray = None
 ) -> Dict:
-    """Render scene and save radiosity data."""
+    """Render scene and save geometry (vertices and normals)."""
 
     # Build mesh
     scene.build_combined_mesh()
-    mesh = scene.get_trimesh()
+    # mesh = scene.get_trimesh()
 
     # Solve radiosity with shadows
-    solve_progressive(scene.patches, mesh, max_iterations=20)
+    # solve_progressive(scene.patches, mesh, max_iterations=20)
 
     # Setup camera - match main.py settings
     box_size = 2.0
@@ -241,7 +250,7 @@ def render_and_save(
         height=1024
     )
     # Render with Mitsuba - match main.py settings
-    image = render_mitsuba(
+    image = render_mitsuba_standard(
         scene, camera,
         object_color=object_color if object_color is not None else np.array([0.7, 0.1, 0.1]),
         spp=256
@@ -252,10 +261,10 @@ def render_and_save(
 
     # Extract radiosity data
     # Separate object patches from wall patches based on material color
-    object_radiosity = []
-    wall_radiosity = []
     object_vertices = []
+    object_normals = []
     wall_vertices = []
+    wall_normals = []
 
     for patch in scene.patches:
         is_wall = (
@@ -266,21 +275,21 @@ def render_and_save(
         )
 
         if is_wall:
-            wall_radiosity.append(patch.radiosity.tolist())
             wall_vertices.append(patch.center.tolist())
+            wall_normals.append(patch.normal.tolist())
         else:
-            object_radiosity.append(patch.radiosity.tolist())
             object_vertices.append(patch.center.tolist())
+            object_normals.append(patch.normal.tolist())
 
     # Save data
     data = {
         "params": params,
-        "object_radiosity": object_radiosity,
         "object_vertices": object_vertices,
-        "wall_radiosity": wall_radiosity,
+        "object_normals": object_normals,
         "wall_vertices": wall_vertices,
-        "num_object_patches": len(object_radiosity),
-        "num_wall_patches": len(wall_radiosity)
+        "wall_normals": wall_normals,
+        "num_object_patches": len(object_vertices),
+        "num_wall_patches": len(wall_vertices)
     }
 
     with open(f"{output_prefix}_data.json", "w") as f:
@@ -289,10 +298,10 @@ def render_and_save(
     # Also save as numpy for easier loading
     np.savez(
         f"{output_prefix}_data.npz",
-        object_radiosity=np.array(object_radiosity),
         object_vertices=np.array(object_vertices),
-        wall_radiosity=np.array(wall_radiosity),
+        object_normals=np.array(object_normals),
         wall_vertices=np.array(wall_vertices),
+        wall_normals=np.array(wall_normals),
         color=params["color"],
         rotation=params["rotation"]
     )
@@ -301,8 +310,9 @@ def render_and_save(
 
 
 def main():
+    start_time = time.time()
     print("=" * 60)
-    print("Dataset Generation for Radiosity Rendering")
+    print("Dataset Generation for Neural Rendering")
     print("=" * 60)
 
     # Create output directories
@@ -396,6 +406,10 @@ def main():
     print(f"Dataset generation complete!")
     print(f"  Total renders: {len(all_metadata)}")
     print(f"  Output directory: {OUTPUT_DIR}")
+    
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"  Total time: {elapsed_time:.2f} seconds ({elapsed_time/60:.2f} minutes)")
     print("=" * 60)
 
 

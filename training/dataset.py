@@ -23,7 +23,7 @@ class RadiosityDataset(Dataset):
         
         # Find all completed cases (must have .npz and .png)
         # Pattern: case_*.npz
-        self.files = glob.glob(os.path.join(data_dir, "case_*_data.npz"))
+        self.files = glob.glob(os.path.join(data_dir, "case_*.npz"))
         self.files.sort()
         
         # Simple split (first 90% train, last 10% val)
@@ -83,7 +83,8 @@ class RadiosityDataset(Dataset):
         data = np.load(file_path)
         
         # 1. Load Image
-        img_path = file_path.replace("_data.npz", "_render.png")
+        # img_path = file_path.replace("_co0_r1.npz", "_render.png")
+        img_path = file_path[:-9] + "_render.png" # replace c0_r*.npz with _render.png
         image = Image.open(img_path).convert("RGB")
         image = image.resize((self.image_res, self.image_res), Image.Resampling.BILINEAR)
         image_tensor = transforms.ToTensor()(image) # (3, H, W)
