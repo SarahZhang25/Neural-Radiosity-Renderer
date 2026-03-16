@@ -18,7 +18,8 @@ from typing import List, Tuple, Dict
 import shutil
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import multiprocessing
+import mitsuba as mi
+
 multiprocessing.set_start_method('spawn', force=True)
 
 # Add parent directory
@@ -37,7 +38,7 @@ SHAPENET_ROOT = "/home/sazhang/ShapeNetCorev2"
 
 OUTPUT_ROOT = os.path.join(SCRIPT_DIR, "output")
 # RENDER_DIR = os.path.join(OUTPUT_ROOT, "renders")
-RENDER_DIR = os.path.join(OUTPUT_ROOT, "datasets/data_generation/output/datasets/shapenet_take3_table_vessel_chair_guitar_motorbike")
+RENDER_DIR = os.path.join(OUTPUT_ROOT, "datasets/shapenet_take3_exr_version")
 MESH_SOURCE_DIR = os.path.join(OUTPUT_ROOT, "raw_meshes", "simple_objects")
 os.makedirs(RENDER_DIR, exist_ok=True)
 
@@ -50,8 +51,8 @@ os.makedirs(RENDER_DIR, exist_ok=True)
 # }
 # ShapeNet class IDs
 CLASS_IDS = {
-    # "02691156": "airplane",
-    # "02958343": "car",
+    "02691156": "airplane",
+    "02958343": "car",
     "04379243": "table",
     "04530566": "vessel",
     "03001627": "chair",
@@ -261,28 +262,36 @@ def render_single_case(args):
         # 5. Save Data for Model
         fn_prefix = f"case_{case_idx:03d}_{class_id}_{shape_id}_c{color_idx}_r{rot_idx}"
         npz_path = os.path.join(RENDER_DIR, f"{fn_prefix}.npz")
-        png_path = os.path.join(RENDER_DIR, f"{fn_prefix[:-5]}_render.png") # strip _data
         
+        # Change PNG to EXR for visual debugging of HDR data
+        exr_path = os.path.join(RENDER_DIR, f"{fn_prefix}_render.exr")
+        png_path = os.path.join(RENDER_DIR, f"{fn_prefix}_render.png")
+        
+        # Save the raw HDR image using Mitsuba's native Bitmap class
+        import mitsuba as mi
+        mi.Bitmap(image_tensor).write(exr_path)
+        
+        # Also save a tone-mapped PNG for easy viewing
         save_image(image_tensor, png_path, tone_mapping="reinhard", exposure=1)
         
         # Point Clouds
-        obj_pc, obj_face_idx = trimesh.sample.sample_surface(mesh, 2048)
-        obj_normals = mesh.face_normals[obj_face_idx]
+        canonical_pc, canonical_face_idx = trimesh.sample.sample_surface(mesh, 2048)
+        canonical_normals = mesh.face_normals[canonical_face_idx]
         
         wall_pc, wall_normals = get_walls_point_cloud(box_meshes, 2048)
         
         np.savez(
             npz_path,
-            object_vertices=obj_pc,
-            object_normals=obj_normals,
+            hdr_target_image=hdr_image_np,
+            canonical_vertices=canonical_pc,
+            canonical_normals=canonical_normals,
             wall_vertices=wall_pc,
             wall_normals=wall_normals,
             color=color,
             rotation=rotation,
-            scale_ratio=1.,#scale_ratio,
-            position_offset=None,#translation,
+            scale_ratio=1.,
             # Dummy fields for compatibility
-            object_radiosity=np.zeros_like(obj_pc),
+            object_radiosity=np.zeros_like(canonical_pc),
             wall_radiosity=np.zeros_like(wall_pc),
             camera_pos=CAMERA.position,
             camera_lookat=CAMERA.look_at
@@ -366,32 +375,35 @@ def process_case(case_idx, shape_name, color, rotation, light_intensity: float, 
     image = render_pure_mitsuba_scene(
         box_meshes, mesh, color, CAMERA, spp=SPP, light_intensity=light_intensity
     )
+    hdr_image_np = np.array(image, dtype=np.float32)
     
     # 5. Save Data for Model
     fn_prefix = f"case_{case_idx:03d}_{shape_name}_r{int(rotation)}_data"
     npz_path = os.path.join(RENDER_DIR, f"{fn_prefix}.npz")
+    exr_path = os.path.join(RENDER_DIR, f"{fn_prefix[:-5]}_render.exr") # strip _data
     png_path = os.path.join(RENDER_DIR, f"{fn_prefix[:-5]}_render.png") # strip _data
-    
+
+    mi.Bitmap(image).write(exr_path)
     save_image(image, png_path, tone_mapping="reinhard", exposure=exposure)
     
     # Point Clouds
-    obj_pc, obj_face_idx = trimesh.sample.sample_surface(mesh, 2048)
-    obj_normals = mesh.face_normals[obj_face_idx]
+    canonical_pc, canonical_face_idx = trimesh.sample.sample_surface(mesh, 2048)
+    canonical_normals = mesh.face_normals[canonical_face_idx]
     
     wall_pc, wall_normals = get_walls_point_cloud(box_meshes, 2048)
     
     np.savez(
         npz_path,
-        object_vertices=obj_pc,
-        object_normals=obj_normals,
+        hdr_target_image=hdr_image_np,
+        canonical_vertices=canonical_pc,
+        canonical_normals=canonical_normals,
         wall_vertices=wall_pc,
         wall_normals=wall_normals,
         color=color,
         rotation=rotation,
         scale_ratio=scale_ratio,
-        position_offset=translation,
         # Dummy fields for compatibility
-        object_radiosity=np.zeros_like(obj_pc),
+        object_radiosity=np.zeros_like(canonical_pc),
         wall_radiosity=np.zeros_like(wall_pc),
         camera_pos=CAMERA.position,
         camera_lookat=CAMERA.look_at
@@ -527,14 +539,14 @@ if __name__ == "__main__":
                 pbar.update(1)
 
     # Save master metadata
-    metadata_path = os.path.join(OUTPUT_ROOT, "metadata.json")
+    metadata_path = os.path.join(RENDER_DIR, "metadata.json")
     with open(metadata_path, "w") as f:
         json.dump(all_metadata, f, indent=2)
 
     print("\n" + "=" * 60)
     print(f"Dataset generation complete!")
     print(f"  Total renders: {len(all_metadata)}")
-    print(f"  Output directory: {OUTPUT_ROOT}")
+    print(f"  Output directory: {RENDER_DIR}")
     
     end_time = time.time()
     elapsed_time = end_time - start_time

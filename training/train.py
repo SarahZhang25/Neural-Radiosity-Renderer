@@ -18,9 +18,47 @@ from training.dataset import RadiosityDataset
 def log_transform(x):
     """
     Applies a log transform to the input image tensor for better handling of HDR values in L1 loss.
-    Add 1e-5 to prevent log(0) from producing -inf / NaN gradients.
+    Clamp explicitly to prevent log(x < 0) from producing NaN gradients.
     """
+    x = torch.clamp(x, min=0.0)
     return torch.log(x + 1e-5)
+
+def linear_to_srgb(x: torch.Tensor) -> torch.Tensor:
+    a = 0.055
+    x = torch.clamp(x, min=0.0, max=1.0)
+    return torch.where(x <= 0.0031308, 12.92 * x, (1 + a) * torch.pow(x, 1/2.4) - a)
+
+def tone_map_reinhard(x, exposure=1.0):
+    """
+    Simple Reinhard tone mapping: x / (x + 1)
+    We can also apply an exposure scaling before tone mapping.
+    """
+    x = x * exposure
+    return x / (x + 1.0)
+
+def to_uint8(x):
+    """
+    Convert float image [0, 1] to uint8 [0, 255].
+    """
+    x = torch.clamp(x, 0.0, 1.0)
+    return (x * 255).byte()
+
+def convert_hdr_for_visualization(x, method="reinhard", exposure=1.0):
+    """
+    Convert HDR image to LDR for visualization using specified tone mapping method.
+
+    Args:
+        x: Input HDR image tensor
+        method: Current hard-coded to reinhard # "reinhard", "gamma", or "none". 
+        exposure: Exposure value for tone mapping
+
+    Returns:
+        Tone-mapped image in [0, 1] range
+    """
+    x = tone_map_reinhard(x, exposure=exposure)
+    x = linear_to_srgb(x)
+    x = to_uint8(x)
+    return x
 
 # RenderFormer LPIPS Tone-mapping: "clamp (log I / log 2, 0, 1)"
 # Note: log(I) / log(2) is mathematically identical to log2(I).
@@ -90,7 +128,6 @@ def train(config_path):
         def criterion(pred, target):
             # Base core loss on log-transformed HDR predictions
             loss_l1 = core_loss_fn(log_transform(pred), log_transform(target))
-            loss_l1 = core_loss_fn(pred, target)
             # LPIPS loss on tone-mapped LDR predictions
             pred_mapped = tone_map_lpips(pred)
             target_mapped = tone_map_lpips(target)
@@ -99,7 +136,7 @@ def train(config_path):
             return loss_l1 + lpips_weight * loss_lpips
     else:
         def criterion(pred, target):
-            return core_loss_fn(pred, target)
+            return core_loss_fn(log_transform(pred), log_transform(target))
     
     # 5. Logging
     log_dir_root = config['training']['log_dir']
@@ -225,10 +262,13 @@ def train(config_path):
                     obj_normals=fixed_val_batch['obj_normals']
                 )
                 
-                # Log images: Target vs Prediction
+                # Log images: Target vs Prediction (tone-mapped for visualization)
                 # Stack them: [Target, Prediction]
-                vis_img = torch.cat([fixed_val_batch['target_image'], pred_fixed], dim=3) # Concatenate width-wise
-                grid = torchvision.utils.make_grid(vis_img, nrow=1, normalize=True, value_range=(0,1))
+                # Using a simple Reinhard tone mapping followed by sRGB curve for visualization
+                vis_target = convert_hdr_for_visualization(fixed_val_batch['target_image'])
+                vis_pred = convert_hdr_for_visualization(torch.clamp(pred_fixed, min=0.0))
+                vis_img = torch.cat([vis_target, vis_pred], dim=3) # Concatenate width-wise
+                grid = torchvision.utils.make_grid(vis_img, nrow=1, normalize=False)
                 writer.add_image('Visual/Validation', grid, epoch)
 
                 # Visual Inspection (Fixed Training Batch)=
@@ -244,13 +284,12 @@ def train(config_path):
 
                 # Stack them: [Target, Prediction]
                 # Note: We visualize the first 4 samples if batch is large to save space, or all if small
-                vis_train_limit = 32 # fixed_train_batch['target_image'].shape[0] # 4 
-                vis_train_img = torch.cat([
-                    fixed_train_batch['target_image'][:vis_train_limit], 
-                    pred_train_fixed[:vis_train_limit]
-                ], dim=3)
+                vis_train_limit = 16 # fixed_train_batch['target_image'].shape[0] # 4 
+                vis_train_target = convert_hdr_for_visualization(fixed_train_batch['target_image'][:vis_train_limit])
+                vis_train_pred = convert_hdr_for_visualization(torch.clamp(pred_train_fixed[:vis_train_limit], min=0.0))
+                vis_train_img = torch.cat([vis_train_target, vis_train_pred], dim=3)
                 
-                grid_train = torchvision.utils.make_grid(vis_train_img, nrow=1, normalize=True, value_range=(0,1))
+                grid_train = torchvision.utils.make_grid(vis_train_img, nrow=1, normalize=False)
                 writer.add_image('Visual/Training', grid_train, epoch)
 
     writer.close()

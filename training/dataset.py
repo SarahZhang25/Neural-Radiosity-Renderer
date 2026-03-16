@@ -3,11 +3,11 @@ import torch
 import numpy as np
 import json
 from torch.utils.data import Dataset
-from PIL import Image
-from torchvision import transforms
 import glob
 from typing import Tuple, List, Optional
 from utils.ray_generator import RayGenerator
+import mitsuba as mi
+mi.set_variant('scalar_rgb')
 
 class RadiosityDataset(Dataset):
     def __init__(
@@ -83,16 +83,23 @@ class RadiosityDataset(Dataset):
         data = np.load(file_path)
         
         # 1. Load Image
-        # img_path = file_path.replace("_co0_r1.npz", "_render.png")
-        img_path = file_path[:-9] + "_render.png" # replace c0_r*.npz with _render.png
-        image = Image.open(img_path).convert("RGB")
-        image = image.resize((self.image_res, self.image_res), Image.Resampling.BILINEAR)
-        image_tensor = transforms.ToTensor()(image) # (3, H, W)
+        if 'hdr_target_image' in data:
+            image_np = data['hdr_target_image']
+        else:
+            img_path = file_path[:-4] + "_render.exr" # fallback
+            bitmap = mi.Bitmap(img_path)
+            image_np = np.array(bitmap)
+            
+        # Resize using PyTorch
+        # Note: image_np has shape (H, W, C)
+        image_np = image_np[..., :3] # keep only RGB
+        image_tensor = torch.from_numpy(image_np).permute(2, 0, 1).float() # (3, H, W)
+        image_tensor = torch.nn.functional.interpolate(image_tensor.unsqueeze(0), size=(self.image_res, self.image_res), mode='bilinear', align_corners=False).squeeze(0)
         
         # 2. Process Point Clouds
         # Object 0: The central object
-        obj_verts = data['object_vertices'] # (N, 3)
-        obj_normals = data['object_normals'] if 'object_normals' in data else np.zeros_like(obj_verts)
+        obj_verts = data['canonical_vertices'] # (N, 3)
+        obj_normals = data['canonical_normals'] if 'canonical_normals' in data else np.zeros_like(obj_verts)
         obj_color = data['color'] # (3,)
         
         # Object 1: The box walls
