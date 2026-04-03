@@ -38,7 +38,7 @@ SHAPENET_ROOT = "/home/sazhang/ShapeNetCorev2"
 
 OUTPUT_ROOT = os.path.join(SCRIPT_DIR, "output")
 # RENDER_DIR = os.path.join(OUTPUT_ROOT, "renders")
-RENDER_DIR = os.path.join(OUTPUT_ROOT, "datasets/shapenet_take3_exr_version")
+RENDER_DIR = os.path.join(OUTPUT_ROOT, "datasets/variable_camera_experiment")
 MESH_SOURCE_DIR = os.path.join(OUTPUT_ROOT, "raw_meshes", "simple_objects")
 os.makedirs(RENDER_DIR, exist_ok=True)
 
@@ -51,32 +51,32 @@ os.makedirs(RENDER_DIR, exist_ok=True)
 # }
 # ShapeNet class IDs
 CLASS_IDS = {
-    "02691156": "airplane",
-    "02958343": "car",
-    "04379243": "table",
-    "04530566": "vessel",
+    # "02691156": "airplane",
+    # "02958343": "car",
+    # "04379243": "table",
+    # "04530566": "vessel",
     "03001627": "chair",
     # "03636649": "lamp", # Excluded due to small size and low comparative complexity
-    "03467517": "guitar",
-    "03790512": "motorbike"
+    # "03467517": "guitar",
+    # "03790512": "motorbike"
 }
 
 PREDEFINED_COLORS = [
     np.array([0.2, 0.4, 0.6]), # blue
-    # np.array([0.7, 0.1, 0.1]), # red
-    np.array([0.9, 0.75, 0.1]), # gold
-    # np.array([0.9, 0.8, 0.2]),  # yellow
-    np.array([0.6, 0.3, 0.8]),  # purple
-    np.array([0.8, 0.8, 0.8]),  # gray
-    np.array([0.9, 0.9, 0.9]),  # white
-    np.array([0.9, 0.5, 0.1]),  # orange
+    # # np.array([0.7, 0.1, 0.1]), # red
+    # np.array([0.9, 0.75, 0.1]), # gold
+    # # np.array([0.9, 0.8, 0.2]),  # yellow
+    # np.array([0.6, 0.3, 0.8]),  # purple
+    # np.array([0.8, 0.8, 0.8]),  # gray
+    # np.array([0.9, 0.9, 0.9]),  # white
+    # np.array([0.9, 0.5, 0.1]),  # orange
 ]
 
 # Rotations around up-axis (in degrees)
 NUM_ROTATIONS = 3
 
 # Number of colors per shape
-NUM_COLORS = 3
+NUM_COLORS = 1
 
 # Number of shapes per class
 SHAPES_PER_CLASS = 15 #120
@@ -198,19 +198,42 @@ def get_walls_point_cloud(box_meshes, n_points=2048):
     return points, normals
 
 
-# def process_case(case_idx, shape_name, color, rotation, light_intensity: float, light_size_ratio: float, exposure: float, scale_min: float, scale_max: float, pos_variation: float, random_seed: int):
-
 def render_single_case(args):
     """Worker function for parallel rendering. Takes a tuple of case parameters."""
-    case_idx, class_id, shape_id, mesh_path, color, color_idx, rotation, rot_idx, renders_dir = args
+    case_idx, class_id, shape_id, mesh_path, color, color_idx, rotation, rot_idx, randomize_camera, include_head_on_view, random_seed, renders_dir = args
 
     try:
         # Create scene
-        # Set random seed for reproducibility
-        random_seed = 42
         np.random.seed(random_seed + case_idx)
         
         # print(f"Generating Case {case_idx}: {class_id}, rot={rotation:.1f}...")
+        
+        if randomize_camera:
+            # Randomize camera position
+            target = np.array([0.0, BOX_SIZE * 0.5, 0.0])
+            # Base spherical coords for pos [0, 1, 3] relative to target: radius=3, theta=0, phi=pi/2
+            r = BOX_SIZE * 1.5
+            # Vary theta (horizontal angle) between -30 and 30 degrees
+            theta = np.random.uniform(-np.radians(30), np.radians(30))
+            # Vary phi (vertical angle) between 60 and 120 degrees (from vertical pole)
+            # where 90 is horizontal (y = 1.0)
+            phi = np.random.uniform(np.radians(70), np.radians(110))
+            
+            cam_x = target[0] + r * np.sin(phi) * np.sin(theta)
+            cam_y = target[1] + r * np.cos(phi)
+            cam_z = target[2] + r * np.sin(phi) * np.cos(theta)
+            
+            cam_pos_var = np.array([cam_x, cam_y, cam_z])
+            
+            case_camera = Camera(
+                position=cam_pos_var,
+                look_at=target,
+                fov=50.0,
+                width=256,
+                height=256
+            )
+        else:
+            case_camera = CAMERA
         
         # 1. Load Object Mesh
         # mesh_path = os.path.join(MESH_SOURCE_DIR, f"{shape_name}.obj")
@@ -254,7 +277,7 @@ def render_single_case(args):
         
         # 4. Render
         image_tensor = render_pure_mitsuba_scene(
-            box_meshes, mesh, color, CAMERA, spp=SPP#, light_intensity=light_intensity
+            box_meshes, mesh, color, case_camera, spp=SPP#, light_intensity=light_intensity
         )
         # Convert the Mitsuba tensor directly into a standard NumPy float32 array
         hdr_image_np = np.array(image_tensor, dtype=np.float32)
@@ -293,8 +316,8 @@ def render_single_case(args):
             # Dummy fields for compatibility
             object_radiosity=np.zeros_like(canonical_pc),
             wall_radiosity=np.zeros_like(wall_pc),
-            camera_pos=CAMERA.position,
-            camera_lookat=CAMERA.look_at
+            camera_pos=case_camera.position,
+            camera_lookat=case_camera.look_at
         )
 
         # Params
@@ -324,90 +347,108 @@ def render_single_case(args):
         return (case_idx, None, str(e) + "\n" + traceback.format_exc())
 
 
-
-def process_case(case_idx, shape_name, color, rotation, light_intensity: float, light_size_ratio: float, exposure: float, scale_min: float, scale_max: float, pos_variation: float, random_seed: int):
-    # Set random seed for reproducibility
-    np.random.seed(random_seed + case_idx)
+#TODO: remove this????
+# def process_case(case_idx, shape_name, color, rotation, light_intensity: float, light_size_ratio: float, exposure: float, scale_min: float, scale_max: float, pos_variation: float, random_seed: int):
+#     # Set random seed for reproducibility
+#     np.random.seed(random_seed + case_idx)
     
-    print(f"Generating Case {case_idx}: {shape_name}, rot={rotation:.1f}...")
+#     print(f"Generating Case {case_idx}: {shape_name}, rot={rotation:.1f}...")
     
-    # 1. Load Object Mesh
-    mesh_path = os.path.join(MESH_SOURCE_DIR, f"{shape_name}.obj")
-    if not os.path.exists(mesh_path):
-        print(f"Skipping {shape_name}: {mesh_path} not found")
-        return
+#     # 1. Load Object Mesh
+#     mesh_path = os.path.join(MESH_SOURCE_DIR, f"{shape_name}.obj")
+#     if not os.path.exists(mesh_path):
+#         print(f"Skipping {shape_name}: {mesh_path} not found")
+#         return
 
-    mesh = trimesh.load(mesh_path, force='mesh')
+#     mesh = trimesh.load(mesh_path, force='mesh')
         
-    # 2. Transform Object (Scale, Rotate, Position)
-    # Random scale between scale_min and scale_max of box size
-    scale_ratio = np.random.uniform(scale_min, scale_max)
-    target_size = BOX_SIZE * scale_ratio
-    bounds = mesh.bounds
-    current_size = np.max(bounds[1] - bounds[0])
-    if current_size > 0:
-        scale_factor = target_size / current_size
-        mesh.apply_scale(scale_factor)
+#     # 2. Transform Object (Scale, Rotate, Position)
+#     # Random scale between scale_min and scale_max of box size
+#     scale_ratio = np.random.uniform(scale_min, scale_max)
+#     target_size = BOX_SIZE * scale_ratio
+#     bounds = mesh.bounds
+#     current_size = np.max(bounds[1] - bounds[0])
+#     if current_size > 0:
+#         scale_factor = target_size / current_size
+#         mesh.apply_scale(scale_factor)
     
-    # Rotate Y
-    if rotation != 0:
-        rot_mat = trimesh.transformations.rotation_matrix(np.radians(rotation), [0, 1, 0])
-        mesh.apply_transform(rot_mat)
+#     # Rotate Y
+#     if rotation != 0:
+#         rot_mat = trimesh.transformations.rotation_matrix(np.radians(rotation), [0, 1, 0])
+#         mesh.apply_transform(rot_mat)
         
-    # Position: Center horizontally, Bottom on floor
-    bounds = mesh.bounds
-    translation = np.zeros(3)
-    translation[1] = -bounds[0][1] # Move bottom to 0
+#     # Position: Center horizontally, Bottom on floor
+#     bounds = mesh.bounds
+#     translation = np.zeros(3)
+#     translation[1] = -bounds[0][1] # Move bottom to 0
     
-    # Center XZ with random variation:
-    translation[0] = - (bounds[0][0] + bounds[1][0]) / 2.0 + np.random.uniform(-pos_variation, pos_variation) * BOX_SIZE
-    translation[2] = - (bounds[0][2] + bounds[1][2]) / 2.0 + np.random.uniform(-pos_variation, pos_variation) * BOX_SIZE
+#     # Center XZ with random variation:
+#     translation[0] = - (bounds[0][0] + bounds[1][0]) / 2.0 + np.random.uniform(-pos_variation, pos_variation) * BOX_SIZE
+#     translation[2] = - (bounds[0][2] + bounds[1][2]) / 2.0 + np.random.uniform(-pos_variation, pos_variation) * BOX_SIZE
     
-    # Optional: Add small Y variation (keep object above floor)
-    translation[1] += np.random.uniform(0, pos_variation * 0.5) * BOX_SIZE
+#     # Optional: Add small Y variation (keep object above floor)
+#     translation[1] += np.random.uniform(0, pos_variation * 0.5) * BOX_SIZE
     
-    mesh.apply_translation(translation)
+#     mesh.apply_translation(translation)
     
-    # 3. Create Scene Meshes
-    box_meshes = create_cornell_box_meshes(BOX_SIZE, light_size_ratio=light_size_ratio)
+#     # 3. Create Scene Meshes
+#     box_meshes = create_cornell_box_meshes(BOX_SIZE, light_size_ratio=light_size_ratio)
     
-    # 4. Render
-    image = render_pure_mitsuba_scene(
-        box_meshes, mesh, color, CAMERA, spp=SPP, light_intensity=light_intensity
-    )
-    hdr_image_np = np.array(image, dtype=np.float32)
-    
-    # 5. Save Data for Model
-    fn_prefix = f"case_{case_idx:03d}_{shape_name}_r{int(rotation)}_data"
-    npz_path = os.path.join(RENDER_DIR, f"{fn_prefix}.npz")
-    exr_path = os.path.join(RENDER_DIR, f"{fn_prefix[:-5]}_render.exr") # strip _data
-    png_path = os.path.join(RENDER_DIR, f"{fn_prefix[:-5]}_render.png") # strip _data
+#     # 4. Render
+#     if randomize_camera:
+#         target = np.array([0.0, BOX_SIZE * 0.5, 0.0])
+#         r = BOX_SIZE * 1.5
+#         theta = np.random.uniform(-np.radians(30), np.radians(30))
+#         phi = np.random.uniform(np.radians(70), np.radians(110))
+#         cam_x = target[0] + r * np.sin(phi) * np.sin(theta)
+#         cam_y = target[1] + r * np.cos(phi)
+#         cam_z = target[2] + r * np.sin(phi) * np.cos(theta)
+#         case_camera = Camera(
+#             position=np.array([cam_x, cam_y, cam_z]),
+#             look_at=target,
+#             fov=50.0,
+#             width=256,
+#             height=256
+#         )
+#     else:
+#         case_camera = CAMERA
 
-    mi.Bitmap(image).write(exr_path)
-    save_image(image, png_path, tone_mapping="reinhard", exposure=exposure)
+#     image = render_pure_mitsuba_scene(
+#         box_meshes, mesh, color, case_camera, spp=SPP, light_intensity=light_intensity
+#     )
+#     hdr_image_np = np.array(image, dtype=np.float32)
     
-    # Point Clouds
-    canonical_pc, canonical_face_idx = trimesh.sample.sample_surface(mesh, 2048)
-    canonical_normals = mesh.face_normals[canonical_face_idx]
+#     # 5. Save Data for Model
+#     fn_prefix = f"case_{case_idx:03d}_{shape_name}_r{int(rotation)}_data"
+#     npz_path = os.path.join(RENDER_DIR, f"{fn_prefix}.npz")
+#     exr_path = os.path.join(RENDER_DIR, f"{fn_prefix[:-5]}_render.exr") # strip _data
+#     png_path = os.path.join(RENDER_DIR, f"{fn_prefix[:-5]}_render.png") # strip _data
+
+#     mi.Bitmap(image).write(exr_path)
+#     save_image(image, png_path, tone_mapping="reinhard", exposure=exposure)
     
-    wall_pc, wall_normals = get_walls_point_cloud(box_meshes, 2048)
+#     # Point Clouds
+#     canonical_pc, canonical_face_idx = trimesh.sample.sample_surface(mesh, 2048)
+#     canonical_normals = mesh.face_normals[canonical_face_idx]
     
-    np.savez(
-        npz_path,
-        hdr_target_image=hdr_image_np,
-        canonical_vertices=canonical_pc,
-        canonical_normals=canonical_normals,
-        wall_vertices=wall_pc,
-        wall_normals=wall_normals,
-        color=color,
-        rotation=rotation,
-        scale_ratio=scale_ratio,
-        # Dummy fields for compatibility
-        object_radiosity=np.zeros_like(canonical_pc),
-        wall_radiosity=np.zeros_like(wall_pc),
-        camera_pos=CAMERA.position,
-        camera_lookat=CAMERA.look_at
-    )
+#     wall_pc, wall_normals = get_walls_point_cloud(box_meshes, 2048)
+    
+#     np.savez(
+#         npz_path,
+#         hdr_target_image=hdr_image_np,
+#         canonical_vertices=canonical_pc,
+#         canonical_normals=canonical_normals,
+#         wall_vertices=wall_pc,
+#         wall_normals=wall_normals,
+#         color=color,
+#         rotation=rotation,
+#         scale_ratio=scale_ratio,
+#         # Dummy fields for compatibility
+#         object_radiosity=np.zeros_like(canonical_pc),
+#         wall_radiosity=np.zeros_like(wall_pc),
+#         camera_pos=case_camera.position,
+#         camera_lookat=case_camera.look_at
+#     )
 
 if __name__ == "__main__":
     import argparse
@@ -430,8 +471,12 @@ if __name__ == "__main__":
     # Control object variation
     parser.add_argument('--scale_min', type=float, default=0.3, help='Minimum object scale as fraction of box size (default: 0.3)')
     parser.add_argument('--scale_max', type=float, default=0.5, help='Maximum object scale as fraction of box size (default: 0.5)')
-    parser.add_argument('--pos_variation', type=float, default=0.15, help='Position variation as fraction of box size (default: 0.15)')
+    parser.add_argument('--pos_variation', type=float, default=0.15, help='Position variation of object as fraction of box size (default: 0.15)')
     parser.add_argument('--random_seed', type=int, default=42, help='Random seed for reproducibility (default: 42)')
+    parser.add_argument('--shapes_per_class', type=int, default=SHAPES_PER_CLASS, help='Number of shapes to select per class from ShapeNet (default: 15)')
+    parser.add_argument('--randomize_camera', type=bool, default=False, help='Whether to randomize camera position for each render (default: False)')
+    parser.add_argument('--viewpoints_per_case', type=int, default=1, help='Number of different camera viewpoints to render per object configuration (default: 1)')
+    parser.add_argument('--include_head_on_view', type=bool, default=True, help='Whether to include a head-on view (camera directly facing object) for each case (default: True)')
     
     args = parser.parse_args()
 
@@ -439,8 +484,18 @@ if __name__ == "__main__":
     SPP = args.spp
     LIGHT_INTENSITY = args.light_intensity
     LIGHT_SIZE_RATIO = args.light_size_ratio
+
     exposure = args.exposure
-    
+    shapes_per_class = args.shapes_per_class
+
+    num_rotations=args.num_rotations
+    random_seed = args.random_seed
+    randomize_camera = args.randomize_camera
+    viewpoints_per_case = args.viewpoints_per_case
+    include_head_on_view = args.include_head_on_view
+    if not randomize_camera:
+        viewpoints_per_case = 1 # Override to 1 if not randomizing camera
+
     start_time = time.time()
     print("=" * 60)
     print("Dataset Generation for Neural Rendering")
@@ -462,7 +517,7 @@ if __name__ == "__main__":
     #         print(f"  Found: {shape_name}")
     #         processed_shapes.append((shape_name, shape_name, mesh_path))
             
-    processed_shapes = select_random_shapes(num_per_class=SHAPES_PER_CLASS)
+    processed_shapes = select_random_shapes(num_per_class=shapes_per_class)
 
     # Step 2: Summary
     print(f"\n[2/4] Loaded {len(processed_shapes)} meshes")
@@ -472,7 +527,7 @@ if __name__ == "__main__":
 
     # Generate random rotations
     random.seed(123)
-    rotations = [random.uniform(0, 360) for _ in range(NUM_ROTATIONS)]
+    rotations = [random.uniform(0, 360) for _ in range(num_rotations)]
     print(f"      Rotations: {[f'{r:.1f}°' for r in rotations]}")
 
     # Assign NUM_COLORS colors per shape
@@ -486,7 +541,7 @@ if __name__ == "__main__":
 
     # Step 4: Generate all renders
     print("\n[4/4] Generating renders...")
-    total_cases = len(processed_shapes) * NUM_COLORS * NUM_ROTATIONS
+    total_cases = len(processed_shapes) * NUM_COLORS * num_rotations
     print(f"Settings:")
     print(f"  Shapes: {args.shapes}")
     print(f"  Rotations: {len(rotations)} steps")
@@ -509,9 +564,15 @@ if __name__ == "__main__":
         colors = shape_colors[key]
         for color_idx, color in enumerate(colors):
             for rot_idx, rotation in enumerate(rotations):
-                case_idx += 1
-                # Pack all args for worker: (case_idx, class_id, shape_id, mesh_path, color, color_idx, rotation, rot_idx, renders_dir)
-                render_cases.append((case_idx, class_id, shape_id, mesh_path, color, color_idx, rotation, rot_idx, RENDER_DIR))
+                for vp in range(viewpoints_per_case):
+                    if vp == 0 and include_head_on_view:
+                        # First viewpoint is head-on (no random camera)
+                        randomize_camera = False
+                    else:
+                        randomize_camera = args.randomize_camera
+                    case_idx += 1
+                    # Pack all args for worker: (case_idx, class_id, shape_id, mesh_path, color, color_idx, rotation, rot_idx, randomize_camera, include_head_on_view, random_seed, RENDER_DIR)
+                    render_cases.append((case_idx, class_id, shape_id, mesh_path, color, color_idx, rotation, rot_idx, randomize_camera, include_head_on_view, random_seed, RENDER_DIR))
 
     all_metadata = []
 
