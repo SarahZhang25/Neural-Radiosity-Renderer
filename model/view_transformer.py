@@ -13,7 +13,7 @@ class ViewTransformer(nn.Module):
     def __init__(self, config: RenderFormerConfig):
         super().__init__()
         self.config = config
-        if config.pe_type == 'nerf':
+        if config.pe_type == 'nerf': #TODO: understand this block
             self.pos_pe = NeRFEncoding(
                 in_dim=9,
                 num_frequencies=config.vertex_pe_num_freqs,
@@ -110,7 +110,7 @@ class ViewTransformer(nn.Module):
         ray_token_pos = camera_o[:, None].repeat(1, n_patches, 3)  # [B, N_PATCHES, 3]
 
         # positional encoding if use 'nerf' pe
-        if self.config.pe_type == 'nerf':
+        if self.config.pe_type == 'nerf': #TODO: why do both ray and tri token suse the same pos_pe and pe_token_proj?
             ray_tokens = ray_tokens + self.token_pos_pe_norm(self.pe_token_proj(self.pos_pe(ray_token_pos)))
             tri_tokens = tri_tokens + self.token_pos_pe_norm(self.pe_token_proj(self.pos_pe(tri_pos)))
 

@@ -148,8 +148,8 @@ def apply_rotary_emb_one_cossin(one_tensor, cos, sin):
 
     return one_tensor.type(dtype)
 
-
-class TriangleRotaryEmbedding(Module):
+#TODO:[ROPE] need to remake this for object-level single sample or anchor-based
+class ObjectRotaryEmbedding(nn.Module):
     def __init__(
         self,
         dim,
@@ -157,10 +157,9 @@ class TriangleRotaryEmbedding(Module):
         double_max_freq=False,
     ):
         """
-        TriangleRotaryEmbedding is a class that implements the rotary embedding for the triangle.
-
+        ObjectRotaryEmbedding implements 3D rotary embeddings for object centroids.
         Args:
-            dim (int): The dimension of the rotary embedding.
+            dim (int): The dimension of the rotary embedding per spatial axis.
             hf_format (bool): Whether to use the huggingface RoPE format.
             double_max_freq (bool): Whether to double the frequency range.
         """
@@ -169,29 +168,31 @@ class TriangleRotaryEmbedding(Module):
         self.hf_format = hf_format
 
         # log spaced frequencies
-        max_freq = log(
-            dim // 2 - 1, 2) if not double_max_freq else log(dim - 1, 2)
+        max_freq = log(dim // 2 - 1, 2) if not double_max_freq else log(dim - 1, 2)
         freqs = 2 ** torch.linspace(0, max_freq, dim // 2)
 
         self.freqs = nn.Parameter(freqs, requires_grad=False)
-
-        # dummy for device
         self.register_buffer("dummy", torch.tensor(0), persistent=False)
-
-        # add apply_rotary_emb as static method
         self.apply_rotary_emb = staticmethod(apply_rotary_emb)
 
     @property
     def device(self):
         return self.dummy.device
 
-    def get_triangle_freqs(self, pos: Tensor):
-        # generate all frequencies for all triangles
+    def get_centroid_freqs(self, pos: Tensor):
+        """
+        pos expected shape: (Batch, N_objs, 3)
+        """
+        # Outer product of coords and freqs -> (Batch, N_objs, 3, dim//2)
         freqs = self.forward(pos)
+        
+        # Flatten the 3 spatial coordinates (X,Y,Z) with the frequency dimensions
+        # 'coords' will explicitly catch the length-3 dimension
         freqs = rearrange(
-            freqs, "batch n_tris n_verts d -> batch 1 n_tris (n_verts d)"
-        )  # 1 for head dim
+            freqs, "batch n_objs coords d -> batch 1 n_objs (coords d)"
+        )  
 
+        # Duplicate/format for standard Sine/Cosine split
         if self.hf_format:
             freqs = torch.cat([freqs, freqs], dim=-1)
         else:
@@ -201,6 +202,8 @@ class TriangleRotaryEmbedding(Module):
     @autocast("cuda", enabled=False)
     def forward(self, t: Tensor, seq_len=None, offset=0):
         freqs = self.freqs
+        # t shape: (B, N, 3)
+        # freqs shape: (dim//2)
+        # output shape: (B, N, 3, dim//2)
         freqs = einsum("..., f -> ... f", t.type(freqs.dtype), freqs)
-
         return freqs

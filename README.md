@@ -12,6 +12,6 @@ Simple shapes only, mitsuba rendering, example usage:
 
 Training script:
 `python training/train.py`
-Training config: `training/train_config.yml`\
+Training config: `training/train_config.yml`
 
 Launch tensorboard with `tensorboard --logdir=training/logs`

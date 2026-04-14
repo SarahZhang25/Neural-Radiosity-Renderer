@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from pos_encodings.nerf_encoding import NeRFEncoding
+from model.encodings.nerf_encoding import NeRFEncoding
 from einops import rearrange
 
 
@@ -12,7 +12,7 @@ class RayEncoder(nn.Module):
         vertex_pe_num_freqs: int = 12,
         vdir_pe_type: str = 'nerf',
         vdir_num_freqs: int = 0,
-        patch_size: int = 16,
+        patch_size: int = 8,
         norm_type: str = 'rms_norm',
         view_transformer_latent_dim: int = 768, ## should this just be predictor hidden dim???
         view_transformer_n_heads: int = 4 ## should this just be predictor hidden dim???
@@ -24,7 +24,7 @@ class RayEncoder(nn.Module):
         self.vdir_num_freqs = vdir_num_freqs
         self.patch_size = patch_size
         self.norm_type = norm_type
-        # refactor these.....
+        # TODO: refactor these.....
         self.view_transformer_latent_dim = view_transformer_latent_dim
         self.view_transformer_n_heads = view_transformer_n_heads
 
@@ -41,7 +41,7 @@ class RayEncoder(nn.Module):
 
         if pe_type == 'nerf':
             self.pos_pe = NeRFEncoding(
-                in_dim=9,
+                in_dim=3,
                 num_frequencies=vertex_pe_num_freqs,
                 include_input=True
             )
@@ -56,7 +56,7 @@ class RayEncoder(nn.Module):
             else:
                 raise ValueError(f"Unsupported normalization type: {norm_type}")
             self.rope_dim = None
-        elif pe_type == 'rope':
+        elif pe_type == 'rope': #TODO:[ROPE] check this?
             self.rope_dim = min(vertex_pe_num_freqs, view_transformer_latent_dim // view_transformer_n_heads // 18 * 2)
         else:
             raise ValueError(f"Unsupported positional encoding type: {pe_type}")
@@ -86,11 +86,11 @@ class RayEncoder(nn.Module):
         Encode ray map.
 
         Args:
-            camera_o (torch.Tensor): (B, 3)
-            ray_map (torch.Tensor): (B, H, W, 3)
+            camera_o (torch.Tensor): (B, 3) Camera origin
+            ray_map (torch.Tensor): (B, H, W, 3) Normalized ray directions
         Returns:
-            ray_tokens: (B, ???)
-            # decoded_img: (B, 3, H, W)
+            ray_tokens: (B, N_PATCHES, D)
+            ray_token_pos: (B, N_PATCHES, 3)
         """
 
         # query sequence
@@ -104,27 +104,27 @@ class RayEncoder(nn.Module):
         ray_tokens = self.ray_map_patch_token + self.ray_map_encoder_norm(self.ray_map_encoder(ray_tokens))  # [B, N_PATCHES, D]
         n_patches = ray_tokens.size(1)
 
-        # --- Add 2D Patch Positional Encodings ---
-        # Create grid normalized to [-1, 1]
-        y_coords = torch.linspace(-1, 1, patch_h, device=ray_tokens.device)
-        x_coords = torch.linspace(-1, 1, patch_w, device=ray_tokens.device)
-        grid_y, grid_x = torch.meshgrid(y_coords, x_coords, indexing='ij')
-        
-        # Stack to (N_patches, 2)
-        grid = torch.stack([grid_x, grid_y], dim=-1).reshape(-1, 2) # (N_patches, 2)
-        
-        # Encode and Project
-        # (N_patches, PE_dim) -> (N_patches, D)
-        patch_pe = self.patch_grid_proj(self.patch_grid_pe(grid))
-        
-        # Add to tokens (Broadcasting B)
-        ray_tokens = ray_tokens + patch_pe.unsqueeze(0)
-        # -----------------------------------------
-
-        ray_token_pos = camera_o[:, None].repeat(1, n_patches, 3)  # [B, N_PATCHES, 3]
-
+        ray_token_pos = camera_o[:, None].repeat(1, n_patches, 1)  # [B, N_PATCHES, 3]
         # positional encoding if use 'nerf' pe
-        if self.pe_type == 'nerf':
+        if self.pe_type == 'nerf': #TODO: why do both ray and tri token suse the same pos_pe and pe_token_proj?
             ray_tokens = ray_tokens + self.token_pos_pe_norm(self.pe_token_proj(self.pos_pe(ray_token_pos)))
+        #TODO:[ROPE] add ROPE conditional
 
-        return ray_tokens
+        # # --- Add 2D Patch Positional Encodings ---
+        # # Create grid normalized to [-1, 1]
+        # y_coords = torch.linspace(-1, 1, patch_h, device=ray_tokens.device)
+        # x_coords = torch.linspace(-1, 1, patch_w, device=ray_tokens.device)
+        # grid_y, grid_x = torch.meshgrid(y_coords, x_coords, indexing='ij')
+        
+        # # Stack to (N_patches, 2)
+        # grid = torch.stack([grid_x, grid_y], dim=-1).reshape(-1, 2) # (N_patches, 2)
+        
+        # # Encode and Project
+        # # (N_patches, PE_dim) -> (N_patches, D)
+        # patch_pe = self.patch_grid_proj(self.patch_grid_pe(grid))
+        
+        # # Add to tokens (Broadcasting B)
+        # ray_tokens = ray_tokens + patch_pe.unsqueeze(0)
+        # # -----------------------------------------
+
+        return ray_tokens, ray_token_pos

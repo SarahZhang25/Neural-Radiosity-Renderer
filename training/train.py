@@ -15,13 +15,16 @@ from lpips import LPIPS
 from model.global_illumination_model import GlobalIlluminationModel
 from training.dataset import RadiosityDataset
 
+torch.backends.cuda.matmul.allow_tf32 = True
+
 def log_transform(x):
     """
     Applies a log transform to the input image tensor for better handling of HDR values in L1 loss.
     Clamp explicitly to prevent log(x < 0) from producing NaN gradients.
+    Use log(1 + x) for smooth gradients and true zero-anchoring.
     """
     x = torch.clamp(x, min=0.0)
-    return torch.log(x + 1e-5)
+    return torch.log1p(x)
 
 def linear_to_srgb(x: torch.Tensor) -> torch.Tensor:
     a = 0.055
@@ -69,14 +72,25 @@ def tone_map_lpips(x):
     # We clamp the input to a minimum of 1.0 before log2 so that log2(1) = 0.
     # This maps the darkest areas to 0, and specular highlights (up to 2.0) to 1.
     # Then scale to [-1, 1] for LPIPS input.
-    log2_x = torch.log2(torch.clamp(x, min=1.0))
+    log2_x = torch.log2(x + 1.0)
     return torch.clamp(log2_x, min=0.0, max=1.0) * 2 - 1
 
-def train(config_path):
+def calculate_psnr(pred, target):
+    """
+    Calculate PSNR on tone-mapped LDR images in [0, 1] range to match human perception.
+    """
+    with torch.no_grad():
+        p = linear_to_srgb(tone_map_reinhard(torch.clamp(pred, min=0.0)))
+        t = linear_to_srgb(tone_map_reinhard(torch.clamp(target, min=0.0)))
+        mse = torch.nn.functional.mse_loss(p, t)
+        if mse == 0:
+            return 100.0 # arbitrary high upper bound
+        psnr = -10.0 * torch.log10(mse)
+        return psnr.item()
 
+def train(config_path):
     print(f"CUDA Available: {torch.cuda.is_available()}")
 
-    
     # 1. Load Config
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
@@ -179,6 +193,7 @@ def train(config_path):
     for epoch in range(start_epoch, num_epochs):
         model.train()
         train_loss = 0.0
+        train_psnr = 0.0
         
         with tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}") as pbar:
             for batch in pbar:
@@ -189,12 +204,13 @@ def train(config_path):
                 normals = batch['obj_normals'].to(device)
                 properties = batch['obj_properties'].to(device)
                 class_ids = batch['obj_class_ids'].to(device)
+                w2c = batch['w2c'].to(device)
                 target = batch['target_image'].to(device)
                 
                 optimizer.zero_grad()
                 
                 # Forward pass with mixed precision
-                with torch.amp.autocast('cuda'):
+                with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                     pred_radiance = model(
                         rays_o=rays_o,
                         rays_d=rays_d,
@@ -202,25 +218,35 @@ def train(config_path):
                         obj_properties=properties,
                         obj_class_ids=class_ids,
                         ray_map=rays_d, # Using rays_d as ray_map
-                        obj_normals=normals
+                        obj_normals=normals,
+                        w2c=w2c
                     )
-                    
+                
                     loss = criterion(pred_radiance, target)
                 
-                # Backward pass with scaler
-                scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
+                # Backward pass with scaler, which is needed for fp16 but not bf16
+                loss.backward()
+                optimizer.step()
+                # scaler.scale(loss).backward()
+                # scaler.step(optimizer)
+                # scaler.update()
                 
-                train_loss += loss.item()
-                pbar.set_postfix({'loss': loss.item()})
+                loss_item = loss.item()
+                psnr_item = calculate_psnr(pred_radiance, target)
+                
+                train_loss += loss_item
+                train_psnr += psnr_item
+                pbar.set_postfix({'loss': loss_item, 'psnr': psnr_item})
 
         avg_train_loss = train_loss / len(train_loader)
+        avg_train_psnr = train_psnr / len(train_loader)
         writer.add_scalar('Loss/train', avg_train_loss, epoch)
+        writer.add_scalar('PSNR/train', avg_train_psnr, epoch)
         
         # Validation & Logging
         if (epoch + 1) % config['training']['save_interval'] == 0:
             val_loss = 0.0
+            val_psnr = 0.0
             model.eval()
             with torch.no_grad():
                 for batch in val_loader:
@@ -230,15 +256,19 @@ def train(config_path):
                     normals = batch['obj_normals'].to(device)
                     properties = batch['obj_properties'].to(device)
                     class_ids = batch['obj_class_ids'].to(device)
+                    w2c = batch['w2c'].to(device)
                     target = batch['target_image'].to(device)
 
-                    pred = model(rays_o, rays_d, positions, properties, class_ids, rays_d, obj_normals=normals)
+                    pred = model(rays_o, rays_d, positions, properties, class_ids, rays_d, obj_normals=normals, w2c=w2c)
                     loss = criterion(pred, target)
                     val_loss += loss.item()
+                    val_psnr += calculate_psnr(pred, target)
                 
                 avg_val_loss = val_loss / len(val_loader)
+                avg_val_psnr = val_psnr / len(val_loader)
                 writer.add_scalar('Loss/val', avg_val_loss, epoch)
-                print(f"Epoch {epoch+1}: Val Loss {avg_val_loss:.6f}")
+                writer.add_scalar('PSNR/val', avg_val_psnr, epoch)
+                print(f"Epoch {epoch+1}: Val Loss {avg_val_loss:.6f}, Val PSNR: {avg_val_psnr:.2f} dB")
 
                 # Save model at end of training
                 if (epoch + 1 ) == config['training']['num_epochs']:
@@ -259,7 +289,8 @@ def train(config_path):
                     fixed_val_batch['obj_properties'],
                     fixed_val_batch['obj_class_ids'],
                     fixed_val_batch['rays_d'],
-                    obj_normals=fixed_val_batch['obj_normals']
+                    obj_normals=fixed_val_batch['obj_normals'],
+                    w2c=fixed_val_batch['w2c']
                 )
                 
                 # Log images: Target vs Prediction (tone-mapped for visualization)
@@ -279,7 +310,8 @@ def train(config_path):
                     fixed_train_batch['obj_properties'],
                     fixed_train_batch['obj_class_ids'],
                     fixed_train_batch['rays_d'],
-                    obj_normals=fixed_train_batch['obj_normals']
+                    obj_normals=fixed_train_batch['obj_normals'],
+                    w2c=fixed_train_batch['w2c']
                 )
 
                 # Stack them: [Target, Prediction]

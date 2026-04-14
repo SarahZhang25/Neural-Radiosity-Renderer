@@ -9,7 +9,7 @@ import yaml
 from typing import Dict, Tuple, Optional
 
 from model.encoder import PointNetEncoder
-from model.decoder import TransformerDecoder
+from model.layers.bidirectional_attention import BidirectionalTransformerEncoder
 from model.predictor import RadiancePredictor
 from model.state_manager import StateManager
 from model.ray_encoder import RayEncoder
@@ -47,7 +47,7 @@ class GlobalIlluminationModel(nn.Module):
         )
 
         # 3. View-Independent Bi-Directional Transformer
-        self.scene_transformer = TransformerDecoder(
+        self.scene_transformer = BidirectionalTransformerEncoder(
             state_dim=config['decoder']['hidden_dim'],
             num_layers=config['decoder']['num_layers'],
             num_heads=config['decoder']['num_heads'],
@@ -58,7 +58,9 @@ class GlobalIlluminationModel(nn.Module):
             use_self_attention=config['decoder']['use_self_attention'],
             norm_type=config['decoder']['norm_type'],
             qk_norm=config['decoder']['qk_norm'],
-            num_register_tokens=config['decoder']['num_register_tokens']
+            num_register_tokens=config['decoder']['num_register_tokens'],
+            rope_dim=((config['decoder']['hidden_dim'] // config['decoder']['num_heads']) // 2) // 3 * 2, # Total angles must fit in head_dim // 2
+            rope_type='object'
         )
 
         # Rendering Stage
@@ -76,6 +78,8 @@ class GlobalIlluminationModel(nn.Module):
 
         # 5. Predictor Transformer
         self.predictor = RadiancePredictor(
+            pe_type=config['predictor'].get('pe_type', 'nerf'),
+            pe_num_freqs=config['predictor'].get('pe_num_freqs', config['ray_encoder']['vertex_pe_num_freqs']),
             hidden_dim=config['predictor']['hidden_dim'],
             patch_size=config['ray_encoder']['patch_size'],
             num_heads=config['predictor']['num_heads'],
@@ -95,6 +99,7 @@ class GlobalIlluminationModel(nn.Module):
         obj_class_ids: torch.Tensor,
         ray_map: Optional[torch.Tensor] = None, # Added ray_map for RayEncoder
         obj_normals: Optional[torch.Tensor] = None,
+        w2c: Optional[torch.Tensor] = None, # (B, 4, 4) world to camera transform
     ) -> torch.Tensor:
         """
         Forward pass to predict radiance.
@@ -141,14 +146,9 @@ class GlobalIlluminationModel(nn.Module):
 
         # 3. Spatial Positional Encoding (RoPE preparation)
         # Calculate Object Centroids for RoPE
-        # (B, N_obj, 3)
-        object_centroids = obj_positions.mean(dim=2)
-        
-        # 3. Spatial Positional Encoding (RoPE preparation)
-        # NOTE: For initial debugging, we are skipping explicit RoPE and state position generation.
-        # The PointNetEncoder already encodes absolute surface positions into the object tokens.
-        state_positions = None 
-        object_centroids = None # Not needed until RoPE is implemented
+        object_centroids = obj_positions.mean(dim=2)  # (B, N_obj, 3)
+
+        state_positions = None # Registers and abstract concepts don't have explicit physical geometry
 
         # 4. Bi-Directional Interaction
         all_state_layers, all_obj_layers = self.scene_transformer(
@@ -165,7 +165,13 @@ class GlobalIlluminationModel(nn.Module):
             raise ValueError("ray_map (B, H, W, 3) is required for ray encoding")
              
         # ray_tokens: (B, N_patches, D)
-        ray_tokens = self.ray_encoder(rays_o, ray_map) 
+        if w2c is not None:
+             # operating in camera space, camera origin is 0
+             rays_o_input = torch.zeros_like(rays_o) 
+        else:
+             rays_o_input = rays_o
+             
+        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, ray_map) 
 
         # 6. Predict Radiance
         # Ray tokens query the scene (object + state features)
@@ -174,7 +180,10 @@ class GlobalIlluminationModel(nn.Module):
             query_view_features=ray_tokens,
             multi_scale_state_features=all_state_layers,
             patch_h=ray_map.shape[1] // self.ray_encoder.patch_size,
-            patch_w=ray_map.shape[2] // self.ray_encoder.patch_size
+            patch_w=ray_map.shape[2] // self.ray_encoder.patch_size,
+            w2c=w2c,
+            obj_positions=obj_positions,
+            ray_positions=ray_token_pos
         )
 
         return radiance

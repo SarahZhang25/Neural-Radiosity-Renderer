@@ -123,9 +123,6 @@ class TransformerDecoder(nn.Module):
 
         return all_state_layers, all_obj_layers
 
-
-from pos_encodings.rope import apply_rotary_emb
-
 class TransformerDecoderLayer(nn.Module):
     """
     Single layer of bidirectional cross-attention.
@@ -207,7 +204,8 @@ class TransformerDecoderLayer(nn.Module):
         mask: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Forward pass through one decoder layer."""
-
+        # TODO:[ROPE] use rope on object tokens and state tokens before attention, if positional encodings are provided.
+        # TODO:[ROPE] need to implement multihead attention with RoPE support -- use renderformer's implementation as reference.
         # NOTE: Position tensors (state_pos, obj_pos) are accepted for future RoPE integration
         # but are currently ignored in this baseline implementation.
         # We use standard MultiheadAttention which is optimized but does not support RoPE.

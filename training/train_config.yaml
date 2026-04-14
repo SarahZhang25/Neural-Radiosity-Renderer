@@ -1,12 +1,19 @@
 # Training Configuration
 
-# Run notes (changes from last run): using EXR dataset, added linear_to_srgb. Just debugging visualization atm....
+# Run notes (changes from last run): 
+#     Switch to ROPE for predictor. Refactored to use new transformer modules.
+#     Reduce state size to 2x2x2 grid
+#     Attempted to implement View-dependent stage in camera space
 # Model: 
-#   
-# Dataset: using ~1k points shapenet objects dataset: 
-#     data_generation/output/datasets/shapenet_take3_table_vessel_chair_guitar_motorbike_car_airplane
-# Hyperparams: batch size 64
+#     Rays now encoded in camera space (so view-dependent stage is now in camera coordinates)
+#     Obj positions also transformed to camera space in RadiancePredictor
+#     In RayEncoder, remove 2D Patch Positional Encodings, so that encoder matches ViewTransformer of RenderFormer
+# Dataset: variable_camera_experiment
+#     data_generation/output/datasets/variable_camera_experiment
+# Hyperparams:
 # Training: 
+#   Higher epochs, lower resolution to 128
+#   Using BF16, LR 1e-4
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
@@ -17,7 +24,7 @@ encoder:
   num_hierarchical_levels: 3 # Ignored
 
 state:
-  num_tokens: 216  # 8x8x8 grid
+  num_tokens: 8  # 2x2x2 grid
   token_dim: 1024 # Match encoder output
   learnable_init: true
   init_scale: 0.1
@@ -36,8 +43,8 @@ decoder:
   num_register_tokens: 0
 
 ray_encoder:
-  pe_type: 'nerf' # simpler than rope for ray queries initially
-  vertex_pe_num_freqs: 8
+  pe_type: 'nerf' # TODO: how does renderformer encode rays?
+  vertex_pe_num_freqs: 8 # this controls how many frequencies are applied for the pe
   vdir_pe_type: 'nerf'
   vdir_num_freqs: 8
   patch_size: 8
@@ -46,6 +53,8 @@ ray_encoder:
   view_transformer_n_heads: 4
 
 predictor:
+  pe_type: 'rope' # TODO:[ROPE] support rope initially # TODO: KEEP? 
+  # TODO: add a obj num_freq term?
   hidden_dim: 1024
   num_heads: 8
   num_layers: 4
@@ -56,10 +65,10 @@ predictor:
 training:
   batch_size: 64
   learning_rate: 1.0e-4
-  num_epochs: 10
-  save_interval: 2
-  image_res: 256
-  data_dir: "data_generation/output/datasets/shapenet_take3_exr_version"
+  num_epochs: 500
+  save_interval: 50
+  image_res: 128
+  data_dir: "data_generation/output/datasets/variable_camera_experiment"
   log_dir: "training/logs"
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'

@@ -132,25 +132,37 @@ class RadiosityDataset(Dataset):
         # Class IDs: (N_obj,) -> 0 for Object, 1 for Wall (arbitrary mapping)
         class_ids = torch.tensor([0, 1]).long() 
         
-        # 3. Generate Rays
-        # If camera was variable, we'd do this per item. Since fixed, we could cache.
-        if self.precomputed_ray_data is None:
-             rays_o, rays_d = self.ray_generator(self.c2w, self.fov_rad, self.image_res)
-             self.precomputed_ray_data = (rays_o, rays_d)
+        if 'camera_pos' in data and 'camera_lookat' in data:
+            cam_pos = data['camera_pos']
+            cam_lookat = data['camera_lookat']
         else:
-             rays_o, rays_d = self.precomputed_ray_data
+            cam_pos = self.cam_pos
+            cam_lookat = self.cam_lookat
+
+        c2w = self._compute_c2w(cam_pos, cam_lookat, self.cam_up)
+        w2c = torch.inverse(c2w)
+        
+        # Rays generated in local camera space (eye matrix) are identical 
+        # across all samples because FOV and image_res are constant.
+        if self.precomputed_ray_data is None:
+            c2w_eye = torch.eye(4)
+            rays_o, rays_d = self.ray_generator(c2w_eye, self.fov_rad, self.image_res)
+            self.precomputed_ray_data = (rays_o, rays_d)
+        else:
+            rays_o, rays_d = self.precomputed_ray_data
              
-        # rays_d is (H, W, 3), we need it channel last?
+        # rays_d is (H, W, 3), we need its channel last?
         # Model expects rays_o (3,) and ray_map (H, W, 3)
         # RayGenerator returns rays_d as (H, W, 3)
         
         return {
-            'rays_o': rays_o,                  # (3,)
+            'rays_o': torch.zeros(3),          # (3,) camera origin in camera space
             'rays_d': rays_d,                  # (H, W, 3) - used as ray_map
             'obj_positions': positions,        # (2, N_p, 3)
             'obj_normals': normals,            # (2, N_p, 3)
             'obj_properties': properties,      # (2, 3)
             'obj_class_ids': class_ids,        # (2,)
+            'w2c': w2c,                        # (4, 4)
             'target_image': image_tensor       # (3, H, W)
         }
 
