@@ -32,10 +32,8 @@ class GlobalIlluminationModel(nn.Module):
             hidden_dims=config['encoder']['hidden_dims'],
             output_dim=config['encoder']['output_dim'],
             backbone_dim=config['encoder']['backbone_dim'],
-            # fusion_hidden_dim=config['encoder']['fusion_hidden_dim'], # Removed
             pooling_type=config['encoder']['pooling_type'],
             num_hierarchical_levels=config['encoder']['num_hierarchical_levels'],
-            # use_physics_params=config['encoder']['use_physics_params'] # Removed
         )
         
         # 2. State Manager (Learnable 3D Grid)
@@ -96,8 +94,6 @@ class GlobalIlluminationModel(nn.Module):
         rays_d: torch.Tensor,
         obj_positions: torch.Tensor,
         obj_properties: torch.Tensor,
-        obj_class_ids: torch.Tensor,
-        ray_map: Optional[torch.Tensor] = None, # Added ray_map for RayEncoder
         obj_normals: Optional[torch.Tensor] = None,
         w2c: Optional[torch.Tensor] = None, # (B, 4, 4) world to camera transform
     ) -> torch.Tensor:
@@ -106,13 +102,11 @@ class GlobalIlluminationModel(nn.Module):
 
         Args:
             rays_o: Camera origin (B, 3)
-            rays_d: Camera view direction (not explicitly used if ray_map provided, but good for context)
+            rays_d: Camera view directions (B, H, W, 3)
             obj_positions: Object point clouds (B, N_obj, N_vertices, 3)
-            obj_properties: Object properties (B, N_obj, 3) (e.g. RGB)
-            obj_class_ids: Object class IDs (B, N_obj)
-            ray_map: Ray tokens map (B, H, W, 3) - Represents camera rays/directions per pixel
+            obj_properties: Object properties (B, N_obj, 10)
             obj_normals: Object normals (B, N_obj, N_vertices, 3)
-
+            w2c: TODO:
         Returns:
             radiance: Predicted RGB image (B, 3, H, W)
         """
@@ -128,13 +122,12 @@ class GlobalIlluminationModel(nn.Module):
         if obj_normals is not None:
              flat_normals = obj_normals.view(B * N_obj, N_v, 3)
 
-        flat_props = obj_properties.view(B * N_obj, 3)
-        flat_ids = obj_class_ids.view(B * N_obj)
+        flat_props = obj_properties.view(B * N_obj, 10)
         
         obj_features_flat = self.pointnet_encoder(
             surface_pos=flat_positions,
             properties=flat_props,
-            object_class_ids=flat_ids,
+            # object_class_ids=flat_ids,
             normals=flat_normals
         )
         
@@ -161,7 +154,7 @@ class GlobalIlluminationModel(nn.Module):
         # --- Stage 2: Rendering ---
 
         # 5. Ray Encoding
-        if ray_map is None:
+        if rays_d is None:
             raise ValueError("ray_map (B, H, W, 3) is required for ray encoding")
              
         # ray_tokens: (B, N_patches, D)
@@ -171,7 +164,7 @@ class GlobalIlluminationModel(nn.Module):
         else:
              rays_o_input = rays_o
              
-        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, ray_map) 
+        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d) 
 
         # 6. Predict Radiance
         # Ray tokens query the scene (object + state features)
@@ -179,8 +172,8 @@ class GlobalIlluminationModel(nn.Module):
             multi_scale_features=all_obj_layers,
             query_view_features=ray_tokens,
             multi_scale_state_features=all_state_layers,
-            patch_h=ray_map.shape[1] // self.ray_encoder.patch_size,
-            patch_w=ray_map.shape[2] // self.ray_encoder.patch_size,
+            patch_h=rays_d.shape[1] // self.ray_encoder.patch_size,
+            patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,
             obj_positions=obj_positions,
             ray_positions=ray_token_pos

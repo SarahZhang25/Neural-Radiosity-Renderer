@@ -19,7 +19,7 @@ encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
   hidden_dims: [512, 1024, 2048] # Increase capacity for memorization
   output_dim: 1024 # Increased
-  backbone_dim: 1024
+  backbone_dim: 768
   pooling_type: 'hierarchical' # Simpler than hierarchical for pure memorization
   num_hierarchical_levels: 3 # Ignored
 
@@ -53,7 +53,7 @@ ray_encoder:
   view_transformer_n_heads: 4
 
 predictor:
-  pe_type: 'rope' # TODO:[ROPE] support rope initially # TODO: KEEP? 
+  pe_type: 'nerf' # TODO:[ROPE] support rope initially # TODO: KEEP? 
   # TODO: add a obj num_freq term?
   hidden_dim: 1024
   num_heads: 8
@@ -68,7 +68,7 @@ training:
   num_epochs: 500
   save_interval: 50
   image_res: 128
-  data_dir: "data_generation/output/datasets/variable_camera_experiment"
+  data_dir: "data_generation/output_auto/datasets/attempt3_fixed_view_table"
   log_dir: "training/logs"
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'

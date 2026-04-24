@@ -9,7 +9,7 @@ from utils.ray_generator import RayGenerator
 import mitsuba as mi
 mi.set_variant('scalar_rgb')
 
-class RadiosityDataset(Dataset):
+class SceneDataset(Dataset):
     def __init__(
         self, 
         data_dir: str, 
@@ -21,12 +21,13 @@ class RadiosityDataset(Dataset):
         self.image_res = image_res
         self.num_points = num_points_per_object
         
-        # Find all completed cases (must have .npz and .png)
-        # Pattern: case_*.npz
-        self.files = glob.glob(os.path.join(data_dir, "case_*.npz"))
+        # Find all completed cases (must have .npz)
+        self.files = glob.glob(os.path.join(data_dir, "*.npz"))
         self.files.sort()
+        # Shuffle with a fixed seed
+        rng = np.random.RandomState(42)
+        rng.shuffle(self.files)
         
-        # Simple split (first 90% train, last 10% val)
         split_idx = int(len(self.files) * 0.9)
         if split == 'train':
             self.files = self.files[:split_idx]
@@ -36,22 +37,12 @@ class RadiosityDataset(Dataset):
         print(f"[{split}] Found {len(self.files)} samples in {data_dir}")
 
         self.ray_generator = RayGenerator()
-        
-        # Fixed Camera Parameters (from generate_cube_only.py)
-        box_size = 2.0
-        self.cam_pos = np.array([0.0, box_size * 0.5, box_size * 1.5])
-        self.cam_lookat = np.array([0.0, box_size * 0.5, 0.0])
-        self.cam_up = np.array([0.0, 1.0, 0.0])
-        self.fov_deg = 50.0
-        
-        # Precompute c2w for efficiency (it's constant for this dataset)
-        self.c2w = self._compute_c2w(self.cam_pos, self.cam_lookat, self.cam_up)
-        # FOV in radians
-        self.fov_rad = torch.tensor(np.deg2rad(self.fov_deg)).float().view(1) 
-        
-        # Ray map is constant for same camera/resolution
-        self.precomputed_ray_data = None
 
+        self.cam_up = [0.0, 0.0, 1.0] # TODO: unhardcode....
+        self.fov_deg = 37.5 # TODO: unhardcode...
+        
+        self.fov_rad = torch.tensor(np.deg2rad(self.fov_deg)).float().view(1)
+        self.precomputed_ray_data = None
 
     def _compute_c2w(self, pos, target, up):
         # Camera Coordinate System:
@@ -76,104 +67,64 @@ class RadiosityDataset(Dataset):
     def __len__(self):
         return len(self.files)
 
+    def _sample_points(self, points, num_points, normals=None):
+        N = points.shape[0]
+        if N >= num_points:
+            indices = np.random.choice(N, num_points, replace=(N < num_points))
+        if normals is not None:
+            return points[indices], normals[indices]
+        return points[indices]
+
     def __getitem__(self, idx):
         file_path = self.files[idx]
-        
-        # Load NPZ
         data = np.load(file_path)
         
         # 1. Load Image
-        if 'hdr_target_image' in data:
-            image_np = data['hdr_target_image']
-        else:
-            img_path = file_path[:-4] + "_render.exr" # fallback
-            bitmap = mi.Bitmap(img_path)
-            image_np = np.array(bitmap)
-            
-        # Resize using PyTorch
-        # Note: image_np has shape (H, W, C)
-        image_np = image_np[..., :3] # keep only RGB
-        image_tensor = torch.from_numpy(image_np).permute(2, 0, 1).float() # (3, H, W)
+        image_np = data['hdr_target_image']
+        image_np = image_np[..., :3]
+        image_tensor = torch.from_numpy(image_np).permute(2, 0, 1).float()
         image_tensor = torch.nn.functional.interpolate(image_tensor.unsqueeze(0), size=(self.image_res, self.image_res), mode='bilinear', align_corners=False).squeeze(0)
         
-        # 2. Process Point Clouds
-        # Object 0: The central object
-        obj_verts = data['canonical_vertices'] # (N, 3)
-        obj_normals = data['canonical_normals'] if 'canonical_normals' in data else np.zeros_like(obj_verts)
-        obj_color = data['color'] # (3,)
+        # 2. Geometry & Materials
+        entity_vertices = data['entity_vertices']
+        entity_normals = data['entity_normals']
+        entity_materials = data['entity_materials']
         
-        # Object 1: The box walls
-        wall_verts = data['wall_vertices'] # (M, 3)
-        wall_normals = data['wall_normals'] if 'wall_normals' in data else np.zeros_like(wall_verts)
-        wall_color = np.array([0.9, 0.9, 0.9]) # Placeholder white walls
+        N_obj, V, C = entity_vertices.shape
+        if V != self.num_points:
+            new_verts = []
+            new_norms = []
+            for i in range(N_obj):
+                v, n = self._sample_points(entity_vertices[i], self.num_points, entity_normals[i])
+                new_verts.append(v)
+                new_norms.append(n)
+            entity_vertices = np.stack(new_verts)
+            entity_normals = np.stack(new_norms)
+            
+        positions = torch.from_numpy(entity_vertices).float()
+        normals = torch.from_numpy(entity_normals).float()
+        properties = torch.from_numpy(entity_materials).float()
+        # class_ids = torch.arange(N_obj).long() 
         
-        # Resample/Pad Point Clouds
-        obj_verts, obj_normals = self._sample_points(obj_verts, self.num_points, normals=obj_normals)
-        wall_verts, wall_normals = self._sample_points(wall_verts, self.num_points, normals=wall_normals)
-        
-        # Prepare Tensors
-        # Shape: (N_obj, N_v, 3) -> (2, N_v, 3)
-        positions = torch.stack([
-            torch.from_numpy(obj_verts).float(),
-            torch.from_numpy(wall_verts).float()
-        ])
-
-        normals = torch.stack([
-            torch.from_numpy(obj_normals).float(),
-            torch.from_numpy(wall_normals).float()
-        ])
-        
-        # Properties: (N_obj, 3) -> (2, 3)
-        properties = torch.stack([
-            torch.from_numpy(obj_color).float(),
-            torch.from_numpy(wall_color).float()
-        ])
-        
-        # Class IDs: (N_obj,) -> 0 for Object, 1 for Wall (arbitrary mapping)
-        class_ids = torch.tensor([0, 1]).long() 
-        
-        if 'camera_pos' in data and 'camera_lookat' in data:
-            cam_pos = data['camera_pos']
-            cam_lookat = data['camera_lookat']
-        else:
-            cam_pos = self.cam_pos
-            cam_lookat = self.cam_lookat
+        cam_pos = data['camera_pos']
+        cam_lookat = data['camera_lookat']
 
         c2w = self._compute_c2w(cam_pos, cam_lookat, self.cam_up)
         w2c = torch.inverse(c2w)
         
-        # Rays generated in local camera space (eye matrix) are identical 
-        # across all samples because FOV and image_res are constant.
-        if self.precomputed_ray_data is None:
-            c2w_eye = torch.eye(4)
-            rays_o, rays_d = self.ray_generator(c2w_eye, self.fov_rad, self.image_res)
-            self.precomputed_ray_data = (rays_o, rays_d)
-        else:
-            rays_o, rays_d = self.precomputed_ray_data
-             
-        # rays_d is (H, W, 3), we need its channel last?
-        # Model expects rays_o (3,) and ray_map (H, W, 3)
-        # RayGenerator returns rays_d as (H, W, 3)
+        # if self.precomputed_ray_data is None:
+        c2w_eye = torch.eye(4)
+        rays_o, rays_d = self.ray_generator(c2w_eye, self.fov_rad, self.image_res)
+        #     self.precomputed_ray_data = (rays_o, rays_d)
+        # else:
+            # rays_o, rays_d = self.precomputed_ray_data
         
         return {
-            'rays_o': torch.zeros(3),          # (3,) camera origin in camera space
-            'rays_d': rays_d,                  # (H, W, 3) - used as ray_map
-            'obj_positions': positions,        # (2, N_p, 3)
-            'obj_normals': normals,            # (2, N_p, 3)
-            'obj_properties': properties,      # (2, 3)
-            'obj_class_ids': class_ids,        # (2,)
-            'w2c': w2c,                        # (4, 4)
-            'target_image': image_tensor       # (3, H, W)
+            'rays_o': torch.zeros(3),       # (3,) camera origin in camera space
+            'rays_d': rays_d,               # (H, W, 3) - used as ray_map
+            'obj_positions': positions,     # (N_obj, N_p, 3)
+            'obj_normals': normals,         # (N_obj, N_p, 3)
+            'obj_properties': properties,   # (N_obj, C)
+            'w2c': w2c,                     # (4, 4)
+            'target_image': image_tensor    # (3, H, W)
         }
-
-    def _sample_points(self, points, num_points, normals=None):
-        """Randomly sample points to fix size."""
-        N = points.shape[0]
-        if N >= num_points:
-            indices = np.random.choice(N, num_points, replace=False)
-        else:
-            indices = np.random.choice(N, num_points, replace=True)
-        
-        if normals is not None:
-            return points[indices], normals[indices]
-        return points[indices]

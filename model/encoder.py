@@ -8,63 +8,29 @@ import torch.nn as nn
 from typing import Optional, Tuple
 from enum import IntEnum
 
-class ObjectClass(IntEnum):
-    # Modifiers
-    MODIFIER_DIFFUSE = 0
-    MODIFIER_SPECULAR = 1  # Easy to extend later
-    
-    # Emitters (Start indices after modifiers)
-    EMITTER_POINT = 10
-    EMITTER_AREA = 11
-    EMITTER_SPOT = 12
-    EMITTER_SUN = 13
-
-class UniversalPropertyEncoder(nn.Module):
+class MaterialPropertyEncoder(nn.Module):
     def __init__(
         self,
-        prop_dim: int = 3,         # [R, G, B]
-        num_classes: int = 20,     # Size of registry
-        embed_dim: int = 512,      # Output dimension
-        type_embed_dim: int = 64,  # Reserved for class identity
+        prop_dim: int = 10,    # [diffuse_color (3), specular_color (3), emissive_color (3), roughness (1)]
+        embed_dim: int = 128,  # Output dimension
         use_batch_norm: bool = True
     ):
         super().__init__()
-        
-        # 1. Discrete Knowledge: What IS this thing?
-        self.type_embedding = nn.Embedding(num_classes, type_embed_dim)
-        
-        # 2. Continuous Knowledge: What color/intensity is it?
-        # We output (Total - Type_Dim) so they sum to embed_dim
-        prop_out_dim = embed_dim - type_embed_dim
-        
-        self.prop_mlp = nn.Sequential(
-            nn.Linear(prop_dim, prop_out_dim, bias=not use_batch_norm),
-            nn.BatchNorm1d(prop_out_dim) if use_batch_norm else nn.Identity(),
-            nn.SiLU()
-        )
-        
-        # 3. Fusion: Mix them together
-        self.final_proj = nn.Sequential(
-            nn.Linear(embed_dim, embed_dim, bias=not use_batch_norm),
+
+        self.mlp = nn.Sequential(
+            nn.Linear(prop_dim, embed_dim, bias=not use_batch_norm),
             nn.BatchNorm1d(embed_dim) if use_batch_norm else nn.Identity(),
             nn.SiLU()
         )
 
-    def forward(self, properties: torch.Tensor, class_ids: torch.LongTensor) -> torch.Tensor:
+    def forward(self, properties: torch.Tensor) -> torch.Tensor:
         """
-        properties: (B, 3) 
-        class_ids: (B,) Integers from ObjectClass enum
+        properties: (B, 10) [diffuse_color (3), specular_color (3), emissive_color (3), roughness (1)]
         """
-        # Embed the type (B, type_embed_dim)
-        type_feat = self.type_embedding(class_ids)
-        
-        # Encode physical properties (B, embed_dim - type_embed_dim)
-        prop_feat = self.prop_mlp(properties)
-        
-        # Concatenate: [TypeInfo | PhysicsInfo]
-        combined = torch.cat([prop_feat, type_feat], dim=-1)
-        
-        return self.final_proj(combined)
+        # log transform emmissive color to handle high dynamic range
+        properties[:, 6:9] = torch.log1p(properties[:, 6:9])
+        return self.mlp(properties)
+
 
 class PointNetEncoder(nn.Module):
     """
@@ -81,13 +47,11 @@ class PointNetEncoder(nn.Module):
         input_dim: int = 12,
         hidden_dims: list = [2048, 2048],
         output_dim: int = 512,
-        backbone_dim: int = 800,
-        # fusion_hidden_dim: int = 800,
+        backbone_dim: int = 768,
+        property_embed_dim: int = 128,
         use_batch_norm: bool = True,
         pooling_type: str = 'hierarchical', # or 'max'
         num_hierarchical_levels: int = 5,
-        property_encoder_hidden_dim: int = 128,
-        emitter_type_dim: int = 16
     ):
         super().__init__()
 
@@ -95,9 +59,6 @@ class PointNetEncoder(nn.Module):
         self.output_dim = output_dim
         self.backbone_dim = backbone_dim
         self.pooling_type = pooling_type
-        
-        self.emitter_type_dim = emitter_type_dim
-        self.property_encoder_hidden_dim = property_encoder_hidden_dim
 
         # Geometry path: PointNet backbone
         layers = []
@@ -129,14 +90,13 @@ class PointNetEncoder(nn.Module):
             self.hierarchical_proj = nn.Linear(total_feat_dim, backbone_dim)
 
         # Universal property encoders for objects
-        self.property_encoder = UniversalPropertyEncoder(
-            prop_dim=3,
-            num_classes=20,
-            embed_dim=output_dim
-        )
+        self.property_encoder = MaterialPropertyEncoder(
+            prop_dim=10,
+            embed_dim=property_embed_dim
+        )  
 
         # Fusion MLP: Combine geometry and physics
-        fusion_input_dim = backbone_dim + output_dim
+        fusion_input_dim = backbone_dim + property_embed_dim
         self.fusion_mlp = nn.Sequential(
             nn.Linear(fusion_input_dim, output_dim, bias=not use_batch_norm),
             nn.BatchNorm1d(output_dim) if use_batch_norm else nn.Identity(),
@@ -152,8 +112,7 @@ class PointNetEncoder(nn.Module):
     def forward(
         self,
         surface_pos: torch.Tensor,
-        properties: torch.Tensor,
-        object_class_ids: torch.Tensor,
+        properties: torch.Tensor, 
         normals: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
@@ -161,10 +120,8 @@ class PointNetEncoder(nn.Module):
 
         Args:
             surface_pos: sampled positions from object surface (B, N, 3)
+            properties: vector of [diffuse_color, specular_color, emissision_color, roughness] (B, 10)
             normals: Optional surface normals (B, N, 3)
-            properties: diffuse [r,g,b] (B, 3) if modifier; intensity [r,g,b] [type] (B, 4) if emitter
-            object_types: (B,) tensor with 0=modifier, 1=emitter
-            emitter_types: (B,) tensor with light type indices, only used for emitters # NOTE: nah i don't like this design.....
 
         Returns:
             Encoded features (B, output_dim)
@@ -214,10 +171,10 @@ class PointNetEncoder(nn.Module):
             raise ValueError(f"Unknown pooling type: {self.pooling_type}")
 
         # Process properties based on object type for each item in batch
-        properties_token = self.property_encoder(properties, object_class_ids)
+        properties_token = self.property_encoder(properties)
 
         # Fuse geometry and physical properties
-        combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, backbone_dim + output_dim)
+        combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, backbone_dim + property_embed_dim)
         output = self.fusion_mlp(combined)  # (B, output_dim)
 
         return output  # (B, output_dim)

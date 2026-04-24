@@ -13,7 +13,7 @@ from datetime import datetime
 from lpips import LPIPS
 
 from model.global_illumination_model import GlobalIlluminationModel
-from training.dataset import RadiosityDataset
+from training.dataset import SceneDataset 
 
 torch.backends.cuda.matmul.allow_tf32 = True
 
@@ -99,12 +99,12 @@ def train(config_path):
     print(f"Using device: {device}")
 
     # 2. Setup Data
-    train_dataset = RadiosityDataset(
+    train_dataset = SceneDataset(
         data_dir=config['training']['data_dir'],
         image_res=config['training']['image_res'],
         split='train'
     )
-    val_dataset = RadiosityDataset(
+    val_dataset = SceneDataset(
         data_dir=config['training']['data_dir'],
         image_res=config['training']['image_res'],
         split='val'
@@ -203,7 +203,6 @@ def train(config_path):
                 positions = batch['obj_positions'].to(device)
                 normals = batch['obj_normals'].to(device)
                 properties = batch['obj_properties'].to(device)
-                class_ids = batch['obj_class_ids'].to(device)
                 w2c = batch['w2c'].to(device)
                 target = batch['target_image'].to(device)
                 
@@ -216,8 +215,6 @@ def train(config_path):
                         rays_d=rays_d,
                         obj_positions=positions,
                         obj_properties=properties,
-                        obj_class_ids=class_ids,
-                        ray_map=rays_d, # Using rays_d as ray_map
                         obj_normals=normals,
                         w2c=w2c
                     )
@@ -255,11 +252,11 @@ def train(config_path):
                     positions = batch['obj_positions'].to(device)
                     normals = batch['obj_normals'].to(device)
                     properties = batch['obj_properties'].to(device)
-                    class_ids = batch['obj_class_ids'].to(device)
+                    # class_ids = batch['obj_class_ids'].to(device)
                     w2c = batch['w2c'].to(device)
                     target = batch['target_image'].to(device)
 
-                    pred = model(rays_o, rays_d, positions, properties, class_ids, rays_d, obj_normals=normals, w2c=w2c)
+                    pred = model(rays_o, rays_d, positions, properties, obj_normals=normals, w2c=w2c)
                     loss = criterion(pred, target)
                     val_loss += loss.item()
                     val_psnr += calculate_psnr(pred, target)
@@ -287,8 +284,6 @@ def train(config_path):
                     fixed_val_batch['rays_d'],
                     fixed_val_batch['obj_positions'],
                     fixed_val_batch['obj_properties'],
-                    fixed_val_batch['obj_class_ids'],
-                    fixed_val_batch['rays_d'],
                     obj_normals=fixed_val_batch['obj_normals'],
                     w2c=fixed_val_batch['w2c']
                 )
@@ -308,8 +303,6 @@ def train(config_path):
                     fixed_train_batch['rays_d'],
                     fixed_train_batch['obj_positions'],
                     fixed_train_batch['obj_properties'],
-                    fixed_train_batch['obj_class_ids'],
-                    fixed_train_batch['rays_d'],
                     obj_normals=fixed_train_batch['obj_normals'],
                     w2c=fixed_train_batch['w2c']
                 )

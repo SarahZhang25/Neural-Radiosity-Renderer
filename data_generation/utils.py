@@ -68,7 +68,17 @@ def to_uint8(image: np.ndarray) -> np.ndarray:
     Returns:
         uint8 image
     """
-    clipped = np.clip(image, 0, 1)
+    # TODO: remove these debug messages after fixing this...
+    nan_count = np.isnan(image).sum()
+    posinf_count = np.isposinf(image).sum()
+    neginf_count = np.isneginf(image).sum()
+    
+    if nan_count > 0 or posinf_count > 0 or neginf_count > 0:
+        print(f"[to_uint8] Cleaning image: {nan_count} NaNs, {posinf_count} +Infs, {neginf_count} -Infs")
+        
+
+    clean_image = np.nan_to_num(image, nan=0.0, posinf=1.0, neginf=0.0)
+    clipped = np.clip(clean_image, 0, 1)
     return (clipped * 255).astype(np.uint8)
 
 
