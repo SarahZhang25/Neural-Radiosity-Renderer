@@ -119,16 +119,16 @@ class RadiancePredictor(nn.Module):
         positions_cam_space = None
         if self.pe_type in ['nerf', 'rope'] and w2c is not None and obj_positions is not None:
             # Transform object positions to camera space
-            # w2c is (B, 4, 4), obj_positions is (B, N_obj, N_v, 3)
+            # w2c is (B, 4, 4), obj_positions is (B, N_obj, n_centroids, 3) from local feature extraction
             B, N_obj, N_v, _ = obj_positions.shape
             w2c_R = w2c[:, :3, :3]  # (B, 3, 3)
             w2c_t = w2c[:, :3, 3]   # (B, 3)
             
-            # Use centroids representing each object token
-            centroids = obj_positions.mean(dim=2)  # (B, N_obj, 3)
+            # Flatten local positions instead of mean pooling
+            local_positions = obj_positions.view(B, N_obj * N_v, 3)  # (B, N_obj * n_centroids, 3)
             
-            # Transform centroids to camera space
-            positions_cam_space = torch.bmm(centroids, w2c_R.transpose(1, 2)) + w2c_t.unsqueeze(1)
+            # Transform to camera space
+            positions_cam_space = torch.bmm(local_positions, w2c_R.transpose(1, 2)) + w2c_t.unsqueeze(1)
         
         # Infer patch grid if not provided
         if patch_h is None or patch_w is None:
@@ -140,12 +140,16 @@ class RadiancePredictor(nn.Module):
         layer_weights = torch.softmax(self.layer_weights, dim=0)
         obj_features = sum(
             w * feat for w, feat in zip(layer_weights, multi_scale_features[:3])
-        )  # (B, N_obj, D)
+        )  # (B, N_obj, n_centroids, D)
+        
+        # Flatten obj_features to shape (B, N_obj * n_centroids, D)
+        B, N_obj, N_v, D_feature = obj_features.shape
+        obj_features = obj_features.view(B, N_obj * N_v, D_feature)
 
         if self.pe_type == 'nerf' and positions_cam_space is not None:
             # Generate NeRF positional encoding and add to object features
             encoded_pos = self.pos_pe(positions_cam_space)
-            pos_emb = self.pos_pe_norm(self.pe_token_proj(encoded_pos)) # (B, N_obj, D)
+            pos_emb = self.pos_pe_norm(self.pe_token_proj(encoded_pos)) # (B, N_obj * n_centroids, D)
             obj_features = obj_features + pos_emb
 
         # Prepare scene context and RoPE context positions

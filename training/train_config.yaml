@@ -1,6 +1,9 @@
 # Training Configuration
 
 # Run notes (changes from last run): 
+#     Updated/fixed RoPE implementation in MHA
+#     Using 64 local pointnet features (set abstraction: for 2048 points pershape, 64 centroids each feature is avg of 32 points) 
+#
 #     Switch to ROPE for predictor. Refactored to use new transformer modules.
 #     Reduce state size to 2x2x2 grid
 #     Attempted to implement View-dependent stage in camera space
@@ -20,8 +23,9 @@ encoder:
   hidden_dims: [512, 1024, 2048] # Increase capacity for memorization
   output_dim: 1024 # Increased
   backbone_dim: 768
-  pooling_type: 'hierarchical' # Simpler than hierarchical for pure memorization
+  pooling_type: 'set_abstraction' # Replaced 'hierarchical' and 'max' with set abstraction for local features
   num_hierarchical_levels: 3 # Ignored
+  num_centroids: 64
 
 state:
   num_tokens: 8  # 2x2x2 grid
@@ -53,7 +57,7 @@ ray_encoder:
   view_transformer_n_heads: 4
 
 predictor:
-  pe_type: 'nerf' # TODO:[ROPE] support rope initially # TODO: KEEP? 
+  pe_type: 'rope' # TODO:[ROPE] support rope # TODO: KEEP? 
   # TODO: add a obj num_freq term?
   hidden_dim: 1024
   num_heads: 8
