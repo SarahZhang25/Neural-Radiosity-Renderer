@@ -237,8 +237,8 @@ class GlobalIlluminationModel(nn.Module):
             patch_h=rays_d.shape[1] // self.ray_encoder.patch_size,
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,
-            obj_positions=object_positions_patches,
-            obj_mask=obj_mask,
+            obj_positions=objectect_positions_patches,
+            obj_mask=obj_mask, # TODO: fix size to make compatible with patches
             ray_positions=ray_token_pos,
             use_dpt_decoder=self.use_dpt_decoder
         )

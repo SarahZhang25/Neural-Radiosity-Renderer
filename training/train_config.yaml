@@ -3,6 +3,9 @@
 # Run notes (changes from last run): 
 #     Updated/fixed RoPE implementation in MHA
 #     Using 64 local pointnet features (set abstraction: for 2048 points pershape, 64 centroids each feature is avg of 32 points) 
+#
+#     Updated/fixed RoPE implementation in MHA
+#     Using 64 local pointnet features (set abstraction: for 2048 points pershape, 64 centroids each feature is avg of 32 points) 
 
 # Model: 
 #     Rays now encoded in camera space (so view-dependent stage is now in camera coordinates)
