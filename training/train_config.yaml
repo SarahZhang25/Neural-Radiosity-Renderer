@@ -1,19 +1,9 @@
 # Training Configuration
 
 # Run notes (changes from last run): 
-#     Run on slightly larger dataset: attempt2_fixed_view 
-#       - change output activation to ELU
-#       - change output projection layer to GELU instead of RELU
-#       - run some debugging printouts
-#       - remove gamma correction to tone_map_lpips (aka revert to run 20260504-123609)
-#
-#     Reimplement camera space conversion in predictor
-#     Debug lighting rendering issues: 
-#       - move loss computation out of autocast
-#       - Change tone-mapping to smooth mapping instead of log2 with hard clamp to prevent cutoffs)
-#     Switch radiance predictor back to old predictor
-#     Switch scene transformer back to new torch implementation
-#
+#     Updated/fixed RoPE implementation in MHA
+#     Using 64 local pointnet features (set abstraction: for 2048 points pershape, 64 centroids each feature is avg of 32 points) 
+
 # Model: 
 #     Rays now encoded in camera space (so view-dependent stage is now in camera coordinates)
 #     Obj positions also transformed to camera space in RadiancePredictor
@@ -30,8 +20,9 @@ encoder:
   hidden_dims: [512, 1024, 2048] # Increase capacity for memorization
   output_dim: 1024 # Increased
   backbone_dim: 768
-  pooling_type: 'hierarchical' # Simpler than hierarchical for pure memorization
+  pooling_type: 'set_abstraction' # Replaced 'hierarchical' and 'max' with set abstraction for local features
   num_hierarchical_levels: 3 # Ignored
+  num_centroids: 64
 
 state:
   num_tokens: 8  # 2x2x2 grid
@@ -63,7 +54,7 @@ ray_encoder:
   view_transformer_n_heads: 4
 
 predictor:
-  pe_type: 'nerf' # TODO:[ROPE] support rope initially # TODO: KEEP? 
+  pe_type: 'rope' # TODO:[ROPE] support rope # TODO: KEEP? 
   # TODO: add a obj num_freq term?
   hidden_dim: 1024
   num_heads: 8

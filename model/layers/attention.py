@@ -141,13 +141,26 @@ class MultiHeadAttention(nn.Module):
         #         q = apply_rotary_emb_one_cossin(q, rope_cos, rope_sin)
         #         k = apply_rotary_emb_one_cossin(k, rope_ctx_cos, rope_ctx_sin)
 
-        if rope_cos is not None and rope_ctx_cos is None and self.is_self_attn:
-             q, k = self.apply_rope_cossin(q, k, rope_cos, rope_sin)
-        else:
-             if rope_cos is not None:
-                 q = apply_rotary_emb_one_cossin(q, rope_cos, rope_sin)
-             if rope_ctx_cos is not None:
-                 k = apply_rotary_emb_one_cossin(k, rope_ctx_cos, rope_ctx_sin)
+
+        ## NOTE: this is bad because it is incorrect to allow rope to be applied to k but not q or vice versa
+        # if rope_cos is not None and rope_ctx_cos is None and self.is_self_attn:
+        #      q, k = self.apply_rope_cossin(q, k, rope_cos, rope_sin)
+        # else:
+        #      if rope_cos is not None:
+        #          q = apply_rotary_emb_one_cossin(q, rope_cos, rope_sin)
+        #      if rope_ctx_cos is not None:
+        #          k = apply_rotary_emb_one_cossin(k, rope_ctx_cos, rope_ctx_sin)
+
+
+        # apply rope safely: prevent asymmetric rotation
+        if self.is_self_attn and rope_cos is not None:
+            # Self-attention: safely rotate both Q and K together
+            q, k = self.apply_rope_cossin(q, k, rope_cos, rope_sin)
+            
+        elif not self.is_self_attn and rope_cos is not None and rope_ctx_cos is not None:
+            # Cross-attention: ONLY rotate if both domains share spatial coordinates
+            q = apply_rotary_emb_one_cossin(q, rope_cos, rope_sin)
+            k = apply_rotary_emb_one_cossin(k, rope_ctx_cos, rope_ctx_sin)
 
         if ATTN == 'sdpa' or force_sdpa:
             # create attention mask

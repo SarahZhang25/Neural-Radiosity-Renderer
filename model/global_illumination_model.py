@@ -37,6 +37,7 @@ class GlobalIlluminationModel(nn.Module):
             backbone_dim=config['encoder']['backbone_dim'],
             pooling_type=config['encoder']['pooling_type'],
             num_hierarchical_levels=config['encoder']['num_hierarchical_levels'],
+            num_centroids=config['encoder']['num_centroids'],
         )
         
         # 2. State Manager (Learnable 3D Grid)
@@ -133,21 +134,25 @@ class GlobalIlluminationModel(nn.Module):
 
         flat_props = obj_properties.view(B * N_obj, 10)
         
-        obj_features_flat = self.pointnet_encoder(
+        obj_features_flat, obj_positions_local = self.pointnet_encoder(
             surface_pos=flat_positions,
             properties=flat_props,
             normals=flat_normals
         )
+        n_centroids = self.pointnet_encoder.num_centroids
         
-        # Reshape back: (B, N_obj, D)
-        object_tokens = obj_features_flat.view(B, N_obj, -1)
+        # obj_features_flat: (B*N_obj, 64, D) -> (B, N_obj, 64, D)
+        object_tokens_patches = obj_features_flat.view(B, N_obj, n_centroids, -1)
+        # object_positions_local: (B*N_obj, 64, 3) -> (B, N_obj, 64, 3)
+        object_positions_patches = obj_positions_local.view(B, N_obj, n_centroids, 3)
 
         # 2. Get State Tokens
         state_tokens = self.state_manager.get_tokens(B)  # (B, N_state, D)
 
         # 3. Spatial Positional Encoding (RoPE preparation)
-        # Calculate Object Centroids for RoPE
-        object_centroids = obj_positions.mean(dim=2)  # (B, N_obj, 3)
+        # We now use the local 64 centroids over all objects
+        object_centroids = object_positions_patches.view(B, N_obj * n_centroids, 3)  # (B, N_obj * n_centroids, 3)
+        object_tokens = object_tokens_patches.view(B, N_obj * n_centroids, -1) # (B, N_obj * n_centroids, D)
 
         state_positions = None # Registers and abstract concepts don't have explicit physical geometry
 
@@ -158,6 +163,9 @@ class GlobalIlluminationModel(nn.Module):
             state_pos=state_positions,
             obj_pos=object_centroids
         )
+        
+        # Return object layers back to block structure [B, N_obj, 64, D] so Predictor receives this
+        all_obj_layers = [layer.view(B, N_obj, n_centroids, -1) for layer in all_obj_layers]
 
         # --- Stage 2: Rendering ---
 
@@ -183,8 +191,8 @@ class GlobalIlluminationModel(nn.Module):
             patch_h=rays_d.shape[1] // self.ray_encoder.patch_size,
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,
-            obj_positions=obj_positions,
-            ray_positions=ray_token_pos,  # would use this if using predictor with RoPE supported 
+            obj_positions=object_positions_patches,
+            ray_positions=ray_token_pos,
             use_dpt_decoder=self.use_dpt_decoder
         )
 
