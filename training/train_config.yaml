@@ -1,15 +1,25 @@
 # Training Configuration
 
 # Run notes (changes from last run): 
-#     Switch to ROPE for predictor. Refactored to use new transformer modules.
-#     Reduce state size to 2x2x2 grid
-#     Attempted to implement View-dependent stage in camera space
+#     Run on slightly larger dataset: attempt2_fixed_view 
+#       - change output activation to ELU
+#       - change output projection layer to GELU instead of RELU
+#       - run some debugging printouts
+#       - remove gamma correction to tone_map_lpips (aka revert to run 20260504-123609)
+#
+#     Reimplement camera space conversion in predictor
+#     Debug lighting rendering issues: 
+#       - move loss computation out of autocast
+#       - Change tone-mapping to smooth mapping instead of log2 with hard clamp to prevent cutoffs)
+#     Switch radiance predictor back to old predictor
+#     Switch scene transformer back to new torch implementation
+#
 # Model: 
 #     Rays now encoded in camera space (so view-dependent stage is now in camera coordinates)
 #     Obj positions also transformed to camera space in RadiancePredictor
 #     In RayEncoder, remove 2D Patch Positional Encodings, so that encoder matches ViewTransformer of RenderFormer
-# Dataset: variable_camera_experiment
-#     data_generation/output/datasets/variable_camera_experiment
+# Dataset: attempt2_fixed_view
+#     data_generation/output/datasets/attempt2_fixed_view
 # Hyperparams:
 # Training: 
 #   Higher epochs, lower resolution to 128
@@ -68,7 +78,7 @@ training:
   num_epochs: 500
   save_interval: 50
   image_res: 128
-  data_dir: "data_generation/output_auto/datasets/attempt3_fixed_view_table"
+  data_dir: "data_generation/output_auto/datasets/attempt2_fixed_view"
   log_dir: "training/logs"
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'

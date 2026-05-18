@@ -9,6 +9,7 @@ import yaml
 from typing import Dict, Tuple, Optional
 
 from model.encoder import PointNetEncoder
+from model.decoder import TransformerDecoder
 from model.layers.bidirectional_attention import BidirectionalTransformerEncoder
 from model.predictor import RadiancePredictor
 from model.state_manager import StateManager
@@ -46,6 +47,7 @@ class GlobalIlluminationModel(nn.Module):
 
         # 3. View-Independent Bi-Directional Transformer
         self.scene_transformer = BidirectionalTransformerEncoder(
+        # self.scene_transformer = TransformerDecoder(
             state_dim=config['decoder']['hidden_dim'],
             num_layers=config['decoder']['num_layers'],
             num_heads=config['decoder']['num_heads'],
@@ -76,8 +78,8 @@ class GlobalIlluminationModel(nn.Module):
 
         # 5. Predictor Transformer
         self.predictor = RadiancePredictor(
-            pe_type=config['predictor'].get('pe_type', 'nerf'),
-            pe_num_freqs=config['predictor'].get('pe_num_freqs', config['ray_encoder']['vertex_pe_num_freqs']),
+            # pe_type=config['predictor'].get('pe_type', 'nerf'),
+            # pe_num_freqs=config['predictor'].get('pe_num_freqs', config['ray_encoder']['vertex_pe_num_freqs']),
             hidden_dim=config['predictor']['hidden_dim'],
             patch_size=config['ray_encoder']['patch_size'],
             num_heads=config['predictor']['num_heads'],
@@ -164,7 +166,8 @@ class GlobalIlluminationModel(nn.Module):
         else:
              rays_o_input = rays_o
              
-        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d) 
+        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d)
+        # ray_tokens, ray_token_pos = self.ray_encoder(rays_o, rays_d)
 
         # 6. Predict Radiance
         # Ray tokens query the scene (object + state features)
@@ -176,7 +179,7 @@ class GlobalIlluminationModel(nn.Module):
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,
             obj_positions=obj_positions,
-            ray_positions=ray_token_pos
+            # ray_positions=ray_token_pos
         )
 
         return radiance

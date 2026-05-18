@@ -26,6 +26,10 @@ def log_transform(x):
     x = torch.clamp(x, min=0.0)
     return torch.log1p(x)
 
+# def log_transform(x):
+#     x = torch.clamp(x, min=1e-4)  # Larger eps
+#     return torch.log(x)  # Natural log, not log1p
+
 def linear_to_srgb(x: torch.Tensor) -> torch.Tensor:
     a = 0.055
     x = torch.clamp(x, min=0.0, max=1.0)
@@ -65,15 +69,31 @@ def convert_hdr_for_visualization(x, method="reinhard", exposure=1.0):
 
 # RenderFormer LPIPS Tone-mapping: "clamp (log I / log 2, 0, 1)"
 # Note: log(I) / log(2) is mathematically identical to log2(I).
+# def tone_map_lpips(x):
+#     """
+#     Tone mapping to apply before LPIPS
+#     """
+#     # We clamp the input to a minimum of 1.0 before log2 so that log2(1) = 0.
+#     # This maps the darkest areas to 0, and specular highlights (up to 2.0) to 1.
+#     # Then scale to [-1, 1] for LPIPS input.
+#     log2_x = torch.log2(x + 1.0)
+#     return torch.clamp(log2_x, min=0.0, max=1.0) * 2 - 1
+
 def tone_map_lpips(x):
     """
-    Tone mapping to apply before LPIPS
+    Smooth Reinhard-style tone mapping for HDR LPIPS.
+    Preserves gradients for extremely bright light sources.
     """
-    # We clamp the input to a minimum of 1.0 before log2 so that log2(1) = 0.
-    # This maps the darkest areas to 0, and specular highlights (up to 2.0) to 1.
-    # Then scale to [-1, 1] for LPIPS input.
-    log2_x = torch.log2(x + 1.0)
-    return torch.clamp(log2_x, min=0.0, max=1.0) * 2 - 1
+    # Map [0, inf) to [0, 1) smoothly
+    mapped = x / (x + 1.0) 
+
+    # Gamma Correction (Approximate sRGB)
+    # Clamp slightly above 0 to prevent NaN gradients in the power function
+    # mapped = torch.clamp(mapped, min=1e-6)
+    # gamma_mapped = torch.pow(mapped, 1.0 / 2.2)
+
+    # Scale to [-1, 1] for LPIPS
+    return mapped * 2.0 - 1.0
 
 def calculate_psnr(pred, target):
     """
@@ -219,7 +239,9 @@ def train(config_path):
                         w2c=w2c
                     )
                 
-                    loss = criterion(pred_radiance, target)
+                # loss = criterion(pred_radiance, target)
+                # Force float32 precision for mathematical stability?
+                loss = criterion(pred_radiance.float(), target.float())
                 
                 # Backward pass with scaler, which is needed for fp16 but not bf16
                 loss.backward()
@@ -257,7 +279,7 @@ def train(config_path):
                     target = batch['target_image'].to(device)
 
                     pred = model(rays_o, rays_d, positions, properties, obj_normals=normals, w2c=w2c)
-                    loss = criterion(pred, target)
+                    loss = criterion(pred.float(), target.float())
                     val_loss += loss.item()
                     val_psnr += calculate_psnr(pred, target)
                 
@@ -316,6 +338,21 @@ def train(config_path):
                 
                 grid_train = torchvision.utils.make_grid(vis_train_img, nrow=1, normalize=False)
                 writer.add_image('Visual/Training', grid_train, epoch)
+
+                if (epoch + 1) == 500:
+                    # pred = model(test_input)
+                    target_hdr = fixed_val_batch['target_image']
+                    pred_log = log_transform(pred_fixed + 1e-6)
+                    target_log = log_transform(target_hdr + 1e-6)
+
+                    print(f"Pred range: [{pred_fixed.min():.3f}, {pred_fixed.max():.3f}]")
+                    print(f"Target range: [{target_hdr.min():.3f}, {target_hdr.max():.3f}]")
+                    print(f"Pred log range: [{pred_log.min():.3f}, {pred_log.max():.3f}]")
+                    print(f"Target log range: [{target_log.min():.3f}, {target_log.max():.3f}]")
+
+                    # Also check for negative predictions (clamping issue)
+                    num_negative = (pred_fixed < 0).sum().item()
+                    print(f"Negative predictions: {num_negative} / {pred_fixed.numel()}")
 
     writer.close()
     print("Training Complete.")

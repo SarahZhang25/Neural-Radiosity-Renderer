@@ -5,6 +5,7 @@ Transformer-based predictor for radiance prediction.
 import torch
 import torch.nn as nn
 from typing import List, Optional
+from model.layers.attention import TransformerDecoder
 from einops import rearrange
 import math
 from model.encodings.nerf_encoding import NeRFEncoding
@@ -54,29 +55,31 @@ class RadiancePredictor(nn.Module):
         # Feature pooling across encoder layers
         self.layer_weights = nn.Parameter(torch.ones(3))
 
-        # PyTorch TransformerDecoder
-        decoder_layer = nn.TransformerDecoderLayer(
-            d_model=hidden_dim,
-            nhead=num_heads,
-            dim_feedforward=hidden_dim * 4,
-            dropout=dropout,
-            activation=activation,
-            batch_first=True,
-            norm_first=True  # Pre-norm architecture
-        )
+        # RoPE needs to fit 3 coordinates. Each coordinate needs rope_dim // 2 angles.
+        # Total angles = 3 * (rope_dim // 2). This must be <= head_dim // 2.
+        # So rope_dim // 2 * 3 <= head_dim // 2  => rope_dim <= (head_dim // 2) // 3 * 2
+        rope_dim = (((hidden_dim // num_heads) // 2) // 3) * 2 if pe_type == 'rope' else None
         
-        self.transformer = nn.TransformerDecoder(
-            decoder_layer,
-            num_layers=num_layers
+        self.transformer = TransformerDecoder(
+            num_layers=num_layers,
+            num_heads=num_heads,
+            hidden_dim=hidden_dim,
+            ffn_hidden_dim=hidden_dim * 4,
+            dropout=dropout,
+            include_self_attn=include_self_attn,
+            activation=activation,
+            norm_type=norm_type,
+            rope_dim=rope_dim,
+            rope_type='object'
         )
 
         # Output projection:  -> 3 RGB channels × patch_size × patch_size
         self.out_proj = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
-            nn.GELU(),
+            nn.ReLU(),
             nn.Linear(hidden_dim, 3 * patch_size * patch_size)
         )
-        self.out_proj_act = nn.GELU() 
+        self.out_proj_act = nn.ELU(alpha=1e-3)
         
         # Initialize last layer with small weights for stable training
         last_layer = self.out_proj[-1]
@@ -104,6 +107,9 @@ class RadiancePredictor(nn.Module):
             multi_scale_state_features: List of state features [(B, N_state, D), ...]
             patch_h: Number of patches in height
             patch_w: Number of patches in width
+            w2c: Optional (B, 4, 4) World to Camera matrix
+            obj_positions: Optional (B, N_obj, N_v, 3) Object point clouds in world space
+            ray_positions: Optional (B, N_patches, 3) Ray positions in world space
 
         Returns:
             Predicted radiances (B, 3, H, W)
@@ -142,19 +148,41 @@ class RadiancePredictor(nn.Module):
             pos_emb = self.pos_pe_norm(self.pe_token_proj(encoded_pos)) # (B, N_obj, D)
             obj_features = obj_features + pos_emb
 
+        # Prepare scene context and RoPE context positions
+        ctx_pos = None
+        if self.pe_type == 'rope' and positions_cam_space is not None:
+            ctx_pos = positions_cam_space
+
         # Optionally concatenate state features
         if multi_scale_state_features is not None:
             state_features = sum(
                 w * feat for w, feat in zip(layer_weights, multi_scale_state_features[:3])
             )  # (B, N_state, D)
             scene_features = torch.cat([obj_features, state_features], dim=1)
+            
+            # If using RoPE, pad ctx_pos with zeros for state tokens
+            if ctx_pos is not None:
+                pad_pos = torch.zeros(B, state_features.shape[1], 3, device=ctx_pos.device, dtype=ctx_pos.dtype)
+                ctx_pos = torch.cat([ctx_pos, pad_pos], dim=1)
         else:
             scene_features = obj_features
 
         # Cross-attention: rays query scene
+        # print("in RadiancePredictor forward:")
+        # print("N_obj (object tokens):", obj_features.shape)
+        # if multi_scale_state_features is not None:
+        #     print("N_state (state tokens):", state_features.shape)
+        # print("Scene features shape:", scene_features.shape)
+        # print("query_view_features shape:", query_view_features.shape)
+        # print("obj_pos shape:", ctx_pos.shape if ctx_pos is not None else None)
+        # print("ray_pos shape:", ray_positions.shape if ray_positions is not None else None)
         ray_features = self.transformer(
-            tgt=query_view_features,      # (B, N_patches, D)
-            memory=scene_features,        # (B, N_obj+N_state, D)
+            x=query_view_features,        # (B, N_patches, D)
+            ctx=scene_features,           # (B, N_obj+N_state, D)
+            obj_pos=ctx_pos,
+            ray_pos=ray_positions,
+            patch_h=patch_h,
+            patch_w=patch_w
         )  # (B, N_patches, D)
 
         # Decode to RGB per patch
@@ -173,3 +201,17 @@ class RadiancePredictor(nn.Module):
         )  # (B, 3, H, W)
 
         return radiances
+    
+if __name__ == "__main__":
+    # Quick sanity check
+    B, N_obj, N_state, D = 2, 100, 10, 512
+    N_patches = 16 * 16  # 256 patches
+
+    query = torch.randn(B, N_patches, D)
+    obj_feats = [torch.randn(B, N_obj, D) for _ in range(3)]
+    state_feats = [torch.randn(B, N_state, D) for _ in range(3)]
+
+    predictor = RadiancePredictor(hidden_dim=D, patch_size=16)
+    out = predictor(obj_feats, query, state_feats, patch_h=16, patch_w=16)
+
+    assert out.shape == (B, 3, 256, 256)  # 16 patches × 16 pixels = 256px

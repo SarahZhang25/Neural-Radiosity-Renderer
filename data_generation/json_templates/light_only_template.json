@@ -1,0 +1,68 @@
+{
+    "scene_name": "cornell box template",
+    "version": "1.0",
+    "objects": {
+        "light_0": {
+            "mesh_path": "backgrounds/plane.obj",
+            "transform": {
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    180.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.15,
+                    0.15,
+                    0.495
+                ],
+                "normalize": false
+            },
+            "material": {
+                "diffuse": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "specular": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "random_diffuse_max": 0.0,
+                "roughness": 1.0,
+                "emissive": [
+                    30.0,
+                    30.0,
+                    30.0
+                ],
+                "smooth_shading": false,
+                "rand_tri_diffuse_seed": null
+            }
+        }
+    },
+    "cameras": [
+        {
+            "position": [
+                0.0,
+                -2.0,
+                0.0
+            ],
+            "look_at": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "up": [
+                0.0,
+                0.0,
+                1.0
+            ],
+            "fov": 37.5
+        }
+    ]
+}

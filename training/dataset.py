@@ -120,7 +120,7 @@ class SceneDataset(Dataset):
             # rays_o, rays_d = self.precomputed_ray_data
         
         return {
-            'rays_o': torch.zeros(3),       # (3,) camera origin in camera space
+            'rays_o': rays_o,               # (3,) camera origin in world space
             'rays_d': rays_d,               # (H, W, 3) - used as ray_map
             'obj_positions': positions,     # (N_obj, N_p, 3)
             'obj_normals': normals,         # (N_obj, N_p, 3)

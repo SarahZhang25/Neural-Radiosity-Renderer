@@ -105,6 +105,7 @@ class BidirectionalTransformerEncoder(nn.Module):
 
         if getattr(self, 'rope_emb', None) is not None:
             ## NOTE: No need to apply ROPE on state tokens...
+            ## NOTE: but isn't it wrong to apply ROPE on obj but not state tokens? cross attention won't make sense?
             # if state_pos is not None:
             #     # Register tokens don't map to original state positions. We pad them with zeros to avoid breaking geometry
             #     if self.num_register_tokens > 0:
@@ -282,8 +283,8 @@ class BidirectionalAttentionLayer(nn.Module):
             rope_ctx_cos=rope_state_cos, rope_ctx_sin=rope_state_sin,
             force_sdpa=force_sdpa
         )
-
-        state_tokens = state_tokens + self.dropout(state_to_obj_out)
+        
+        state_tokens = state_tokens + self.dropout(state_to_obj_out) # move up?
         obj_tokens = obj_tokens + self.dropout(obj_to_state_out)
 
         # 3. Feedforward

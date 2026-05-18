@@ -32,7 +32,7 @@ sys.path.append(SCRIPT_DIR)
 # Constants
 SHAPENET_ROOT = "/home/sazhang/ShapeNetCorev2"
 OUTPUT_ROOT = os.path.join(SCRIPT_DIR, "output_auto")
-RENDER_DIR = os.path.join(OUTPUT_ROOT, "datasets/attempt3_fixed_view_table")
+RENDER_DIR = os.path.join(OUTPUT_ROOT, "datasets/attempt5_fixed_view_no_box")
 MESH_SOURCE_DIR = os.path.join(OUTPUT_ROOT, "raw_meshes", "simple_objects")
 os.makedirs(RENDER_DIR, exist_ok=True)
 
@@ -40,10 +40,10 @@ os.makedirs(RENDER_DIR, exist_ok=True)
 # ShapeNet class IDs
 CLASS_IDS = {
     # "02691156": "airplane",
-    # "02958343": "car",
-    "04379243": "table",
+    "02958343": "car",
+    # "04379243": "table",
     # "04530566": "vessel",
-    # "03001627": "chair",
+    "03001627": "chair",
     # "03636649": "lamp", # Excluded due to small size and low comparative complexity
     # "03467517": "guitar",
     # "03790512": "motorbike"
@@ -324,11 +324,11 @@ def process_scene(
     os.makedirs(output_dir, exist_ok=True)
 
     npz_path = os.path.join(output_dir, f"{scene_name}.npz")
-    exr_path = os.path.join(output_dir, f"{scene_name}_render.exr")
+    # exr_path = os.path.join(output_dir, f"{scene_name}_render.exr")
     png_path = os.path.join(output_dir, f"{scene_name}_render.png")
 
     # Save the visual EXR for debugging and tone-mapped PNG for easy viewing 
-    mi.Bitmap(image_tensor).write(exr_path)
+    # mi.Bitmap(image_tensor).write(exr_path) # don't need to save exr directly since it gets saved in npz already
     save_image(image_tensor, png_path, tone_mapping="reinhard", exposure=1)
 
     # Save the pipeline data
@@ -357,34 +357,29 @@ def render_single_case(args):
         
         # print(f"Generating Case {case_idx}: {class_id}, rot={rotation:.1f}...")
 
+        target = np.array([0.0, 0.0, 0.0])
+        r = BOX_SIZE * 2.0
+
         if randomize_camera:
-            # Randomize camera position
-            target = np.array([0.0, -2.0, 0.0]) # default position
-            # Base spherical coords for pos [0, 1, 3] relative to target: radius=3, theta=0, phi=pi/2
-            r = BOX_SIZE * 1.25
-            # Vary theta (horizontal angle) between -30 and 30 degrees
-            theta = np.random.uniform(-np.radians(30), np.radians(30))
-            # Vary phi (vertical angle) between 60 and 120 degrees (from vertical pole)
-            # where 90 is horizontal (y = 1.0)
-            phi = np.random.uniform(np.radians(70), np.radians(110))
-            
-            cam_x = target[0] + r * np.sin(phi) * np.sin(theta)
-            cam_y = target[1] + r * np.cos(phi)
-            cam_z = target[2] + r * np.sin(phi) * np.cos(theta)
-            
-            cam_pos_var = np.array([cam_x, cam_y, cam_z])
-            
+            # Randomize camera position with fixed distance and moderate angles around [0.0, -r, 0.0]
+            theta = np.random.uniform(-np.radians(20), np.radians(20)) # horizontal angle
+            phi = np.random.uniform(-np.radians(15), np.radians(15))   # vertical angle
+
+            cam_x = target[0] + r * np.sin(theta) * np.cos(phi)
+            cam_y = target[1] - r * np.cos(theta) * np.cos(phi)
+            cam_z = target[2] + r * np.sin(phi)
+
             cam_config = {
                 "position": [cam_x, cam_y, cam_z],
-                "look_at": [0.0, 0.0, 0.0],
+                "look_at": target.tolist(),
                 "up": [0.0, 0.0, 1.0],
                 "fov": 37.5
             }
-            
+
         else:
             cam_config = {
-                "position": [0.0, -2.0, 0.0],
-                "look_at": [0.0, 0.0, 0.0],
+                "position": [0.0, -r, 0.0],
+                "look_at": target.tolist(),
                 "up": [0.0, 0.0, 1.0],
                 "fov": 37.5
             }
@@ -434,7 +429,8 @@ def render_single_case(args):
         }}
 
         scene_config = construct_full_config(
-            template_path="json_templates/cbox_template.json", # NOTE: this is hardcoded...
+            # template_path="json_templates/cbox_template.json", # NOTE: this is hardcoded...
+            template_path="json_templates/light_only_template.json", # NOTE: this is hardcoded...
             additional_objs_config=obj_config,
             cam_config=cam_config
         )
