@@ -1,3 +1,8 @@
+"""
+Usage:
+python training/count_params.py path/to/checkpoint.pt
+"""
+
 import torch
 import argparse
 import os

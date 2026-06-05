@@ -1,5 +1,6 @@
 """
 Transformer-based predictor for radiance prediction.
+Implementation with RoPE-style positional encoding and cross-attention between ray features and scene features.
 """
 
 import torch

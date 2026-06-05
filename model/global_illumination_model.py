@@ -25,6 +25,7 @@ class GlobalIlluminationModel(nn.Module):
     """
     def __init__(self, config: Dict):
         super().__init__()
+        self.use_dpt_decoder = config['predictor']['use_dpt_decoder']
 
         # Scene Representation Stage
         # 1. Object Encoder
@@ -87,6 +88,12 @@ class GlobalIlluminationModel(nn.Module):
             dropout=config['predictor']['dropout'],
             activation=config['predictor']['activation'],
             norm_type=config['predictor']['norm_type'],
+            pe_type=config['predictor']['pe_type'],
+            pe_num_freqs=config['predictor']['pe_num_freqs'],
+            use_dpt_decoder=config['predictor']['use_dpt_decoder'],
+            dpt_features=config['predictor'].get('dpt_features', None),
+            dpt_out_channels=config['predictor'].get('dpt_out_channels', None),
+            include_alpha=config['predictor'].get('include_alpha', False)            
         )
 
 
@@ -179,7 +186,8 @@ class GlobalIlluminationModel(nn.Module):
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,
             obj_positions=obj_positions,
-            # ray_positions=ray_token_pos
+            # ray_positions=ray_token_pos,
+            use_dpt_decoder=self.use_dpt_decoder
         )
 
         return radiance

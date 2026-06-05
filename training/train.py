@@ -4,8 +4,9 @@ import shutil
 import yaml
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import torchvision
@@ -108,17 +109,17 @@ def calculate_psnr(pred, target):
         psnr = -10.0 * torch.log10(mse)
         return psnr.item()
 
-def train(config_path):
+def train(config_path, resume_path=None):
     print(f"CUDA Available: {torch.cuda.is_available()}")
 
-    # 1. Load Config
+    ### Load Config ###
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
-    # 2. Setup Data
+    ### Setup Data ###
     train_dataset = SceneDataset(
         data_dir=config['training']['data_dir'],
         image_res=config['training']['image_res'],
@@ -143,11 +144,11 @@ def train(config_path):
         num_workers=2
     )
 
-    # 3. Setup Model
+    ### Setup Model ###
     model = GlobalIlluminationModel(config).to(device)
 
-    # 4. Setup Optimizer & Loss
-    optimizer = optim.AdamW(model.parameters(), lr=config['training']['learning_rate'])
+    ### Setup Optimizer & Loss ###
+    optimizer = AdamW(model.parameters(), lr=config['training']['learning_rate'])
     lpips_weight = config['training'].get('lpips_loss_weighting', 0)
     primary_loss = config['training'].get('primary_loss', 'mse')
     if primary_loss == 'mse':
@@ -172,27 +173,65 @@ def train(config_path):
         def criterion(pred, target):
             return core_loss_fn(log_transform(pred), log_transform(target))
     
-    # 5. Logging
+    ### Logging ##
     log_dir_root = config['training']['log_dir']
-    # Create a unique timestamped directory for this run
-    run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
-    log_dir = os.path.join(log_dir_root, run_id)
-    print("Logging to:", log_dir)
-    
-    checkpoint_dir = os.path.join(log_dir, 'checkpoints')
-    os.makedirs(log_dir, exist_ok=True)
-    os.makedirs(checkpoint_dir, exist_ok=True)
-    shutil.copy(config_path, os.path.join(log_dir, 'config.yaml'))
+
+    if resume_path and os.path.exists(resume_path):
+        # Checkpoint path is expected to be: .../run_id/checkpoints/ckpt.pt
+        # Traverse up two levels to get the original run_id directory
+        checkpoint_dir = os.path.dirname(resume_path)
+        log_dir = os.path.dirname(checkpoint_dir)
+        print(f"Resuming run. Appending logs to existing directory: {log_dir}")
+    else:
+        # Create a unique timestamped directory for this NEW run
+        run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+        log_dir = os.path.join(log_dir_root, run_id)
+        checkpoint_dir = os.path.join(log_dir, 'checkpoints')
+        os.makedirs(log_dir, exist_ok=True)
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        print("Logging to new directory:", log_dir)
+
+        # Save copy of original config
+        shutil.copy(config_path, os.path.join(log_dir, 'config.yaml'))
 
     writer = SummaryWriter(log_dir=log_dir)
 
-    # 6. Training Loop
-    start_epoch = 0
+    ### Training Loop ###
+    # LR scheduling: Warmup + Cosine decay
+    # Warm up linearly over the first warmup_epochs.
+    # Automatically kick in the Cosine decay for the remaining epochs
     num_epochs = config['training']['num_epochs']
-    
+    warmup_epochs = config['training'].get('warmup_epochs', num_epochs//20) # default to 5% of total epochs
+    log_viz_interval = config['training'].get('save_interval', 100)
+    checkpoint_interval = config['training'].get('checkpoint_interval', 500)
+
+    warmup_scheduler = LinearLR(optimizer, start_factor=0.01, total_iters=warmup_epochs)
+    cosine_scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs)  # decay
+    scheduler = SequentialLR(optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[warmup_epochs])
+
     # Setup mixed precision training
-    scaler = torch.amp.GradScaler('cuda')
+    # scaler = torch.amp.GradScaler('cuda')
     
+    start_epoch = 0
+    if resume_path and os.path.exists(resume_path):
+        print(f"Resuming training from checkpoint: {resume_path}")
+        checkpoint = torch.load(resume_path, map_location=device)
+        
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        
+        # Start at the epoch *after* the saved one
+        start_epoch = checkpoint['epoch'] + 1 
+        
+        # Restore scheduler state
+        if 'scheduler_state_dict' in checkpoint:
+            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        else:
+            # Fallback for your older checkpoints that didn't save the scheduler
+            print("No scheduler state found in checkpoint. Fast-forwarding...")
+            for _ in range(start_epoch):
+                scheduler.step()
+                    
     # Seeded batch retrieve for consistency
     def get_seeded_batch(dataset, batch_size, seed=42):
         g = torch.Generator()
@@ -210,60 +249,65 @@ def train(config_path):
     fixed_val_batch = get_seeded_batch(val_dataset, min(16, config['training']['batch_size']), seed=123)
     fixed_train_batch = get_seeded_batch(train_dataset, min(16, config['training']['batch_size']), seed=456)
 
-    for epoch in range(start_epoch, num_epochs):
+    for epoch in tqdm(range(start_epoch, num_epochs), desc="Epochs"):
         model.train()
         train_loss = 0.0
         train_psnr = 0.0
         
-        with tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}") as pbar:
-            for batch in pbar:
-                # Move to device
-                rays_o = batch['rays_o'].to(device)
-                rays_d = batch['rays_d'].to(device)
-                positions = batch['obj_positions'].to(device)
-                normals = batch['obj_normals'].to(device)
-                properties = batch['obj_properties'].to(device)
-                w2c = batch['w2c'].to(device)
-                target = batch['target_image'].to(device)
-                
-                optimizer.zero_grad()
-                
-                # Forward pass with mixed precision
-                with torch.amp.autocast('cuda', dtype=torch.bfloat16):
-                    pred_radiance = model(
-                        rays_o=rays_o,
-                        rays_d=rays_d,
-                        obj_positions=positions,
-                        obj_properties=properties,
-                        obj_normals=normals,
-                        w2c=w2c
-                    )
-                
-                # loss = criterion(pred_radiance, target)
-                # Force float32 precision for mathematical stability?
-                loss = criterion(pred_radiance.float(), target.float())
-                
-                # Backward pass with scaler, which is needed for fp16 but not bf16
-                loss.backward()
-                optimizer.step()
-                # scaler.scale(loss).backward()
-                # scaler.step(optimizer)
-                # scaler.update()
-                
-                loss_item = loss.item()
-                psnr_item = calculate_psnr(pred_radiance, target)
-                
-                train_loss += loss_item
-                train_psnr += psnr_item
-                pbar.set_postfix({'loss': loss_item, 'psnr': psnr_item})
+        # with tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}") as pbar:
+        #     for batch in pbar:
+
+        for batch in train_loader:
+            # Move to device
+            rays_o = batch['rays_o'].to(device)
+            rays_d = batch['rays_d'].to(device)
+            positions = batch['obj_positions'].to(device)
+            normals = batch['obj_normals'].to(device)
+            properties = batch['obj_properties'].to(device)
+            w2c = batch['w2c'].to(device)
+            target = batch['target_image'].to(device)
+            
+            optimizer.zero_grad()
+            
+            # Forward pass with mixed precision
+            with torch.amp.autocast('cuda', dtype=torch.bfloat16):
+                pred_radiance = model(
+                    rays_o=rays_o,
+                    rays_d=rays_d,
+                    obj_positions=positions,
+                    obj_properties=properties,
+                    obj_normals=normals,
+                    w2c=w2c
+                )
+            
+            # loss = criterion(pred_radiance, target)
+            # Force float32 precision for mathematical stability?
+            loss = criterion(pred_radiance.float(), target.float())
+            
+            # Backward pass with scaler, which is needed for fp16 but not bf16
+            loss.backward()
+            optimizer.step()
+            # scaler.scale(loss).backward()
+            # scaler.step(optimizer)
+            # scaler.update()
+            
+            loss_item = loss.item()
+            psnr_item = calculate_psnr(pred_radiance, target)
+            
+            train_loss += loss_item
+            train_psnr += psnr_item
+                # pbar.set_postfix({'loss': loss_item, 'psnr': psnr_item})
 
         avg_train_loss = train_loss / len(train_loader)
         avg_train_psnr = train_psnr / len(train_loader)
+        writer.add_scalar('Train/LR', optimizer.param_groups[0]['lr'], epoch)
         writer.add_scalar('Loss/train', avg_train_loss, epoch)
         writer.add_scalar('PSNR/train', avg_train_psnr, epoch)
-        
+
+        scheduler.step()
+
         # Validation & Logging
-        if (epoch + 1) % config['training']['save_interval'] == 0:
+        if (epoch + 1) % log_viz_interval == 0:
             val_loss = 0.0
             val_psnr = 0.0
             model.eval()
@@ -274,7 +318,6 @@ def train(config_path):
                     positions = batch['obj_positions'].to(device)
                     normals = batch['obj_normals'].to(device)
                     properties = batch['obj_properties'].to(device)
-                    # class_ids = batch['obj_class_ids'].to(device)
                     w2c = batch['w2c'].to(device)
                     target = batch['target_image'].to(device)
 
@@ -288,17 +331,6 @@ def train(config_path):
                 writer.add_scalar('Loss/val', avg_val_loss, epoch)
                 writer.add_scalar('PSNR/val', avg_val_psnr, epoch)
                 print(f"Epoch {epoch+1}: Val Loss {avg_val_loss:.6f}, Val PSNR: {avg_val_psnr:.2f} dB")
-
-                # Save model at end of training
-                if (epoch + 1 ) == config['training']['num_epochs']:
-                    print("saving model...")
-                    ckpt_path = os.path.join(checkpoint_dir, f"checkpoint_epoch_{epoch+1}.pt")
-                    torch.save({
-                        'epoch': epoch,
-                        'model_state_dict': model.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                        'loss': avg_val_loss,
-                    }, ckpt_path)
 
                 # Visual Inspection (Fixed Val Batch)
                 pred_fixed = model(
@@ -354,12 +386,25 @@ def train(config_path):
                     num_negative = (pred_fixed < 0).sum().item()
                     print(f"Negative predictions: {num_negative} / {pred_fixed.numel()}")
 
+            # Save model every 500 epochs and at end of training
+            if (epoch + 1 ) == num_epochs or (epoch + 1) % checkpoint_interval == 0:
+                print("saving model...")
+                ckpt_path = os.path.join(checkpoint_dir, f"checkpoint_epoch_{epoch+1}.pt")
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict(),
+                    'loss': avg_val_loss,
+                }, ckpt_path)
+
     writer.close()
     print("Training Complete.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='training/train_config.yaml', help='Path to config file')
+    parser.add_argument('--resume', type=str, default=None, help='Path to checkpoint to resume from')
     args = parser.parse_args()
     
-    train(args.config)
+    train(args.config, args.resume)
