@@ -15,7 +15,7 @@ class SceneDataset(Dataset):
         data_dir: str, 
         image_res: int = 128,
         num_points_per_object: int = 2048,
-        split: str = 'train'
+        split: str = 'train',
     ):
         self.data_dir = data_dir
         self.image_res = image_res
@@ -24,6 +24,18 @@ class SceneDataset(Dataset):
         # Find all completed cases (must have .npz)
         self.files = glob.glob(os.path.join(data_dir, "*.npz"))
         self.files.sort()
+
+        # Filter out corrupted image (NaN or Inf values in target HDR image)
+        corrupted_paths = []
+        for file_path in self.files:
+            npz_data = np.load(file_path)
+            img_hdr = npz_data["hdr_target_image"]
+            if np.isnan(img_hdr).any() or np.isinf(img_hdr).any():
+                corrupted_paths.append(file_path)
+
+        self.files = [item for item in self.files if item not in corrupted_paths]
+        print(f"Removed {len(corrupted_paths)} corrupted images")
+
         # Shuffle with a fixed seed
         rng = np.random.RandomState(42)
         rng.shuffle(self.files)

@@ -32,16 +32,15 @@ sys.path.append(SCRIPT_DIR)
 # Constants
 SHAPENET_ROOT = "/home/sazhang/ShapeNetCorev2"
 OUTPUT_ROOT = os.path.join(SCRIPT_DIR, "output_auto")
-RENDER_DIR = os.path.join(OUTPUT_ROOT, "datasets/attempt5_fixed_view_no_box")
-MESH_SOURCE_DIR = os.path.join(OUTPUT_ROOT, "raw_meshes", "simple_objects")
+RENDER_DIR = os.path.join(OUTPUT_ROOT, "datasets/attempt6_table_chair_540")
 os.makedirs(RENDER_DIR, exist_ok=True)
 
 
 # ShapeNet class IDs
 CLASS_IDS = {
     # "02691156": "airplane",
-    "02958343": "car",
-    # "04379243": "table",
+    # "02958343": "car",
+    "04379243": "table",
     # "04530566": "vessel",
     "03001627": "chair",
     # "03636649": "lamp", # Excluded due to small size and low comparative complexity
@@ -52,22 +51,22 @@ PREDEFINED_COLORS = [
     np.array([0.2, 0.4, 0.6]), # blue
     # # np.array([0.7, 0.1, 0.1]), # red
     # np.array([0.9, 0.75, 0.1]), # gold
-    # # np.array([0.9, 0.8, 0.2]),  # yellow
+    np.array([0.9, 0.8, 0.2]),  # yellow
     np.array([0.6, 0.3, 0.8]),  # purple
-    # np.array([0.8, 0.8, 0.8]),  # gray
-    np.array([0.9, 0.9, 0.9]),  # white
-    np.array([0.9, 0.5, 0.1]),  # orange
+    np.array([0.8, 0.8, 0.8]),  # gray
+    # np.array([0.9, 0.9, 0.9]),  # white
+    np.array([0.9, 0.5, 0.1]),  # orange 
 ]
 
 # Rotations around up-axis (in degrees)
 NUM_ROTATIONS = 3
 
 # Number of colors per shape
-NUM_COLORS = 1
+NUM_COLORS = 3#5
 
 # Number of shapes per class
-SHAPES_PER_CLASS = 15 #120
-MAX_TRIANGLES = 100000  # Skip and resample meshes with more triangles
+SHAPES_PER_CLASS = 5#20 #120
+MAX_TRIANGLES = 10000#0  # Skip and resample meshes with more triangles
 
 # Scene Settings
 BOX_SIZE = 1.0
@@ -361,9 +360,19 @@ def render_single_case(args):
         r = BOX_SIZE * 2.0
 
         if randomize_camera:
-            # Randomize camera position with fixed distance and moderate angles around [0.0, -r, 0.0]
-            theta = np.random.uniform(-np.radians(20), np.radians(20)) # horizontal angle
-            phi = np.random.uniform(-np.radians(15), np.radians(15))   # vertical angle
+            # # Randomize camera position with fixed distance and moderate angles around [0.0, -r, 0.0]
+            # theta = np.random.uniform(-np.radians(20), np.radians(20)) # horizontal angle
+            # phi = np.random.uniform(-np.radians(15), np.radians(15))   # vertical angle
+
+            # Random viewpoint from 9 evenly spaced positions around [0.0, -r, 0.0]
+            thetas_deg = [-20, -10, 0, 10, 20]
+            phis_deg = [-15, 0, 15]
+            angle_pairs = [(t, p) for t in thetas_deg for p in phis_deg]
+            angle_pairs.remove((0, 0)) # remove head-on view from random selection since we add it in separately if include_head_on_view is True
+            chosen_pair = angle_pairs[np.random.randint(len(angle_pairs))]
+            
+            theta = np.radians(chosen_pair[0])
+            phi = np.radians(chosen_pair[1])
 
             cam_x = target[0] + r * np.sin(theta) * np.cos(phi)
             cam_y = target[1] - r * np.cos(theta) * np.cos(phi)
@@ -397,7 +406,7 @@ def render_single_case(args):
         dz = 0 #np.random.uniform(-BOX_SIZE * 0.25, BOX_SIZE * 0.25)
 
         rx = 0 #np.random.uniform(-90, 90) # degrees
-        ry = 0 #np.random.uniform(-90, 90) # degrees
+        ry = rotation # 0 #np.random.uniform(-90, 90) # degrees
         rz = 0 #np.random.uniform(-90, 90) # degrees
 
         # Position: Center horizontally, Bottom on floor
@@ -429,8 +438,8 @@ def render_single_case(args):
         }}
 
         scene_config = construct_full_config(
-            # template_path="json_templates/cbox_template.json", # NOTE: this is hardcoded...
-            template_path="json_templates/light_only_template.json", # NOTE: this is hardcoded...
+            template_path="json_templates/cbox_template.json", # NOTE: this is hardcoded...
+            # template_path="json_templates/light_only_template.json", # NOTE: this is hardcoded...
             additional_objs_config=obj_config,
             cam_config=cam_config
         )
@@ -447,19 +456,6 @@ def render_single_case(args):
 
 
 if __name__ == "__main__":
-    # # Example usage:
-    # process_scene("/home/sazhang/Neural-Radiosity-Renderer/examples/cbox-teapot.json", "data_generation/output_auto/datasets", spp=512)
-
-    # # Print out shapes of saved arrays
-    # npz_path = "data_generation/output_auto/datasets/cornell_box_teapot.npz"
-    # if os.path.exists(npz_path):
-    #     data = np.load(npz_path)
-    #     print("NPZ File Contents:")
-    #     for k in data.files:
-    #         print(f" - {k}: {data[k].shape}")
-
-    # pass
-
     import argparse
     parser = argparse.ArgumentParser()
     # Allow user to specify which shapes to generate
@@ -526,9 +522,11 @@ if __name__ == "__main__":
     # Step 3: Generate colors and rotations
     print("\n[3/4] Generating render configurations...")
 
-    # Generate random rotations
+    ## Generate random rotations
+    # Generate uniform rotations
     random.seed(123)
-    rotations = [random.uniform(0, 360) for _ in range(num_rotations)]
+    # rotations = [random.uniform(0, 360) for _ in range(num_rotations)]
+    rotations = list(range(0, 360, 360 // num_rotations)) if num_rotations > 0 else [0]
     print(f"      Rotations: {[f'{r:.1f}°' for r in rotations]}")
 
     # Assign NUM_COLORS colors per shape
