@@ -1,0 +1,44 @@
+<scene version="3.0.0">
+    <default name="spp" value="1024" />
+    <default name="res" value="512" />
+
+    <integrator type="path" />
+
+    <sensor type="perspective" id="sensor">
+        <transform name="to_world">
+            <lookat target="0.0, 0.0, 1.25" origin="0.0, -12.0, 5.0" up="0.0, 0.0, 1.0" />
+        </transform>
+        <sampler type="independent">
+            <integer name="sample_count" value="$spp" />
+        </sampler>
+        <film type="hdrfilm">
+            <rfilter type="box" />
+            <integer name="width" value="$res" />
+            <integer name="height" value="$res" />
+        </film>
+    </sensor>
+
+    <shape type="obj" id="teapot">
+        
+        <string name="filename" value="/home/sazhang/Neural-Radiosity-Renderer/data_generation/output/raw_meshes/simple_objects/shapenet_lamp.obj" />
+        <bsdf type="twosided">
+            <bsdf type="diffuse">
+                <rgb name="reflectance" value="0.2 0.4 0.6" />
+            </bsdf>
+        </bsdf>
+        <transform name="to_world">
+            <scale value="10" />
+        </transform>
+        <boolean name="face_normals" value="false" />
+    </shape>
+
+    <emitter type="point" id="light1">
+        <point name="position" x="0" y="-6.0" z="6.0" />
+        <rgb name="intensity" value="250.0" />
+    </emitter>
+
+    
+    <emitter type="constant">
+        <rgb name="radiance" value="1.0" />
+    </emitter>
+</scene>

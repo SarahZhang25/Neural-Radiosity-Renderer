@@ -1,7 +1,17 @@
-drjit==0.4.4
-matplotlib==3.10.7
-mitsuba==3.5.0
-numpy==2.3.4
-plotly==6.4.0
-torch==2.8.0
+drjit==1.2.0
+einops==0.8.1
+imageio==2.37.2
+kagglehub==0.4.1
+matplotlib==3.10.8
+mitsuba==3.7.1
+numpy
+Pillow==12.1.0
+plotly==6.5.2
+pyrender==0.1.45
+pytest==4.6.9
+PyYAML==6.0.3
+scipy==1.17.0
+torch # ??? version ???
+torchvision # ??? version ???
 tqdm==4.67.1
+trimesh==4.11.1
