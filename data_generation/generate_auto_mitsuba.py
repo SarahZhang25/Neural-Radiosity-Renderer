@@ -460,8 +460,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     # Allow user to specify which shapes to generate
-    parser.add_argument('--shapes', nargs='+', default=list(CLASS_IDS.keys()), 
-                      help=f"Specific shapes to generate. Available: {list(CLASS_IDS.keys())}")
+    parser.add_argument('--classes', nargs='+', default=list(CLASS_IDS.keys()), 
+                      help=f"Specific shape classes to generate. Available: {list(CLASS_IDS.keys())}")
     
     # Control number of rotations
     parser.add_argument('--num_rotations', type=int, default=NUM_ROTATIONS, 
@@ -543,7 +543,7 @@ if __name__ == "__main__":
     print("\n[4/4] Generating renders...")
     total_cases = len(processed_shapes) * NUM_COLORS * num_rotations
     print(f"Settings:")
-    print(f"  Shapes: {args.shapes}")
+    print(f"  Classes: {args.classes}")
     print(f"  Rotations: {len(rotations)} steps")
     print(f"  Samples per pixel: {SPP}")
     # print(f"  Light size ratio: {LIGHT_SIZE_RATIO}")
@@ -552,7 +552,7 @@ if __name__ == "__main__":
     # print(f"  Scale range: {args.scale_min} - {args.scale_max}")
     # print(f"  Position variation: {args.pos_variation}")
     print(f"  Random seed: {args.random_seed}")
-    # print(f"  Total images to generate: {len(args.shapes) * len(rotations) * len(PREDEFINED_COLORS)}")
+    # print(f"  Total images to generate: {len(args.classes) * len(rotations) * len(PREDEFINED_COLORS)}") # TODO: needs to be updated with new settings
 
     print(f"  Total cases: {total_cases}")
     

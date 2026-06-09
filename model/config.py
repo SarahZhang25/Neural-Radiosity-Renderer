@@ -1,1 +1,1 @@
-#TODO:??
+#TODO: write a config class to store model configurations

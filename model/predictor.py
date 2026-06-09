@@ -178,7 +178,7 @@ class RadiancePredictor(nn.Module):
             with torch.autocast(device_type="cuda", dtype=torch.float32 if tf32_mode else torch.bfloat16):
                 out_features = []
                 x = query_view_features       # (B, N_patches, D)
-                # manually iterate through layers to 
+                # manually iterate through layers to extract intermediate features for DPT decoding
                 for i, layer in enumerate(self.transformer.layers): 
                     x = layer(
                         tgt=x,

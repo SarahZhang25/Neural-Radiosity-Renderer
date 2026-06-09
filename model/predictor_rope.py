@@ -1,6 +1,6 @@
 """
 Transformer-based predictor for radiance prediction.
-Implementation with RoPE-style positional encoding.
+Implementation with RoPE-style positional encoding. [WIP - not fully tested yet]
 """
 
 import torch

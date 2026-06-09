@@ -1,12 +1,11 @@
 """
 PointNet-based encoder for extracting features from point clouds.
-Compare with point-cloud-dynamics-model/
+(Compare with point-cloud-dynamics-model)
 """
 
 import torch
 import torch.nn as nn
-from typing import Optional, Tuple
-from enum import IntEnum
+from typing import Optional
 
 class MaterialPropertyEncoder(nn.Module):
     def __init__(

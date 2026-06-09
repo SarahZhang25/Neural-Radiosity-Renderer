@@ -1,6 +1,6 @@
 """
 Global Illumination Model
-Predict radiance in scene of emitter and modifier objects
+Predict radiance given scene composition and query camera view. 
 """
 
 import torch
@@ -115,7 +115,7 @@ class GlobalIlluminationModel(nn.Module):
             obj_positions: Object point clouds (B, N_obj, N_vertices, 3)
             obj_properties: Object properties (B, N_obj, 10)
             obj_normals: Object normals (B, N_obj, N_vertices, 3)
-            w2c: TODO:
+            w2c: Optional world-to-camera transformation (B, 4, 4) for RoPE in camera space
         Returns:
             radiance: Predicted RGB image (B, 3, H, W)
         """
@@ -124,7 +124,7 @@ class GlobalIlluminationModel(nn.Module):
         # --- Stage 1: Scene Representation ---
 
         # 1. Encode Objects
-        # Flatten batch and objects for encoder: (B*N_obj, N_v, 3)
+        # Flatten batch and objects for encoder
         flat_positions = obj_positions.view(B * N_obj, N_v, 3)
         
         flat_normals = None
@@ -136,7 +136,6 @@ class GlobalIlluminationModel(nn.Module):
         obj_features_flat = self.pointnet_encoder(
             surface_pos=flat_positions,
             properties=flat_props,
-            # object_class_ids=flat_ids,
             normals=flat_normals
         )
         
@@ -174,7 +173,6 @@ class GlobalIlluminationModel(nn.Module):
              rays_o_input = rays_o
              
         ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d)
-        # ray_tokens, ray_token_pos = self.ray_encoder(rays_o, rays_d)
 
         # 6. Predict Radiance
         # Ray tokens query the scene (object + state features)
@@ -186,7 +184,7 @@ class GlobalIlluminationModel(nn.Module):
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,
             obj_positions=obj_positions,
-            # ray_positions=ray_token_pos,
+            # ray_positions=ray_token_pos,  # would use this if using predictor with RoPE supported 
             use_dpt_decoder=self.use_dpt_decoder
         )
 

@@ -60,7 +60,7 @@ def convert_hdr_for_visualization(x, method="reinhard", exposure=1.0):
     x = to_uint8(x)
     return x
 
-# RenderFormer LPIPS Tone-mapping: "clamp (log I / log 2, 0, 1)"
+# RenderFormer LPIPS Tone-mapping as described in RenderFormer paper: "clamp (log I / log 2, 0, 1)"
 # Note: log(I) / log(2) is mathematically identical to log2(I).
 # def tone_map_lpips(x):
 #     """
@@ -102,6 +102,7 @@ def calculate_psnr(pred, target):
         return psnr.item()
 
 def train(config_path, resume_path=None):
+    """Main training loop for the Global Illumination Model."""
     print(f"CUDA Available: {torch.cuda.is_available()}")
 
     ### Load Config ###
@@ -165,7 +166,7 @@ def train(config_path, resume_path=None):
         def criterion(pred, target):
             return core_loss_fn(log_transform(pred), log_transform(target))
     
-    ### Logging ##
+    ### Logging ###
     log_dir_root = config['training']['log_dir']
 
     if resume_path and os.path.exists(resume_path):
@@ -248,7 +249,6 @@ def train(config_path, resume_path=None):
         
         # with tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}") as pbar:
         #     for batch in pbar:
-
         for batch in train_loader:
             # Move to device
             rays_o = batch['rays_o'].to(device)
@@ -272,7 +272,6 @@ def train(config_path, resume_path=None):
                     w2c=w2c
                 )
             
-            # loss = criterion(pred_radiance, target)
             # Force float32 precision for mathematical stability?
             loss = criterion(pred_radiance.float(), target.float())
             
@@ -354,8 +353,8 @@ def train(config_path, resume_path=None):
                 )
 
                 # Stack them: [Target, Prediction]
-                # Note: We visualize the first 4 samples if batch is large to save space, or all if small
-                vis_train_limit = 16 # fixed_train_batch['target_image'].shape[0] # 4 
+                # Note: We visualize the first vis_train_limit samples if batch is large to save space, or all if small
+                vis_train_limit = 16 # fixed_train_batch['target_image'].shape[0]
                 vis_train_target = convert_hdr_for_visualization(fixed_train_batch['target_image'][:vis_train_limit])
                 vis_train_pred = convert_hdr_for_visualization(torch.clamp(pred_train_fixed[:vis_train_limit], min=0.0))
                 vis_train_img = torch.cat([vis_train_target, vis_train_pred], dim=3)
@@ -364,7 +363,6 @@ def train(config_path, resume_path=None):
                 writer.add_image('Visual/Training', grid_train, epoch)
 
                 if (epoch + 1) == 500:
-                    # pred = model(test_input)
                     target_hdr = fixed_val_batch['target_image']
                     pred_log = log_transform(pred_fixed + 1e-6)
                     target_log = log_transform(target_hdr + 1e-6)
