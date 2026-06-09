@@ -15,7 +15,7 @@ except ImportError:
     PYRENDER_AVAILABLE = False
 
 from patches import Patch
-from scene import Scene
+from data_generation_old.scene import Scene
 
 
 @dataclass

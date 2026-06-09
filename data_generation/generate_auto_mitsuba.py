@@ -1,3 +1,6 @@
+"""
+Up to date mitsuba data generation.
+"""
 import os
 import sys
 import numpy as np
@@ -7,9 +10,7 @@ import json
 import multiprocessing
 import random 
 import time
-from pathlib import Path
 from typing import List, Tuple, Dict
-# import shutil
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import mitsuba as mi

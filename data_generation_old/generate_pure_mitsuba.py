@@ -1,7 +1,7 @@
 
 """
 Generate dataset using pure Mitsuba 3 rendering.
-Ignores radiosity patch generation completely.
+**RETIRED, use generate_auto_mitsuba.py instead**
 """
 
 import os
@@ -13,12 +13,9 @@ import json
 import multiprocessing
 import random 
 import time
-from pathlib import Path
-from typing import List, Tuple, Dict
-import shutil
+from typing import List, Tuple
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import mitsuba as mi
 
 multiprocessing.set_start_method('spawn', force=True)
 
@@ -26,8 +23,8 @@ multiprocessing.set_start_method('spawn', force=True)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SCRIPT_DIR)
 
-from pure_mitsuba_utils import render_pure_mitsuba_scene, Camera
-from utils import save_image
+from data_generation_old.pure_mitsuba_utils import render_pure_mitsuba_scene, Camera
+from data_generation.utils import save_image
 
 # Constants
 SHAPENET_ROOT = "/home/sazhang/ShapeNetCorev2"
@@ -346,109 +343,6 @@ def render_single_case(args):
         import traceback
         return (case_idx, None, str(e) + "\n" + traceback.format_exc())
 
-
-#TODO: remove this????
-# def process_case(case_idx, shape_name, color, rotation, light_intensity: float, light_size_ratio: float, exposure: float, scale_min: float, scale_max: float, pos_variation: float, random_seed: int):
-#     # Set random seed for reproducibility
-#     np.random.seed(random_seed + case_idx)
-    
-#     print(f"Generating Case {case_idx}: {shape_name}, rot={rotation:.1f}...")
-    
-#     # 1. Load Object Mesh
-#     mesh_path = os.path.join(MESH_SOURCE_DIR, f"{shape_name}.obj")
-#     if not os.path.exists(mesh_path):
-#         print(f"Skipping {shape_name}: {mesh_path} not found")
-#         return
-
-#     mesh = trimesh.load(mesh_path, force='mesh')
-        
-#     # 2. Transform Object (Scale, Rotate, Position)
-#     # Random scale between scale_min and scale_max of box size
-#     scale_ratio = np.random.uniform(scale_min, scale_max)
-#     target_size = BOX_SIZE * scale_ratio
-#     bounds = mesh.bounds
-#     current_size = np.max(bounds[1] - bounds[0])
-#     if current_size > 0:
-#         scale_factor = target_size / current_size
-#         mesh.apply_scale(scale_factor)
-    
-#     # Rotate Y
-#     if rotation != 0:
-#         rot_mat = trimesh.transformations.rotation_matrix(np.radians(rotation), [0, 1, 0])
-#         mesh.apply_transform(rot_mat)
-        
-#     # Position: Center horizontally, Bottom on floor
-#     bounds = mesh.bounds
-#     translation = np.zeros(3)
-#     translation[1] = -bounds[0][1] # Move bottom to 0
-    
-#     # Center XZ with random variation:
-#     translation[0] = - (bounds[0][0] + bounds[1][0]) / 2.0 + np.random.uniform(-pos_variation, pos_variation) * BOX_SIZE
-#     translation[2] = - (bounds[0][2] + bounds[1][2]) / 2.0 + np.random.uniform(-pos_variation, pos_variation) * BOX_SIZE
-    
-#     # Optional: Add small Y variation (keep object above floor)
-#     translation[1] += np.random.uniform(0, pos_variation * 0.5) * BOX_SIZE
-    
-#     mesh.apply_translation(translation)
-    
-#     # 3. Create Scene Meshes
-#     box_meshes = create_cornell_box_meshes(BOX_SIZE, light_size_ratio=light_size_ratio)
-    
-#     # 4. Render
-#     if randomize_camera:
-#         target = np.array([0.0, BOX_SIZE * 0.5, 0.0])
-#         r = BOX_SIZE * 1.5
-#         theta = np.random.uniform(-np.radians(30), np.radians(30))
-#         phi = np.random.uniform(np.radians(70), np.radians(110))
-#         cam_x = target[0] + r * np.sin(phi) * np.sin(theta)
-#         cam_y = target[1] + r * np.cos(phi)
-#         cam_z = target[2] + r * np.sin(phi) * np.cos(theta)
-#         case_camera = Camera(
-#             position=np.array([cam_x, cam_y, cam_z]),
-#             look_at=target,
-#             fov=50.0,
-#             width=256,
-#             height=256
-#         )
-#     else:
-#         case_camera = CAMERA
-
-#     image = render_pure_mitsuba_scene(
-#         box_meshes, mesh, color, case_camera, spp=SPP, light_intensity=light_intensity
-#     )
-#     hdr_image_np = np.array(image, dtype=np.float32)
-    
-#     # 5. Save Data for Model
-#     fn_prefix = f"case_{case_idx:03d}_{shape_name}_r{int(rotation)}_data"
-#     npz_path = os.path.join(RENDER_DIR, f"{fn_prefix}.npz")
-#     exr_path = os.path.join(RENDER_DIR, f"{fn_prefix[:-5]}_render.exr") # strip _data
-#     png_path = os.path.join(RENDER_DIR, f"{fn_prefix[:-5]}_render.png") # strip _data
-
-#     mi.Bitmap(image).write(exr_path)
-#     save_image(image, png_path, tone_mapping="reinhard", exposure=exposure)
-    
-#     # Point Clouds
-#     canonical_pc, canonical_face_idx = trimesh.sample.sample_surface(mesh, 2048)
-#     canonical_normals = mesh.face_normals[canonical_face_idx]
-    
-#     wall_pc, wall_normals = get_walls_point_cloud(box_meshes, 2048)
-    
-#     np.savez(
-#         npz_path,
-#         hdr_target_image=hdr_image_np,
-#         canonical_vertices=canonical_pc,
-#         canonical_normals=canonical_normals,
-#         wall_vertices=wall_pc,
-#         wall_normals=wall_normals,
-#         color=color,
-#         rotation=rotation,
-#         scale_ratio=scale_ratio,
-#         # Dummy fields for compatibility
-#         object_radiosity=np.zeros_like(canonical_pc),
-#         wall_radiosity=np.zeros_like(wall_pc),
-#         camera_pos=case_camera.position,
-#         camera_lookat=case_camera.look_at
-#     )
 
 if __name__ == "__main__":
     import argparse

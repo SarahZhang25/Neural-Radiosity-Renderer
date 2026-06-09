@@ -14,7 +14,7 @@ try:
 except ImportError:
     EMBREE_AVAILABLE = False
 
-from patches import Patch
+from data_generation_old.patches import Patch
 
 
 def compute_form_factors_fast(patches: List[Patch], chunk_size: int = 1000) -> np.ndarray:

@@ -9,7 +9,7 @@ import mitsuba as mi
 # Use LLVM for speed without CUDA driver issues
 mi.set_variant('llvm_ad_rgb')
 
-from scene import Scene
+from data_generation_old.scene import Scene
 from dataclasses import dataclass
 
 
