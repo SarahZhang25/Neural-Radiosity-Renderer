@@ -27,20 +27,12 @@ def log_transform(x):
     x = torch.clamp(x, min=0.0)
     return torch.log1p(x)
 
-# def log_transform(x):
-#     x = torch.clamp(x, min=1e-4)  # Larger eps
-#     return torch.log(x)  # Natural log, not log1p
-
 def linear_to_srgb(x: torch.Tensor) -> torch.Tensor:
     a = 0.055
     x = torch.clamp(x, min=0.0, max=1.0)
     return torch.where(x <= 0.0031308, 12.92 * x, (1 + a) * torch.pow(x, 1/2.4) - a)
 
 def tone_map_reinhard(x, exposure=1.0):
-    """
-    Simple Reinhard tone mapping: x / (x + 1)
-    We can also apply an exposure scaling before tone mapping.
-    """
     x = x * exposure
     return x / (x + 1.0)
 
