@@ -26,14 +26,14 @@ def count_parameters(checkpoint_path):
         total_params = 0
         trainable_params = 0 # This estimate is less accurate if we don't have the model class instantiated, but usually all in state_dict are parameters.
         
-        print("-" * 50)
-        print(f"{'Layer':<60} {'Parameters':>15}")
-        print("-" * 50)
+        # print("-" * 50)
+        # print(f"{'Layer':<60} {'Parameters':>15}")
+        # print("-" * 50)
         
         for key, value in state_dict.items():
             params = value.numel()
             total_params += params
-            print(f"{key:<60} {params:>15,}")
+            # print(f"{key:<60} {params:>15,}")
             
         print("-" * 50)
         print(f"Total parameters: {total_params:,}")

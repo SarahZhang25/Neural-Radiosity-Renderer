@@ -1,11 +1,9 @@
 import os
 import torch
 import numpy as np
-import json
 from torch.utils.data import Dataset
 import glob
-from typing import Tuple, List, Optional
-from utils.ray_generator import RayGenerator
+from training.ray_generator import RayGenerator
 import mitsuba as mi
 mi.set_variant('scalar_rgb')
 
@@ -25,7 +23,7 @@ class SceneDataset(Dataset):
         self.files = glob.glob(os.path.join(data_dir, "*.npz"))
         self.files.sort()
 
-        # Filter out corrupted image (NaN or Inf values in target HDR image)
+        # Filter out any corrupted images (NaN or Inf values in target HDR image)
         corrupted_paths = []
         for file_path in self.files:
             npz_data = np.load(file_path)
@@ -37,15 +35,19 @@ class SceneDataset(Dataset):
         print(f"Removed {len(corrupted_paths)} corrupted images")
 
         # Shuffle with a fixed seed
-        rng = np.random.RandomState(42)
-        rng.shuffle(self.files)
-        
-        split_idx = int(len(self.files) * 0.9)
-        if split == 'train':
-            self.files = self.files[:split_idx]
+        if split == "all":
+            print(f"[{split}] Using all {len(self.files)} samples in {data_dir}")
         else:
-            self.files = self.files[split_idx:]
+            assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
+            rng = np.random.RandomState(42)
+            rng.shuffle(self.files)
             
+            split_idx = int(len(self.files) * 0.9)
+            if split == 'train':
+                self.files = self.files[:split_idx]
+            else:
+                self.files = self.files[split_idx:]
+                
         print(f"[{split}] Found {len(self.files)} samples in {data_dir}")
 
         self.ray_generator = RayGenerator()
@@ -116,7 +118,6 @@ class SceneDataset(Dataset):
         positions = torch.from_numpy(entity_vertices).float()
         normals = torch.from_numpy(entity_normals).float()
         properties = torch.from_numpy(entity_materials).float()
-        # class_ids = torch.arange(N_obj).long() 
         
         cam_pos = data['camera_pos']
         cam_lookat = data['camera_lookat']

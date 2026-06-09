@@ -678,7 +678,18 @@ class TransformerDecoder(nn.Module):
                 double_max_freq=rope_double_max_freq,
             )
 
-    def forward(self, x, ctx, src_key_padding_mask=None, obj_pos=None, ray_pos=None, out_layers=[], tf32_mode=False, patch_h=None, patch_w=None):
+    def forward(
+            self, 
+            x, 
+            ctx, 
+            src_key_padding_mask=None, 
+            obj_pos=None, 
+            ray_pos=None, 
+            out_layers=[], 
+            tf32_mode=False, 
+            patch_h=None, 
+            patch_w=None
+        ):
         if self.rope_dim is not None:
             assert obj_pos is not None and ray_pos is not None, "obj_pos and ray_pos must be provided if rope_dim is not None"
             rope_freqs = self.rope_emb.get_centroid_freqs(ray_pos)

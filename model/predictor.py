@@ -92,7 +92,7 @@ class RadiancePredictor(nn.Module):
             nn.init.xavier_uniform_(last_layer.weight, gain=0.01)
             nn.init.zeros_(last_layer.bias)
         else:
-            self.out_dpt = DPTHead( # TODO: bring in the actual module from RenderFormer
+            self.out_dpt = DPTHead(
                 in_channels=hidden_dim,
                 features=dpt_features,
                 out_channels=dpt_out_channels,

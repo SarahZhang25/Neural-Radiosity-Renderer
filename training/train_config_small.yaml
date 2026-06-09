@@ -1,29 +1,12 @@
 # Training Configuration
-# reduce model size significantly: 30.5M params
-# these are same params as very initial model runs
+# reduce model size significantly: 50M params
 
 # Training: 
 # --> Using new dataset: attempt6_table_chair_540
-#   -> try training at 256x256 resolution with patch size 8 now#   use new dpt head implementation on predictor, increase to 4 layers in predictor for dpt compatibility
+#   -> train for higher resolution, 256x256, with larger patch size of 16 (from 8)
+#   use new dpt head implementation on predictor, increase to 4 layers in predictor for dpt compatibility
 #   Add norm layer in predictor stage between transformer and output projection, to match renderformer implementation 
 #   Use linear warmup and cosine annealing on LR
-
-
-# ---------
-# Run notes (changes from last run): 
-#     Updated/fixed RoPE implementation in MHA
-#     Using 64 local pointnet features (set abstraction: for 2048 points pershape, 64 centroids each feature is avg of 32 points) 
-#
-#     Switch to ROPE for predictor. Refactored to use new transformer modules.
-#     Reduce state size to 2x2x2 grid
-#     Attempted to implement View-dependent stage in camera space
-# Model: 
-#     Rays now encoded in camera space (so view-dependent stage is now in camera coordinates)
-#     Obj positions also transformed to camera space in RadiancePredictor
-#     In RayEncoder, remove 2D Patch Positional Encodings, so that encoder matches ViewTransformer of RenderFormer
-# Dataset: variable_camera_experiment
-#     data_generation/output/datasets/variable_camera_experiment
-# Hyperparams:
 
 
 encoder:
@@ -36,7 +19,7 @@ encoder:
   num_centroids: 64
 
 state:
-  num_tokens: 8  # 2x2x2 grid
+  num_tokens: 64  # 4x4x4 grid
   token_dim: 512 # Match encoder output
   learnable_init: true
   init_scale: 0.1
@@ -87,7 +70,7 @@ training:
   warmup_epochs: 500
   save_interval: 100  # for visualization
   checkpoint_interval: 500  # for saving model checkpoint 
-  image_res: 256
+  image_res: 128
   data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
   log_dir: "training/logs/attempt6_table_chair_540"
   primary_loss: 'mae' # 'mse'
