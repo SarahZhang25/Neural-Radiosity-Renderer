@@ -2,12 +2,10 @@
 # reduce model size significantly: 50M params
 
 # Training: 
-# --> Using new dataset: attempt6_table_chair_540
-#   -> train for higher resolution, 256x256, with larger patch size of 16 (from 8)
-#   use new dpt head implementation on predictor, increase to 4 layers in predictor for dpt compatibility
-#   Add norm layer in predictor stage between transformer and output projection, to match renderformer implementation 
-#   Use linear warmup and cosine annealing on LR
-
+# Model: use predictor_rope with rope enabled
+# Use expanded dataset: attempt6_table_chair_540
+# Training: add SSIM, LPIPS metrics to logging
+#   -> reduce batch size back to 64 for consistency with rest of experiments...
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
@@ -19,7 +17,7 @@ encoder:
   num_centroids: 64
 
 state:
-  num_tokens: 64  # 4x4x4 grid
+  num_tokens: 8  # 2x2x2 grid
   token_dim: 512 # Match encoder output
   learnable_init: true
   init_scale: 0.1
@@ -48,7 +46,6 @@ ray_encoder:
   view_transformer_n_heads: 4
 
 predictor:
-  pe_type: 'rope' # TODO:[ROPE] support rope # TODO: KEEP? 
   # TODO: add a obj num_freq term?
   hidden_dim: 512
   num_heads: 4
@@ -56,7 +53,7 @@ predictor:
   dropout: 0
   activation: 'gelu'
   norm_type: 'layer_norm'
-  pe_type: 'nerf'
+  pe_type: 'rope' # <--
   pe_num_freqs: 8
   use_dpt_decoder: true
   dpt_features: 128

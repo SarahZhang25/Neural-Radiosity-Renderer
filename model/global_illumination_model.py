@@ -11,7 +11,8 @@ from typing import Dict, Tuple, Optional
 from model.encoder import PointNetEncoder
 from model.decoder import TransformerDecoder
 from model.layers.bidirectional_attention import BidirectionalTransformerEncoder
-from model.predictor import RadiancePredictor
+# from model.predictor import RadiancePredictor
+from model.predictor_rope import RadiancePredictor
 from model.state_manager import StateManager
 from model.ray_encoder import RayEncoder
 
@@ -78,9 +79,8 @@ class GlobalIlluminationModel(nn.Module):
         )
 
         # 5. Predictor Transformer
+        print("Using predictor pe_type: ", config['predictor']['pe_type'])
         self.predictor = RadiancePredictor(
-            # pe_type=config['predictor'].get('pe_type', 'nerf'),
-            # pe_num_freqs=config['predictor'].get('pe_num_freqs', config['ray_encoder']['vertex_pe_num_freqs']),
             hidden_dim=config['predictor']['hidden_dim'],
             patch_size=config['ray_encoder']['patch_size'],
             num_heads=config['predictor']['num_heads'],
@@ -184,7 +184,7 @@ class GlobalIlluminationModel(nn.Module):
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,
             obj_positions=obj_positions,
-            # ray_positions=ray_token_pos,  # would use this if using predictor with RoPE supported 
+            ray_positions=ray_token_pos,  # would use this if using predictor with RoPE supported 
             use_dpt_decoder=self.use_dpt_decoder
         )
 

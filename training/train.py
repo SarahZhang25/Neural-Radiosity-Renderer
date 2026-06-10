@@ -13,6 +13,10 @@ import torchvision
 from datetime import datetime
 from lpips import LPIPS
 
+from torchmetrics.image import StructuralSimilarityIndexMeasure
+from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+
+
 from model.global_illumination_model import GlobalIlluminationModel
 from training.dataset import SceneDataset 
 
@@ -43,7 +47,7 @@ def to_uint8(x):
     x = torch.clamp(x, 0.0, 1.0)
     return (x * 255).byte()
 
-def convert_hdr_for_visualization(x, method="reinhard", exposure=1.0):
+def hdr_to_ldr(x, method="reinhard", exposure=1.0, to_uint8_output=True):
     """
     Convert HDR image to LDR for visualization using specified tone mapping method.
 
@@ -57,7 +61,8 @@ def convert_hdr_for_visualization(x, method="reinhard", exposure=1.0):
     """
     x = tone_map_reinhard(x, exposure=exposure)
     x = linear_to_srgb(x)
-    x = to_uint8(x)
+    if to_uint8_output:
+        x = to_uint8(x)
     return x
 
 # RenderFormer LPIPS Tone-mapping as described in RenderFormer paper: "clamp (log I / log 2, 0, 1)"
@@ -189,6 +194,11 @@ def train(config_path, resume_path=None):
 
     writer = SummaryWriter(log_dir=log_dir)
 
+    # Val metrics
+    ssim_metric = StructuralSimilarityIndexMeasure(data_range=1.0).to(device)
+    lpips_val_metric = LearnedPerceptualImagePatchSimilarity(net_type='alex', normalize=True).to(device)
+    # TODO: FLIP metric
+
     ### Training Loop ###
     # LR scheduling: Warmup + Cosine decay
     # Warm up linearly over the first warmup_epochs.
@@ -245,7 +255,9 @@ def train(config_path, resume_path=None):
     for epoch in tqdm(range(start_epoch, num_epochs), desc="Epochs"):
         model.train()
         train_loss = 0.0
-        train_psnr = 0.0
+        train_psnr, train_ssim, train_lpips = 0.0, 0.0, 0.0
+        # TODO: add train_flip
+
         
         # with tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}") as pbar:
         #     for batch in pbar:
@@ -284,23 +296,37 @@ def train(config_path, resume_path=None):
             
             loss_item = loss.item()
             psnr_item = calculate_psnr(pred_radiance, target)
-            
+
+            # Convert to LDR [0, 1] for Perceptual Metrics
+            pred_ldr = hdr_to_ldr(pred_radiance.float(), to_uint8_output=False)
+            target_ldr = hdr_to_ldr(target.float(), to_uint8_output=False)
+                    
             train_loss += loss_item
             train_psnr += psnr_item
+            train_ssim += ssim_metric(pred_ldr, target_ldr).item()
+            train_lpips += lpips_val_metric(pred_ldr, target_ldr).item()
                 # pbar.set_postfix({'loss': loss_item, 'psnr': psnr_item})
 
         avg_train_loss = train_loss / len(train_loader)
         avg_train_psnr = train_psnr / len(train_loader)
+        avg_train_ssim = train_ssim / len(train_loader)
+        avg_train_lpips = train_lpips / len(train_loader)
+        # avg_train_flip = train_flip / len(train_loader)
+
         writer.add_scalar('Train/LR', optimizer.param_groups[0]['lr'], epoch)
         writer.add_scalar('Loss/train', avg_train_loss, epoch)
         writer.add_scalar('PSNR/train', avg_train_psnr, epoch)
+        writer.add_scalar('SSIM/train', avg_train_ssim, epoch)
+        writer.add_scalar('LPIPS/train', avg_train_lpips, epoch)
+        # writer.add_scalar('FLIP/train', avg_train_flip, epoch)
 
         scheduler.step()
 
         # Validation & Logging
         if (epoch + 1) % log_viz_interval == 0:
             val_loss = 0.0
-            val_psnr = 0.0
+            val_psnr, val_ssim, val_lpips = 0.0, 0.0, 0.0
+            #TODO: add val_flip
             model.eval()
             with torch.no_grad():
                 for batch in val_loader:
@@ -316,11 +342,23 @@ def train(config_path, resume_path=None):
                     loss = criterion(pred.float(), target.float())
                     val_loss += loss.item()
                     val_psnr += calculate_psnr(pred, target)
+                    
+                    # Convert to LDR [0, 1] for Perceptual Metrics
+                    pred_ldr = hdr_to_ldr(pred.float(), to_uint8_output=False)
+                    target_ldr = hdr_to_ldr(target.float(), to_uint8_output=False)
+                    val_ssim += ssim_metric(pred_ldr, target_ldr).item()
+                    val_lpips += lpips_val_metric(pred_ldr, target_ldr).item()
                 
                 avg_val_loss = val_loss / len(val_loader)
                 avg_val_psnr = val_psnr / len(val_loader)
+                avg_val_ssim = val_ssim / len(val_loader)
+                avg_val_lpips = val_lpips / len(val_loader)
+
                 writer.add_scalar('Loss/val', avg_val_loss, epoch)
                 writer.add_scalar('PSNR/val', avg_val_psnr, epoch)
+                writer.add_scalar('SSIM/val', avg_val_ssim, epoch)
+                writer.add_scalar('LPIPS/val', avg_val_lpips, epoch)
+
                 print(f"Epoch {epoch+1}: Val Loss {avg_val_loss:.6f}, Val PSNR: {avg_val_psnr:.2f} dB")
 
                 # Visual Inspection (Fixed Val Batch)
@@ -333,16 +371,16 @@ def train(config_path, resume_path=None):
                     w2c=fixed_val_batch['w2c']
                 )
                 
-                # Log images: Target vs Prediction (tone-mapped for visualization)
-                # Stack them: [Target, Prediction]
+                # Log images: Stacked [Target, Prediction]
                 # Using a simple Reinhard tone mapping followed by sRGB curve for visualization
-                vis_target = convert_hdr_for_visualization(fixed_val_batch['target_image'])
-                vis_pred = convert_hdr_for_visualization(torch.clamp(pred_fixed, min=0.0))
+                # Validation batch::
+                vis_target = hdr_to_ldr(fixed_val_batch['target_image'], to_uint8_output=True)
+                vis_pred = hdr_to_ldr(torch.clamp(pred_fixed, min=0.0), to_uint8_output=True)
                 vis_img = torch.cat([vis_target, vis_pred], dim=3) # Concatenate width-wise
                 grid = torchvision.utils.make_grid(vis_img, nrow=1, normalize=False)
                 writer.add_image('Visual/Validation', grid, epoch)
 
-                # Visual Inspection (Fixed Training Batch)=
+                # Training batch:
                 pred_train_fixed = model(
                     fixed_train_batch['rays_o'],
                     fixed_train_batch['rays_d'],
@@ -351,14 +389,10 @@ def train(config_path, resume_path=None):
                     obj_normals=fixed_train_batch['obj_normals'],
                     w2c=fixed_train_batch['w2c']
                 )
-
-                # Stack them: [Target, Prediction]
-                # Note: We visualize the first vis_train_limit samples if batch is large to save space, or all if small
                 vis_train_limit = 16 # fixed_train_batch['target_image'].shape[0]
-                vis_train_target = convert_hdr_for_visualization(fixed_train_batch['target_image'][:vis_train_limit])
-                vis_train_pred = convert_hdr_for_visualization(torch.clamp(pred_train_fixed[:vis_train_limit], min=0.0))
+                vis_train_target = hdr_to_ldr(fixed_train_batch['target_image'][:vis_train_limit], to_uint8_output=True)
+                vis_train_pred = hdr_to_ldr(torch.clamp(pred_train_fixed[:vis_train_limit], min=0.0), to_uint8_output=True)
                 vis_train_img = torch.cat([vis_train_target, vis_train_pred], dim=3)
-                
                 grid_train = torchvision.utils.make_grid(vis_train_img, nrow=1, normalize=False)
                 writer.add_image('Visual/Training', grid_train, epoch)
 
