@@ -194,43 +194,6 @@ class RadiancePredictor(nn.Module):
             scene_features = obj_features
 
         # Cross-attention: rays query scene
-        ######## old implementation ##########
-        # # print("in RadiancePredictor forward:")
-        # # print("N_obj (object tokens):", obj_features.shape)
-        # # if multi_scale_state_features is not None:
-        # #     print("N_state (state tokens):", state_features.shape)
-        # # print("Scene features shape:", scene_features.shape)
-        # # print("query_view_features shape:", query_view_features.shape)
-        # # print("obj_pos shape:", ctx_pos.shape if ctx_pos is not None else None)
-        # # print("ray_pos shape:", ray_positions.shape if ray_positions is not None else None)
-        # ray_features = self.transformer(
-        #     x=query_view_features,        # (B, N_patches, D)
-        #     ctx=scene_features,           # (B, N_obj+N_state, D)
-        #     obj_pos=ctx_pos,
-        #     ray_pos=ray_positions,
-        #     patch_h=patch_h,
-        #     patch_w=patch_w
-        # )  # (B, N_patches, D)
-
-
-        # # Decode to RGB per patch
-        # patches = self.out_proj(ray_features)  # (B, N_patches, 3*P*P)
-        # patches = self.out_proj_act(patches)
-
-        # # Reshape to image format
-        # radiances = rearrange(
-        #     patches,
-        #     'b (h w) (c p1 p2) -> b c (h p1) (w p2)',
-        #     h=patch_h,
-        #     w=patch_w,
-        #     p1=self.patch_size,
-        #     p2=self.patch_size,
-        #     c=3
-        # )  # (B, 3, H, W)
-
-        # return radiances
-        ######## end old implementation ##########
-
         if use_dpt_decoder:
             with torch.autocast(device_type="cuda", dtype=torch.float32 if tf32_mode else torch.bfloat16):
                 out_features = self.transformer(
@@ -272,8 +235,6 @@ class RadiancePredictor(nn.Module):
             )  # (B, 3, H, W)
 
             return radiances
-
-    
     
 if __name__ == "__main__":
     # Quick sanity check
