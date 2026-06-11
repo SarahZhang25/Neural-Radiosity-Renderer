@@ -3,7 +3,10 @@
 # Run notes (changes from last run): 
 #     Updated/fixed RoPE implementation in MHA
 #     Using 64 local pointnet features (set abstraction: for 2048 points pershape, 64 centroids each feature is avg of 32 points) 
-
+#
+#     Switch to ROPE for predictor. Refactored to use new transformer modules.
+#     Reduce state size to 2x2x2 grid
+#     Attempted to implement View-dependent stage in camera space
 # Model: 
 #     Rays now encoded in camera space (so view-dependent stage is now in camera coordinates)
 #     Obj positions also transformed to camera space in RadiancePredictor
