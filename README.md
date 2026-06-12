@@ -1,4 +1,27 @@
 # Neural-Radiosity-Renderer
+Current working repo for object-based neural rendering model.
+
+Model architecture flow:
+
+    [view-independent stage]
+    scene data (point clouds and properties) 
+        ➡️ `encoder.PointNetEncoder` 
+        ➡️  global object tokens          - state manager ⤵️
+        ➡️ `layers.bidirectional_attention.BidirectionalTransformerEncoder` 
+        ➡️ multiscale object and state tokens (context) ⤵️
+
+    [view-dependnet stage]
+        query ray bundles 
+            ➡️ `ray_encoder.RayEncoder` 
+            ➡️ ray tokens (query) 
+            ➡️ `predictor.RadiancePredictor` 
+            ➡️ predicted radiance
+
+Notes:
+* Positional embedding: Centroid-based RoPE. We adapt RenderFormer's Relative Spatial Positional Embedding, which uses the 3 vertex positions of each triangle, to the object-level by using the centroid position of each object. 
+* Training recipe is designed to mimic RenderFormer based on the paper training description. 
+
+
 ## Repo guide
 Directories:
 * `data_generation/`: Contains data generation scripts, mainly:
@@ -7,12 +30,6 @@ Directories:
 * `data_generation/`: Can be disregarded. Archive for a bunch of old data generation scripts.
 
 * `model/`: All model components are here:
-
-    Model architecture flow:
-    scene data (point clouds and properties) ➡️ `encoder.PointNetEncoder` ➡️ global object tokens ➡️ `layers.bidirectional_attention.BidirectionalTransformerEncoder` ➡️ multiscale object and state tokens (context) ⤵️
-
-    query ray bundles ➡️ `ray_encoder.RayEncoder` ➡️ ray tokens (query) ➡️ `predictor.RadiancePredictor` ➡️ predicted radiance
-
     * `encodings/`: Contains nerf and rope encodings
     * `layers/`: Contains custom attention layers (supporting custom RoPE embeddings) and DPT head class.
     * `decoder.py`: Bidirectional Transformer decoder module performing cross-attention between state and object tokens using torch.nn transformer layers. *Not currently in use, superceded by layers/bidirectional_attention.py implementation.*
