@@ -100,24 +100,16 @@ class BidirectionalTransformerEncoder(nn.Module):
             state_tokens = torch.cat([state_tokens, register_tokens_expanded], dim=1)
 
         # Compute RoPE tensors once internally
-        rope_state_cos, rope_state_sin = None, None # TODO: remove? No need to apply ROPE on state tokens...
+        rope_state_cos, rope_state_sin = None, None
         rope_obj_cos, rope_obj_sin = None, None
 
         if getattr(self, 'rope_emb', None) is not None:
-            ## NOTE: No need to apply ROPE on state tokens...
-            ## NOTE: but isn't it wrong to apply ROPE on obj but not state tokens? cross attention won't make sense?
-            # if state_pos is not None:
-            #     # Register tokens don't map to original state positions. We pad them with zeros to avoid breaking geometry
-            #     if self.num_register_tokens > 0:
-            #         pad_pos = torch.zeros(B, self.num_register_tokens, state_pos.shape[-1], device=state_pos.device, dtype=state_pos.dtype)
-            #         padded_state_pos = torch.cat([state_pos, pad_pos], dim=1)
-            #     else:
-            #         padded_state_pos = state_pos
-            #     state_freqs = self.rope_emb.get_centroid_freqs(padded_state_pos)
-            #     rope_state_cos, rope_state_sin = freqs_to_cos_sin(state_freqs, head_dim=self.head_dim)
-            if obj_pos is not None:
-                obj_freqs = self.rope_emb.get_centroid_freqs(obj_pos)
-                rope_obj_cos, rope_obj_sin = freqs_to_cos_sin(obj_freqs, head_dim=self.head_dim)
+            assert obj_pos is not None and state_pos is not None, "Positional encodings must be provided when using RoPE."
+            obj_freqs = self.rope_emb.get_centroid_freqs(obj_pos)
+            rope_obj_cos, rope_obj_sin = freqs_to_cos_sin(obj_freqs, head_dim=self.head_dim)
+            
+            state_freqs = self.rope_emb.get_centroid_freqs(state_pos)
+            rope_state_cos, rope_state_sin = freqs_to_cos_sin(state_freqs, head_dim=self.head_dim)
 
         all_state_layers = []
         all_obj_layers = []

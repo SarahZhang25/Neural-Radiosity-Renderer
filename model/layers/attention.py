@@ -133,21 +133,21 @@ class MultiHeadAttention(nn.Module):
         v = v.view(bs, ctx_len, self.num_heads, -1).transpose(1, 2)
 
         # apply rope
-        ## old:
-        # if rope_cos is not None:
-        #     if rope_ctx_cos is None:
-        #         q, k = self.apply_rope_cossin(q, k, rope_cos, rope_sin)
-        #     else:
-        #         q = apply_rotary_emb_one_cossin(q, rope_cos, rope_sin)
-        #         k = apply_rotary_emb_one_cossin(k, rope_ctx_cos, rope_ctx_sin)
+        ## restore original implementation:
+        if rope_cos is not None:
+            if rope_ctx_cos is None:
+                q, k = self.apply_rope_cossin(q, k, rope_cos, rope_sin)
+            else:
+                q = apply_rotary_emb_one_cossin(q, rope_cos, rope_sin)
+                k = apply_rotary_emb_one_cossin(k, rope_ctx_cos, rope_ctx_sin)
 
-        if rope_cos is not None and rope_ctx_cos is None and self.is_self_attn:
-             q, k = self.apply_rope_cossin(q, k, rope_cos, rope_sin)
-        else:
-             if rope_cos is not None:
-                 q = apply_rotary_emb_one_cossin(q, rope_cos, rope_sin)
-             if rope_ctx_cos is not None:
-                 k = apply_rotary_emb_one_cossin(k, rope_ctx_cos, rope_ctx_sin)
+        # if rope_cos is not None and rope_ctx_cos is None and self.is_self_attn:
+        #      q, k = self.apply_rope_cossin(q, k, rope_cos, rope_sin)
+        # else:
+        #      if rope_cos is not None:
+        #          q = apply_rotary_emb_one_cossin(q, rope_cos, rope_sin)
+        #      if rope_ctx_cos is not None:
+        #          k = apply_rotary_emb_one_cossin(k, rope_ctx_cos, rope_ctx_sin)
 
         if ATTN == 'sdpa' or force_sdpa:
             # create attention mask

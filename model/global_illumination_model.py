@@ -149,7 +149,7 @@ class GlobalIlluminationModel(nn.Module):
         # Calculate Object Centroids for RoPE
         object_centroids = obj_positions.mean(dim=2)  # (B, N_obj, 3)
 
-        state_positions = None # Registers and abstract concepts don't have explicit physical geometry
+        state_positions = self.state_manager.get_positions(B)  # (B, N_state, 3)
 
         # 4. Bi-Directional Interaction
         all_state_layers, all_obj_layers = self.scene_transformer(
