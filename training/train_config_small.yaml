@@ -2,7 +2,7 @@
 # reduce model size significantly: 50M params
 
 # Training: 
-# Model: using new model with no state manager
+# Model: using new model with no state manager, 128x128
 # Use single obj dataset: attempt3_fixed_view_table
 
 encoder:
@@ -63,10 +63,10 @@ predictor:
 training:
   batch_size: 64
   learning_rate: 1.0e-4
-  num_epochs: 100
-  warmup_epochs: 10
-  save_interval: 10  # for visualization
-  checkpoint_interval: 500  # for saving model checkpoint 
+  num_epochs: 5000
+  warmup_epochs: 500
+  save_interval: 100  # for visualization
+  checkpoint_interval: 1000  # for saving model checkpoint 
   image_res: 128
   data_dir: "data_generation/output_auto/datasets/attempt3_fixed_view_table"
   log_dir: "training/logs/attempt3_fixed_view_table"
