@@ -3,9 +3,6 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 import glob
-from training.ray_generator import RayGenerator
-import mitsuba as mi
-mi.set_variant('scalar_rgb')
 
 class SceneDataset(Dataset):
     def __init__(
@@ -55,27 +52,20 @@ class SceneDataset(Dataset):
                 
         print(f"[{split}] Found {len(self.files)} samples in {data_dir}")
 
-        self.ray_generator = RayGenerator()
-
-        self.cam_up = [0.0, 0.0, 1.0] # TODO: unhardcode....
-        self.fov_deg = 37.5 # TODO: unhardcode...
-        
-        self.fov_rad = torch.tensor(np.deg2rad(self.fov_deg)).float().view(1)
-        self.precomputed_ray_data = None
+        self.cam_up = np.array([0.0, 0.0, 1.0])  # TODO: unhardcode....
+        self.fov_deg = 37.5  # TODO: unhardcode...
 
     def _compute_c2w(self, pos, target, up):
-        # Camera Coordinate System:
-        # Camera looks down -Z
+        """Build a camera-to-world 4x4 matrix. Camera looks down -Z."""
         z_axis = pos - target
         z_axis = z_axis / np.linalg.norm(z_axis)
-        
+
         x_axis = np.cross(up, z_axis)
         x_axis = x_axis / np.linalg.norm(x_axis)
-        
+
         y_axis = np.cross(z_axis, x_axis)
         y_axis = y_axis / np.linalg.norm(y_axis)
-        
-        # 4x4 Matrix
+
         c2w = np.eye(4)
         c2w[:3, 0] = x_axis
         c2w[:3, 1] = y_axis
@@ -128,21 +118,12 @@ class SceneDataset(Dataset):
         cam_lookat = data['camera_lookat']
 
         c2w = self._compute_c2w(cam_pos, cam_lookat, self.cam_up)
-        w2c = torch.inverse(c2w)
-        
-        # if self.precomputed_ray_data is None:
-        c2w_eye = torch.eye(4)
-        rays_o, rays_d = self.ray_generator(c2w_eye, self.fov_rad, self.image_res)
-        #     self.precomputed_ray_data = (rays_o, rays_d)
-        # else:
-            # rays_o, rays_d = self.precomputed_ray_data
-        
+
         return {
-            'rays_o': rays_o,               # (3,) camera origin in world space
-            'rays_d': rays_d,               # (H, W, 3) - used as ray_map
-            'obj_positions': positions,     # (N_obj, N_p, 3)
-            'obj_normals': normals,         # (N_obj, N_p, 3)
-            'obj_properties': properties,   # (N_obj, C)
-            'w2c': w2c,                     # (4, 4)
-            'target_image': image_tensor    # (3, H, W)
+            'c2w': c2w,                             # (4, 4) camera-to-world
+            'fov_deg': torch.tensor(self.fov_deg).float(),  # scalar
+            'obj_positions': positions,             # (N_obj, N_p, 3)
+            'obj_normals': normals,                 # (N_obj, N_p, 3)
+            'obj_properties': properties,           # (N_obj, C)
+            'target_image': image_tensor            # (3, H, W)
         }

@@ -17,7 +17,8 @@ from torchmetrics.image import StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
 from model.global_illumination_model import GlobalIlluminationModel
-from training.dataset import SceneDataset 
+from training.dataset import SceneDataset
+from training.ray_generator import RayGenerator
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32       = True
@@ -165,6 +166,8 @@ class Trainer:
 
         # Model
         self.model = GlobalIlluminationModel(self.config).to(self.device)
+        self.ray_generator = RayGenerator().to(self.device)
+        self.image_res = self.tc['image_res']
         
         if self.use_compile:
             print("Compiling model with torch.compile (mode='reduce-overhead')...")
@@ -250,13 +253,22 @@ class Trainer:
                 self.scheduler.step()
 
     def _forward(self, batch: dict) -> torch.Tensor:
+        c2w = batch['c2w'].to(self.device)          # (B, 4, 4)
+        fov_deg = batch['fov_deg'].to(self.device)  # (B,)
+        fov_rad = (fov_deg * (torch.pi / 180.0)).unsqueeze(-1)  # (B, 1)
+
+        rays_o, rays_d = self.ray_generator(c2w, fov_rad, self.image_res)
+        # rays_o: (B, 3)  rays_d: (B, H, W, 3)
+
+        w2c = torch.inverse(c2w)  # (B, 4, 4)
+
         kwargs = dict(
-            rays_o=batch['rays_o'].to(self.device),
-            rays_d=batch['rays_d'].to(self.device),
+            rays_o=rays_o,
+            rays_d=rays_d,
             obj_positions=batch['obj_positions'].to(self.device),
             obj_properties=batch['obj_properties'].to(self.device),
             obj_normals=batch['obj_normals'].to(self.device),
-            w2c=batch['w2c'].to(self.device)
+            w2c=w2c,
         )
         if self.use_amp:
             with torch.amp.autocast('cuda', dtype=torch.bfloat16):
