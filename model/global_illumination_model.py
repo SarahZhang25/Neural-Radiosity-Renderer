@@ -206,12 +206,15 @@ class GlobalIlluminationModel(nn.Module):
              
         # ray_tokens: (B, N_patches, D)
         if w2c is not None:
-             # operating in camera space, camera origin is 0
+             # rotate rays to camera space, where camera origin is 0
              rays_o_input = torch.zeros_like(rays_o) 
+             w2c_R = w2c[:, :3, :3]
+             rays_d_input = torch.einsum('bij,bhwj->bhwi', w2c_R, rays_d)
         else:
              rays_o_input = rays_o
+             rays_d_input = rays_d
              
-        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d)
+        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d_input)
 
         # 6. Predict Radiance
         # Ray tokens query the scene (object + state features)
