@@ -51,6 +51,8 @@ decoder:
   norm_type: 'layer_norm'
   qk_norm: false
   num_register_tokens: 0
+  bias: true
+  rope_double_max_freq: false
 
 ray_encoder:
   pe_type: 'nerf' # TODO: how does renderformer encode rays?
@@ -71,6 +73,7 @@ predictor:
   dropout: 0
   activation: 'gelu'
   norm_type: 'layer_norm'
+  use_dpt_decoder: true
 
 training:
   batch_size: 64

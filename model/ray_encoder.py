@@ -46,8 +46,8 @@ class RayEncoder(nn.Module):
                 raise ValueError(f"Unsupported normalization type: {norm_type}")
             self.rope_dim = None
         elif pe_type == 'rope':
-            self.rope_dim = min(vertex_pe_num_freqs, view_transformer_latent_dim // view_transformer_n_heads // 9 * 2) 
-            # us: 9 = 3 (centroid pos xyz) * 2 (sin and cos)
+            self.rope_dim = min(vertex_pe_num_freqs, ((view_transformer_latent_dim // view_transformer_n_heads) // 2) // 3 * 2) 
+            # us: 3 = 3 (centroid pos xyz) * 2 (sin and cos)
             # renderformer: 18 = 3 (triangles) * 3 (vertex xyz)* 2 (sin and cos) 
         else:
             raise ValueError(f"Unsupported positional encoding type: {pe_type}")

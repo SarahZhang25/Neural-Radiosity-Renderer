@@ -33,7 +33,10 @@ class GlobalIlluminationModel(nn.Module):
         if config['predictor']['pe_type'] == 'nerf':
             self.rope_dim = None
         elif config['predictor']['pe_type'] == 'rope':
-            self.rope_dim = config['ray_encoder']['vertex_pe_num_freqs'] # TODO: make this config option not part of ray_encoder...
+            # Note: predictor and scene transformer use the same rope_dim formula: (head_dim//2 // 3 * 2)
+            # but their hidden_dim and num_heads can be configured independently, so they might differ.
+            decoder_head_dim = config['decoder']['hidden_dim'] // config['decoder']['num_heads']
+            self.rope_dim = ((decoder_head_dim // 2) // 3) * 2
         else:
             raise ValueError(f"Invalid positional encoding type: {config['predictor']['pe_type']}")
 
@@ -72,7 +75,8 @@ class GlobalIlluminationModel(nn.Module):
             rope_type='object',
             bias=config['decoder']['bias'],# True by default...
             qk_norm=config['decoder']['qk_norm'],
-            rope_double_max_freq=config['decoder']['rope_double_max_freq']
+            rope_double_max_freq=config['decoder']['rope_double_max_freq'],
+            return_all_layers=config['decoder']['return_all_layers']
         )
         ## OLD VERSION
         # self.scene_transformer = BidirectionalTransformerEncoder(
@@ -117,7 +121,7 @@ class GlobalIlluminationModel(nn.Module):
             norm_type=config['predictor']['norm_type'],
             pe_type=config['predictor']['pe_type'],
             pe_num_freqs=config['predictor']['pe_num_freqs'],
-            use_dpt_decoder=config['predictor']['use_dpt_decoder'],
+            use_dpt_decoder=config['predictor'].get('use_dpt_decoder', True),
             dpt_features=config['predictor'].get('dpt_features', None),
             dpt_out_channels=config['predictor'].get('dpt_out_channels', None),
             include_alpha=config['predictor'].get('include_alpha', False)            

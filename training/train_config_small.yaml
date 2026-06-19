@@ -63,9 +63,9 @@ predictor:
 training:
   batch_size: 64
   learning_rate: 1.0e-4
-  num_epochs: 5 #000
-  warmup_epochs: 500
-  save_interval: 100  # for visualization
+  num_epochs: 100
+  warmup_epochs: 10
+  save_interval: 10  # for visualization
   checkpoint_interval: 500  # for saving model checkpoint 
   image_res: 128
   data_dir: "data_generation/output_auto/datasets/attempt3_fixed_view_table"

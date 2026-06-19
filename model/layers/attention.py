@@ -552,6 +552,7 @@ class TransformerEncoder(nn.Module):
         rope_type: Literal['object', 'object_learned', 'object_mixed'] = 'object',
         rope_double_max_freq: bool = False,
         qk_norm: bool = False,
+        return_all_layers: bool = True,
     ):
         super().__init__()
         assert norm_first, "Only support norm_first=True"
@@ -583,6 +584,7 @@ class TransformerEncoder(nn.Module):
                 dim=rope_dim,
                 double_max_freq=rope_double_max_freq,
             )
+        self.return_all_layers = return_all_layers
 
     def forward(self, x, src_key_padding_mask=None, obj_pos=None):
         # src_key_padding_mask: (B, N), key padding mask, things you want to attend to is True
@@ -593,8 +595,16 @@ class TransformerEncoder(nn.Module):
         else:
             rope_cos = rope_sin = None
 
+        all_layers = [] if self.return_all_layers else None
+
         for layer in self.layers:
             x = layer(x, src_key_padding_mask=src_key_padding_mask, rope_cos=rope_cos, rope_sin=rope_sin)
+            if self.return_all_layers:
+                all_layers.append(x)
+                
+        if self.return_all_layers:
+            return all_layers
+            
         return x
 
 
