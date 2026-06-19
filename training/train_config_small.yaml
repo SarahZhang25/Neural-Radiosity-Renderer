@@ -37,7 +37,7 @@ decoder:
   num_register_tokens: 0
 
 ray_encoder:
-  pe_type: 'nerf' # TODO: how does renderformer encode rays?
+  pe_type: 'rope' # ROPE handles spatial position encoding
   vertex_pe_num_freqs: 8 # this controls how many frequencies are applied for the pe
   vdir_pe_type: 'nerf'
   vdir_num_freqs: 4
