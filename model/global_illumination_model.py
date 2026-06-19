@@ -33,10 +33,13 @@ class GlobalIlluminationModel(nn.Module):
         if config['predictor']['pe_type'] == 'nerf':
             self.rope_dim = None
         elif config['predictor']['pe_type'] == 'rope':
-            # Note: predictor and scene transformer use the same rope_dim formula: (head_dim//2 // 3 * 2)
-            # but their hidden_dim and num_heads can be configured independently, so they might differ.
+            # rope_dim controls how many frequency bands are used for positional encoding.
+            # It must not exceed the head's capacity: 3 coords × (rope_dim//2) freqs ≤ head_dim//2.
+            # Using max capacity (~42 for head_dim=128) starves content attention; use the config
+            # value (typically 8) clamped to the max as a safety bound.
             decoder_head_dim = config['decoder']['hidden_dim'] // config['decoder']['num_heads']
-            self.rope_dim = ((decoder_head_dim // 2) // 3) * 2
+            max_rope_dim = ((decoder_head_dim // 2) // 3) * 2
+            self.rope_dim = min(config['ray_encoder']['vertex_pe_num_freqs'], max_rope_dim)
         else:
             raise ValueError(f"Invalid positional encoding type: {config['predictor']['pe_type']}")
 

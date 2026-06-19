@@ -3,6 +3,7 @@
 
 # Training: 
 # Model: using new model with no state manager
+# -- fixed rope dims
 # Use single obj dataset: attempt3_fixed_view_table
 
 encoder:
@@ -14,11 +15,11 @@ encoder:
   num_hierarchical_levels: 3 # Ignored
   num_centroids: 64
 
-state:
-  num_tokens: 8  # 2x2x2 grid
-  token_dim: 512 # Match encoder output
-  learnable_init: true
-  init_scale: 0.1
+# state:
+#   num_tokens: 8  # 2x2x2 grid
+#   token_dim: 512 # Match encoder output
+#   learnable_init: true
+#   init_scale: 0.1
 
 decoder:
   hidden_dim: 512
@@ -63,7 +64,7 @@ predictor:
 training:
   batch_size: 64
   learning_rate: 1.0e-4
-  num_epochs: 100
+  num_epochs: 10
   warmup_epochs: 10
   save_interval: 10  # for visualization
   checkpoint_interval: 500  # for saving model checkpoint 
