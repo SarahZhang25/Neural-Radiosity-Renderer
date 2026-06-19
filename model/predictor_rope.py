@@ -63,8 +63,12 @@ class RadiancePredictor(nn.Module):
 
         # RoPE needs to fit 3 coordinates. Each coordinate needs rope_dim // 2 angles.
         # Total angles = 3 * (rope_dim // 2). This must be <= head_dim // 2.
-        # So rope_dim // 2 * 3 <= head_dim // 2  => rope_dim <= (head_dim // 2) // 3 * 2
-        self.rope_dim = (((hidden_dim // num_heads) // 2) // 3) * 2 if pe_type == 'rope' else None
+        # Use pe_num_freqs (config value, typically 8) clamped to the max capacity.
+        if pe_type == 'rope':
+            max_rope_dim = (((hidden_dim // num_heads) // 2) // 3) * 2
+            self.rope_dim = min(pe_num_freqs, max_rope_dim)
+        else:
+            self.rope_dim = None
         
         self.transformer = TransformerDecoder(
             num_layers=num_layers,

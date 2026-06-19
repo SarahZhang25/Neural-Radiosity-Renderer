@@ -2,7 +2,12 @@
 # reduce model size significantly: 50M params
 
 # Training: 
+<<<<<<< HEAD
 # Model: using new model with no state manager, 128x128
+=======
+# Model: using new model with no state manager
+# -- fixed rope dims
+>>>>>>> 0d94c43b70e156302dfac9e869c1164971c75407
 # Use single obj dataset: attempt3_fixed_view_table
 
 encoder:
@@ -14,11 +19,11 @@ encoder:
   num_hierarchical_levels: 3 # Ignored
   num_centroids: 64
 
-state:
-  num_tokens: 8  # 2x2x2 grid
-  token_dim: 512 # Match encoder output
-  learnable_init: true
-  init_scale: 0.1
+# state:
+#   num_tokens: 8  # 2x2x2 grid
+#   token_dim: 512 # Match encoder output
+#   learnable_init: true
+#   init_scale: 0.1
 
 decoder:
   hidden_dim: 512
@@ -63,10 +68,17 @@ predictor:
 training:
   batch_size: 64
   learning_rate: 1.0e-4
+<<<<<<< HEAD
   num_epochs: 5000
   warmup_epochs: 500
   save_interval: 100  # for visualization
   checkpoint_interval: 1000  # for saving model checkpoint 
+=======
+  num_epochs: 10
+  warmup_epochs: 10
+  save_interval: 10  # for visualization
+  checkpoint_interval: 500  # for saving model checkpoint 
+>>>>>>> 0d94c43b70e156302dfac9e869c1164971c75407
   image_res: 128
   data_dir: "data_generation/output_auto/datasets/attempt3_fixed_view_table"
   log_dir: "training/logs/attempt3_fixed_view_table"
