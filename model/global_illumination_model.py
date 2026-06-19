@@ -9,11 +9,12 @@ import yaml
 from typing import Dict, Tuple, Optional
 
 from model.encoder import PointNetEncoder
+from model.layers.attention import TransformerEncoder
 from model.decoder import TransformerDecoder
 from model.layers.bidirectional_attention import BidirectionalTransformerEncoder
 # from model.predictor import RadiancePredictor
 from model.predictor_rope import RadiancePredictor
-from model.state_manager import StateManager
+# from model.state_manager import StateManager
 from model.ray_encoder import RayEncoder
 
 class GlobalIlluminationModel(nn.Module):
@@ -28,6 +29,14 @@ class GlobalIlluminationModel(nn.Module):
         super().__init__()
         self.use_dpt_decoder = config['predictor']['use_dpt_decoder']
 
+        # TODO: calculate rope_dim here....
+        if config['predictor']['pe_type'] == 'nerf':
+            self.rope_dim = None
+        elif config['predictor']['pe_type'] == 'rope':
+            self.rope_dim = config['ray_encoder']['vertex_pe_num_freqs'] # TODO: make this config option not part of ray_encoder...
+        else:
+            raise ValueError(f"Invalid positional encoding type: {config['predictor']['pe_type']}")
+
         # Scene Representation Stage
         # 1. Object Encoder
         self.pointnet_encoder = PointNetEncoder(
@@ -39,31 +48,49 @@ class GlobalIlluminationModel(nn.Module):
             num_hierarchical_levels=config['encoder']['num_hierarchical_levels'],
         )
         
-        # 2. State Manager (Learnable 3D Grid)
-        self.state_manager = StateManager(
-            num_tokens=config['state']['num_tokens'],
-            token_dim=config['state']['token_dim'],
-            learnable_init=config['state']['learnable_init'],
-            init_scale=config['state']['init_scale']
-        )
+        # # 2. State Manager (Learnable 3D Grid)
+        # self.state_manager = StateManager(
+        #     num_tokens=config['state']['num_tokens'],
+        #     token_dim=config['state']['token_dim'],
+        #     learnable_init=config['state']['learnable_init'],
+        #     init_scale=config['state']['init_scale']
+        # )
 
-        # 3. View-Independent Bi-Directional Transformer
-        self.scene_transformer = BidirectionalTransformerEncoder(
-        # self.scene_transformer = TransformerDecoder(
-            state_dim=config['decoder']['hidden_dim'],
+        # 3. View-Independent Scene Transformer
+        # TODO: possibly redo the config... I don't like "decoder".
+        # should be like, representation learning phase or something
+        # TODO: finish fixing this 
+        self.scene_transformer = TransformerEncoder(
             num_layers=config['decoder']['num_layers'],
             num_heads=config['decoder']['num_heads'],
-            feedforward_dim=config['decoder']['feedforward_dim'],
+            hidden_dim=config['decoder']['hidden_dim'],
+            ffn_hidden_dim=config['decoder']['feedforward_dim'],
             dropout=config['decoder']['dropout'],
             activation=config['decoder']['activation'],
-            return_all_layers=config['decoder']['return_all_layers'],
-            use_self_attention=config['decoder']['use_self_attention'],
             norm_type=config['decoder']['norm_type'],
+            rope_dim=self.rope_dim,
+            rope_type='object',
+            bias=config['decoder']['bias'],# True by default...
             qk_norm=config['decoder']['qk_norm'],
-            num_register_tokens=config['decoder']['num_register_tokens'],
-            rope_dim=((config['decoder']['hidden_dim'] // config['decoder']['num_heads']) // 2) // 3 * 2, # Total angles must fit in head_dim // 2
-            rope_type='object'
+            rope_double_max_freq=config['decoder']['rope_double_max_freq']
         )
+        ## OLD VERSION
+        # self.scene_transformer = BidirectionalTransformerEncoder(
+        # # self.scene_transformer = TransformerDecoder(
+        #     state_dim=config['decoder']['hidden_dim'],
+        #     num_layers=config['decoder']['num_layers'],
+        #     num_heads=config['decoder']['num_heads'],
+        #     feedforward_dim=config['decoder']['feedforward_dim'],
+        #     dropout=config['decoder']['dropout'],
+        #     activation=config['decoder']['activation'],
+        #     return_all_layers=config['decoder']['return_all_layers'],
+        #     use_self_attention=config['decoder']['use_self_attention'],
+        #     norm_type=config['decoder']['norm_type'],
+        #     qk_norm=config['decoder']['qk_norm'],
+        #     num_register_tokens=config['decoder']['num_register_tokens'],
+        #     rope_dim=((config['decoder']['hidden_dim'] // config['decoder']['num_heads']) // 2) // 3 * 2, # Total angles must fit in head_dim // 2
+        #     rope_type='object'
+        # )
 
         # Rendering Stage
         # 4. Ray Encoder
@@ -143,19 +170,24 @@ class GlobalIlluminationModel(nn.Module):
         object_tokens = obj_features_flat.view(B, N_obj, -1)
 
         # 2. Get State Tokens
-        state_tokens = self.state_manager.get_tokens(B)  # (B, N_state, D)
+        # state_tokens = self.state_manager.get_tokens(B)  # (B, N_state, D)
 
         # 3. Spatial Positional Encoding (RoPE preparation)
         # Calculate Object Centroids for RoPE
         object_centroids = obj_positions.mean(dim=2)  # (B, N_obj, 3)
 
-        state_positions = self.state_manager.get_positions(B)  # (B, N_state, 3)
+        # state_positions = None # no longer using self.state_manager.get_positions(B)  # (B, N_state, 3)
 
         # 4. Bi-Directional Interaction
-        all_state_layers, all_obj_layers = self.scene_transformer(
-            state_tokens=state_tokens,
-            obj_tokens=object_tokens,
-            state_pos=state_positions,
+        # all_state_layers, all_obj_layers = self.scene_transformer(
+        #     state_tokens=state_tokens,
+        #     obj_tokens=object_tokens,
+        #     state_pos=state_positions,
+        #     obj_pos=object_centroids
+        # )
+        # self-attn only transformer
+        all_obj_layers =  self.scene_transformer(
+            x=object_tokens,
             obj_pos=object_centroids
         )
 
@@ -176,10 +208,11 @@ class GlobalIlluminationModel(nn.Module):
 
         # 6. Predict Radiance
         # Ray tokens query the scene (object + state features)
+        # If no state features, predictor gracefully handles None input and sets scene_features using only object features
         radiance = self.predictor(
             multi_scale_features=all_obj_layers,
             query_view_features=ray_tokens,
-            multi_scale_state_features=all_state_layers,
+            # multi_scale_state_features=all_state_layers,
             patch_h=rays_d.shape[1] // self.ray_encoder.patch_size,
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,

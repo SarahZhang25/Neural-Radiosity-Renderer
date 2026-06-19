@@ -28,17 +28,6 @@ class RayEncoder(nn.Module):
         self.view_transformer_latent_dim = view_transformer_latent_dim
         self.view_transformer_n_heads = view_transformer_n_heads
 
-        # Add explicit positional encoding for the patches in the image 2D grid
-        self.patch_grid_pe = NeRFEncoding(
-            in_dim=2,
-            num_frequencies=vertex_pe_num_freqs, # Reuse freq count or use default
-            include_input=True
-        )
-        self.patch_grid_proj = nn.Linear(
-            self.patch_grid_pe.get_out_dim(),
-            view_transformer_latent_dim
-        )
-
         if pe_type == 'nerf':
             self.pos_pe = NeRFEncoding(
                 in_dim=3,
@@ -56,8 +45,10 @@ class RayEncoder(nn.Module):
             else:
                 raise ValueError(f"Unsupported normalization type: {norm_type}")
             self.rope_dim = None
-        elif pe_type == 'rope': #TODO:[ROPE] check this?
-            self.rope_dim = min(vertex_pe_num_freqs, view_transformer_latent_dim // view_transformer_n_heads // 18 * 2)
+        elif pe_type == 'rope':
+            self.rope_dim = min(vertex_pe_num_freqs, view_transformer_latent_dim // view_transformer_n_heads // 9 * 2) 
+            # us: 9 = 3 (centroid pos xyz) * 2 (sin and cos)
+            # renderformer: 18 = 3 (triangles) * 3 (vertex xyz)* 2 (sin and cos) 
         else:
             raise ValueError(f"Unsupported positional encoding type: {pe_type}")
 
@@ -105,9 +96,7 @@ class RayEncoder(nn.Module):
         n_patches = ray_tokens.size(1)
 
         ray_token_pos = camera_o[:, None].repeat(1, n_patches, 1)  # [B, N_PATCHES, 3]
-        # positional encoding if use 'nerf' pe
         if self.pe_type == 'nerf': #NOTE: why do both ray and tri token suse the same pos_pe and pe_token_proj?
             ray_tokens = ray_tokens + self.token_pos_pe_norm(self.pe_token_proj(self.pos_pe(ray_token_pos)))
-        #TODO:[ROPE] add ROPE conditional
 
         return ray_tokens, ray_token_pos

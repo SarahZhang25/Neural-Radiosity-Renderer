@@ -64,18 +64,19 @@ class RadiancePredictor(nn.Module):
         # RoPE needs to fit 3 coordinates. Each coordinate needs rope_dim // 2 angles.
         # Total angles = 3 * (rope_dim // 2). This must be <= head_dim // 2.
         # So rope_dim // 2 * 3 <= head_dim // 2  => rope_dim <= (head_dim // 2) // 3 * 2
-        rope_dim = (((hidden_dim // num_heads) // 2) // 3) * 2 if pe_type == 'rope' else None
+        self.rope_dim = (((hidden_dim // num_heads) // 2) // 3) * 2 if pe_type == 'rope' else None
         
         self.transformer = TransformerDecoder(
             num_layers=num_layers,
             num_heads=num_heads,
             hidden_dim=hidden_dim,
+            # ctx_dim=hidden_dim, # TODO: is this right????
             ffn_hidden_dim=hidden_dim * 4,
             dropout=dropout,
             include_self_attn=include_self_attn,
             activation=activation,
             norm_type=norm_type,
-            rope_dim=rope_dim,
+            rope_dim=self.rope_dim,
             rope_type='object'
         )
 
@@ -193,6 +194,9 @@ class RadiancePredictor(nn.Module):
         else:
             scene_features = obj_features
 
+        print("shapes:")
+        print(f"query_view_features: {query_view_features.shape}, scene_features: {scene_features.shape}")
+        print(f"obj_pos: {ctx_pos.shape if ctx_pos is not None else None}, ray_positions: {ray_positions.shape if ray_positions is not None else None}")
         # Cross-attention: rays query scene
         if use_dpt_decoder:
             with torch.autocast(device_type="cuda", dtype=torch.float32 if tf32_mode else torch.bfloat16):

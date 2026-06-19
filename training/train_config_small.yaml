@@ -2,10 +2,8 @@
 # reduce model size significantly: 50M params
 
 # Training: 
-# Model: use predictor_rope with rope enabled
-# Use expanded dataset: attempt6_table_chair_540
-# Training: add SSIM, LPIPS metrics to logging
-#   -> reduce batch size back to 64 for consistency with rest of experiments...
+# Model: using new model with no state manager
+# Use single obj dataset: attempt3_fixed_view_table
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
@@ -26,18 +24,20 @@ decoder:
   hidden_dim: 512
   num_layers: 4
   num_heads: 4
-  feedforward_dim: 512
+  feedforward_dim: 2048 # 512 * 4??? The number of frequencies in the positional encoding for vertex positions
   dropout: 0.0
   activation: 'gelu'
   return_all_layers: true
-  use_self_attention: true
+  use_self_attention: true # Whether to double the max frequency for RoPE.
   norm_type: 'layer_norm'
-  qk_norm: false
+  qk_norm: true
+  bias: true
+  rope_double_max_freq: false
   num_register_tokens: 0
 
 ray_encoder:
   pe_type: 'nerf' # TODO: how does renderformer encode rays?
-  vertex_pe_num_freqs: 6 # this controls how many frequencies are applied for the pe
+  vertex_pe_num_freqs: 8 # this controls how many frequencies are applied for the pe
   vdir_pe_type: 'nerf'
   vdir_num_freqs: 4
   patch_size: 16
@@ -53,8 +53,8 @@ predictor:
   dropout: 0
   activation: 'gelu'
   norm_type: 'layer_norm'
-  pe_type: 'rope' # <--
-  pe_num_freqs: 8
+  pe_type: 'rope' # <-- TODO: take this out of the predictor section? since it also applies for decoder
+  pe_num_freqs: 8 # is this redunant to vertex_pe_num_freqs? TODO: figure this out 
   use_dpt_decoder: true
   dpt_features: 128
   dpt_out_channels: [96, 192, 384, 768] 
@@ -63,13 +63,13 @@ predictor:
 training:
   batch_size: 64
   learning_rate: 1.0e-4
-  num_epochs: 5000
+  num_epochs: 5 #000
   warmup_epochs: 500
   save_interval: 100  # for visualization
   checkpoint_interval: 500  # for saving model checkpoint 
   image_res: 128
-  data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
-  log_dir: "training/logs/attempt6_table_chair_540"
+  data_dir: "data_generation/output_auto/datasets/attempt3_fixed_view_table"
+  log_dir: "training/logs/attempt3_fixed_view_table"
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'
   lpips_loss_weighting: 0.05
