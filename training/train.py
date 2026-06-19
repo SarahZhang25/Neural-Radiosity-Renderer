@@ -130,12 +130,14 @@ class Trainer:
         self.train_dataset = SceneDataset(
             data_dir=self.tc['data_dir'],
             image_res=self.tc['image_res'],
-            split='train'
+            split='train',
+            max_dataset_size=self.tc.get('max_dataset_size', None)
         )
         self.val_dataset = SceneDataset(
             data_dir=self.tc['data_dir'],
             image_res=self.tc['image_res'],
-            split='val'
+            split='val',
+            max_dataset_size=self.tc.get('max_dataset_size', None)
         )
         
         batch_size = self.tc['batch_size']
@@ -209,6 +211,8 @@ class Trainer:
             self._load_checkpoint(resume_path)
         else:
             run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+            if 'run_name' in self.tc:
+                run_id += f"_{self.tc['run_name']}"
             self.log_dir = os.path.join(log_dir_root, run_id)
             self.checkpoint_dir = os.path.join(self.log_dir, 'checkpoints')
             os.makedirs(self.log_dir, exist_ok=True)

@@ -71,6 +71,8 @@ training:
   image_res: 128
   data_dir: "data_generation/output_auto/datasets/attempt3_fixed_view_table"
   log_dir: "training/logs/attempt3_fixed_view_table"
+  run_name: "tmp_test_run" # Optional string tag for log dir name
+  max_dataset_size: 10   # Optional max samples for dataset
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'
   lpips_loss_weighting: 0.05
