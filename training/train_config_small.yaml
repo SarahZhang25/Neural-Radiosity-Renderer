@@ -74,3 +74,5 @@ training:
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'
   lpips_loss_weighting: 0.05
+  use_amp: True
+  use_compile: False
