@@ -14,6 +14,7 @@ class SceneDataset(Dataset):
         image_res: int = 128,
         num_points_per_object: int = 2048,
         split: str = 'train',
+        max_dataset_size: int = None,
     ):
         self.data_dir = data_dir
         self.image_res = image_res
@@ -34,6 +35,9 @@ class SceneDataset(Dataset):
         self.files = [item for item in self.files if item not in corrupted_paths]
         print(f"Removed {len(corrupted_paths)} corrupted images")
 
+        if max_dataset_size is not None and len(self.files) > max_dataset_size:
+            self.files = self.files[:max_dataset_size]
+            
         # Shuffle with a fixed seed
         if split == "all":
             print(f"[{split}] Using all {len(self.files)} samples in {data_dir}")
@@ -47,6 +51,7 @@ class SceneDataset(Dataset):
                 self.files = self.files[:split_idx]
             else:
                 self.files = self.files[split_idx:]
+                
                 
         print(f"[{split}] Found {len(self.files)} samples in {data_dir}")
 
