@@ -91,7 +91,7 @@ def calculate_psnr(pred, target):
 
 def make_vis_grid(linear_rendered, gt_img, max_images=16, diff_amplify=5.0):
     """
-    Build a side-by-side (pred | GT | diff) visualization grid.
+    Build a side-by-side (GT | pred | diff) visualization grid.
     Inputs are assumed to be [B, C, H, W] HDR images.
     """
     pred = linear_rendered.detach().cpu()[:max_images]
@@ -108,7 +108,7 @@ def make_vis_grid(linear_rendered, gt_img, max_images=16, diff_amplify=5.0):
     vis_gt   = to_uint8(gt_ldr)
     vis_diff = to_uint8(diff)
 
-    vis_img = torch.cat([vis_pred, vis_gt, vis_diff], dim=3)  # [N, C, H, W*3]
+    vis_img = torch.cat([vis_gt, vis_pred , vis_diff], dim=3)  # [N, C, H, W*3]
     grid = torchvision.utils.make_grid(vis_img.float(), nrow=1, normalize=False)
     return grid.byte()
 

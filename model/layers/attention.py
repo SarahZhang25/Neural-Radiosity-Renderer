@@ -195,8 +195,16 @@ class MultiHeadAttention(nn.Module):
                 )
                 max_seqlen_q = src_len
 
-                k_unpad, indices_k, cu_seqlens_k, max_seqlen_k, _ = unpad_input(k.transpose(1, 2), src_key_padding_mask)
-                v_unpad, _, _, _, _ = unpad_input(v.transpose(1, 2), src_key_padding_mask)
+                if src_key_padding_mask is not None:
+                    k_unpad, indices_k, cu_seqlens_k, max_seqlen_k, _ = unpad_input(k.transpose(1, 2), src_key_padding_mask)
+                    v_unpad, _, _, _, _ = unpad_input(v.transpose(1, 2), src_key_padding_mask)
+                else:
+                    k_unpad = rearrange(k, "b h s d -> (b s) h d")
+                    v_unpad = rearrange(v, "b h s d -> (b s) h d")
+                    cu_seqlens_k = torch.arange(
+                        0, (bs + 1) * ctx_len, step=ctx_len, dtype=torch.int32, device=q_unpad.device
+                    )
+                    max_seqlen_k = ctx_len
                 kv_unpad = torch.stack([k_unpad, v_unpad], dim=1)
 
                 out_unpad = flash_attn_varlen_kvpacked_func(
