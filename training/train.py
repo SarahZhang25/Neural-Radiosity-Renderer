@@ -426,7 +426,7 @@ class Trainer:
                     # Cleanup old checkpoints
                     for old_file in os.listdir(self.checkpoint_dir):
                         old_path = os.path.join(self.checkpoint_dir, old_file)
-                        if old_path != ckpt_path and old_file.endswith('.pt'):
+                        if old_path != ckpt_path and old_file.endswith('.pt') and not old_file.startswith('model_package_'):
                             os.remove(old_path)
                             print(f"  Removed old checkpoint: {old_file}")
                             
@@ -434,6 +434,22 @@ class Trainer:
                     print(f"WARNING: Failed to save checkpoint at epoch {epoch+1}: {e}")
                     if os.path.exists(tmp_path):
                         os.remove(tmp_path)
+
+                # Save torch.package for inference
+                if (epoch + 1) == self.num_epochs:
+                    pkg_path = os.path.join(self.checkpoint_dir, f"model_package_epoch_{epoch+1}.pt")
+                    try:
+                        import torch.package
+                        print(f"Packaging model to {pkg_path}...")
+                        with torch.package.PackageExporter(pkg_path) as exp:
+                            exp.intern("model.**")
+                            exp.intern("utils.**")
+                            exp.intern("pos_encodings.**")
+                            exp.extern("**")
+                            exp.save_pickle("model", "model.pkl", self.model)
+                        print(f"Saved packaged model to {pkg_path}")
+                    except Exception as e:
+                        print(f"WARNING: Failed to package model: {e}")
 
         self.writer.close()
         print("Training Complete.")
