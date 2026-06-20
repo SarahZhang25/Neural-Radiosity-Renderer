@@ -3,8 +3,8 @@
 
 # Training: 
 # Model: using new model with no state manager
-# -- fixed rope dims
-# Use 500 obj dataset attempt6_table_chair_540 -- full ds
+# -- fixed rope dims, fixed ray dirs in camera space
+# Use 500 obj dataset attempt6_table_chair_540 -- full data
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
@@ -71,8 +71,10 @@ training:
   image_res: 128
   data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
   log_dir: "training/logs/attempt6_table_chair_540"
-  run_name: "full_ds" # Optional string tag for log dir name
+  run_name: "full_ds_raypos_fixed" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
+  # shuffle_data: true
+  # shuffle_data_seed: 42
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'
   lpips_loss_weighting: 0.05

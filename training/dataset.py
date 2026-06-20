@@ -12,6 +12,8 @@ class SceneDataset(Dataset):
         num_points_per_object: int = 2048,
         split: str = 'train',
         max_dataset_size: int = None,
+        shuffle: bool = True,
+        shuffle_seed: int = 42
     ):
         self.data_dir = data_dir
         self.image_res = image_res
@@ -32,6 +34,10 @@ class SceneDataset(Dataset):
         self.files = [item for item in self.files if item not in corrupted_paths]
         print(f"Removed {len(corrupted_paths)} corrupted images")
 
+        if shuffle:
+            rng = np.random.RandomState(shuffle_seed)
+            rng.shuffle(self.files)
+        
         if max_dataset_size is not None and len(self.files) > max_dataset_size:
             self.files = self.files[:max_dataset_size]
             
@@ -40,16 +46,12 @@ class SceneDataset(Dataset):
             print(f"[{split}] Using all {len(self.files)} samples in {data_dir}")
         else:
             assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
-            rng = np.random.RandomState(42)
-            rng.shuffle(self.files)
-            
             split_idx = int(len(self.files) * 0.9)
             if split == 'train':
                 self.files = self.files[:split_idx]
             else:
                 self.files = self.files[split_idx:]
-                
-                
+
         print(f"[{split}] Found {len(self.files)} samples in {data_dir}")
 
         self.cam_up = np.array([0.0, 0.0, 1.0])  # TODO: unhardcode....

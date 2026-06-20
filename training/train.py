@@ -132,13 +132,17 @@ class Trainer:
             data_dir=self.tc['data_dir'],
             image_res=self.tc['image_res'],
             split='train',
-            max_dataset_size=self.tc.get('max_dataset_size', None)
+            max_dataset_size=self.tc.get('max_dataset_size', None),
+            shuffle=self.tc.get('shuffle_dataset', True),
+            shuffle_seed=self.tc.get('shuffle_seed', 42)
         )
         self.val_dataset = SceneDataset(
             data_dir=self.tc['data_dir'],
             image_res=self.tc['image_res'],
             split='val',
-            max_dataset_size=self.tc.get('max_dataset_size', None)
+            max_dataset_size=self.tc.get('max_dataset_size', None),
+            shuffle=self.tc.get('shuffle_dataset', True),
+            shuffle_seed=self.tc.get('shuffle_seed', 42)
         )
         
         batch_size = self.tc['batch_size']
@@ -370,20 +374,20 @@ class Trainer:
             grid_train = make_vis_grid(pred_train_fixed.float(), self.fixed_train_batch['target_image'].float(), max_images=16)
             self.writer.add_image('Visual/Training', grid_train, epoch)
 
-            # Debug stats at epoch 500
-            if (epoch + 1) == 500:
-                target_hdr = self.fixed_val_batch['target_image'].float()
-                pred_f32 = pred_fixed.float()
-                pred_log = log_transform(pred_f32 + 1e-6)
-                target_log = log_transform(target_hdr + 1e-6)
+            # # Debug stats at epoch 500
+            # if (epoch + 1) == 500:
+            #     target_hdr = self.fixed_val_batch['target_image'].float()
+            #     pred_f32 = pred_fixed.float()
+            #     pred_log = log_transform(pred_f32 + 1e-6)
+            #     target_log = log_transform(target_hdr + 1e-6)
 
-                print(f"Pred range: [{pred_f32.min():.3f}, {pred_f32.max():.3f}]")
-                print(f"Target range: [{target_hdr.min():.3f}, {target_hdr.max():.3f}]")
-                print(f"Pred log range: [{pred_log.min():.3f}, {pred_log.max():.3f}]")
-                print(f"Target log range: [{target_log.min():.3f}, {target_log.max():.3f}]")
+            #     print(f"Pred range: [{pred_f32.min():.3f}, {pred_f32.max():.3f}]")
+            #     print(f"Target range: [{target_hdr.min():.3f}, {target_hdr.max():.3f}]")
+            #     print(f"Pred log range: [{pred_log.min():.3f}, {pred_log.max():.3f}]")
+            #     print(f"Target log range: [{target_log.min():.3f}, {target_log.max():.3f}]")
 
-                num_negative = (pred_f32 < 0).sum().item()
-                print(f"Negative predictions: {num_negative} / {pred_f32.numel()}")
+            #     num_negative = (pred_f32 < 0).sum().item()
+            #     print(f"Negative predictions: {num_negative} / {pred_f32.numel()}")
 
         self.model.train()
 
