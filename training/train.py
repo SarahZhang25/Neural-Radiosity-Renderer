@@ -126,6 +126,7 @@ class Trainer:
 
         self.use_amp = self.tc.get('use_amp', True)
         self.use_compile = self.tc.get('use_compile', False)
+        self.package_model = self.tc.get('package_model', False)
 
         # Datasets
         self.train_dataset = SceneDataset(
@@ -436,10 +437,9 @@ class Trainer:
                         os.remove(tmp_path)
 
                 # Save torch.package for inference
-                if (epoch + 1) == self.num_epochs:
+                if self.package_model and (epoch + 1) == self.num_epochs:
                     pkg_path = os.path.join(self.checkpoint_dir, f"model_package_epoch_{epoch+1}.pt")
                     try:
-                        import torch.package
                         print(f"Packaging model to {pkg_path}...")
                         with torch.package.PackageExporter(pkg_path) as exp:
                             exp.intern("model.**")

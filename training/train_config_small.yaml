@@ -69,9 +69,9 @@ training:
   save_interval: 100  # for visualization
   checkpoint_interval: 1000  # for saving model checkpoint 
   image_res: 128
-  data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
-  log_dir: "training/logs/attempt6_table_chair_540"
-  run_name: "full_ds_raypos_fixed" # Optional string tag for log dir name
+  data_dir: "renderformer/tmp/dataset_single_obj"
+  log_dir: "training/logs/rf_single_obj"
+  run_name: "tmp_run" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42
@@ -80,3 +80,4 @@ training:
   lpips_loss_weighting: 0.05
   use_amp: True
   use_compile: False
+  package_model: False

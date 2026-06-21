@@ -4,6 +4,44 @@ import numpy as np
 from torch.utils.data import Dataset
 import glob
 
+def load_exr(path):
+    try:
+        import cv2
+        os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
+        img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        if img is not None:
+            if len(img.shape) == 3 and img.shape[2] >= 3:
+                # OpenCV loads in BGR, convert to RGB
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            return img.astype(np.float32)
+    except Exception:
+        pass
+
+    try:
+        import imageio
+        if hasattr(imageio, 'v3'):
+            return imageio.v3.imread(path).astype(np.float32)
+        else:
+            return imageio.imread(path).astype(np.float32)
+    except Exception:
+        pass
+
+    try:
+        import OpenEXR
+        import Imath
+        file = OpenEXR.InputFile(path)
+        dw = file.header()['dataWindow']
+        size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
+        pt = Imath.PixelType(Imath.PixelType.FLOAT)
+        r = np.frombuffer(file.channel('R', pt), dtype=np.float32).reshape(size[1], size[0])
+        g = np.frombuffer(file.channel('G', pt), dtype=np.float32).reshape(size[1], size[0])
+        b = np.frombuffer(file.channel('B', pt), dtype=np.float32).reshape(size[1], size[0])
+        return np.stack([r, g, b], axis=-1)
+    except Exception:
+        pass
+
+    raise RuntimeError(f"Failed to load EXR file: {path}. Ensure cv2, imageio, or OpenEXR is installed.")
+
 class SceneDataset(Dataset):
     def __init__(
         self, 
@@ -26,9 +64,24 @@ class SceneDataset(Dataset):
         # Filter out any corrupted images (NaN or Inf values in target HDR image)
         corrupted_paths = []
         for file_path in self.files:
-            npz_data = np.load(file_path)
-            img_hdr = npz_data["hdr_target_image"]
-            if np.isnan(img_hdr).any() or np.isinf(img_hdr).any():
+            ## Old:
+            # npz_data = np.load(file_path)
+            # img_hdr = npz_data["hdr_target_image"]
+            # if np.isnan(img_hdr).any() or np.isinf(img_hdr).any():
+            #     corrupted_paths.append(file_path)
+
+            exr_path = os.path.splitext(file_path)[0] + '_0.exr' # TODO: resolve these paths.....
+            if not os.path.exists(exr_path):
+                print(f"Warning: Missing {exr_path}")
+                corrupted_paths.append(file_path)
+                continue
+            
+            try:
+                img_hdr = load_exr(exr_path)
+                if np.isnan(img_hdr).any() or np.isinf(img_hdr).any():
+                    corrupted_paths.append(file_path)
+            except Exception as e:
+                print(f"Error loading {exr_path}: {e}")
                 corrupted_paths.append(file_path)
 
         self.files = [item for item in self.files if item not in corrupted_paths]
@@ -91,7 +144,11 @@ class SceneDataset(Dataset):
         data = np.load(file_path)
         
         # 1. Load Image
-        image_np = data['hdr_target_image']
+        if 'hdr_target_image' in data:
+            image_np = data['hdr_target_image']
+        else:
+            exr_path = os.path.splitext(file_path)[0] + '_0.exr' # TODO: resolve this path
+            image_np = load_exr(exr_path)
         image_np = image_np[..., :3]
         image_tensor = torch.from_numpy(image_np).permute(2, 0, 1).float()
         image_tensor = torch.nn.functional.interpolate(image_tensor.unsqueeze(0), size=(self.image_res, self.image_res), mode='bilinear', align_corners=False).squeeze(0)
