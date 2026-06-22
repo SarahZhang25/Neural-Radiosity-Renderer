@@ -4,7 +4,7 @@
 # Training: 
 # Model: using new model with no state manager
 # -- fixed rope dims, fixed ray dirs in camera space
-# Use 500 obj dataset attempt6_table_chair_540 -- full data
+# Use blender-rendered dataset renderformer/tmp/dataset_single_obj -- 10 scenes
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
@@ -69,9 +69,9 @@ training:
   save_interval: 100  # for visualization
   checkpoint_interval: 1000  # for saving model checkpoint 
   image_res: 128
-  data_dir: "renderformer/tmp/dataset_single_obj"
-  log_dir: "training/logs/rf_single_obj"
-  run_name: "tmp_run" # Optional string tag for log dir name
+  data_dir: "renderformer/data_generation/datasets/ds1_single_obj_ball_cbox3"
+  log_dir: "training/logs/rf_ds1_single_obj_ball_cbox3"
+  # run_name: "" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42

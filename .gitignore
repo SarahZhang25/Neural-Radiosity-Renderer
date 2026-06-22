@@ -2,6 +2,7 @@
 *__pycache__
 examples/
 outputs/
+*.log
 
 point-cloud-dynamics-model/
 renderformer

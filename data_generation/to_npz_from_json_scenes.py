@@ -3,6 +3,9 @@ Reads in a directory of JSON configurations, parsing all mesh geometry (using th
 along with materials, cameras, and rendering the target HDR and PNGs, exporting the output .npz 
 files identically to generate_auto_mitsuba.py.
 
+TODO: add support for multiple workers using concurrent.futures to speed up processing.
+though tbh it's pretty fast -- 500 scenes in < 1 min?
+
 Ex usage:
 cd /home/sazhang/Neural-Radiosity-Renderer/data_generation
 python to_npz_from_json_scenes.py \
