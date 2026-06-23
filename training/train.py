@@ -135,7 +135,7 @@ class Trainer:
             split='train',
             max_dataset_size=self.tc.get('max_dataset_size', None),
             shuffle=self.tc.get('shuffle_dataset', True),
-            shuffle_seed=self.tc.get('shuffle_seed', 42)
+            shuffle_seed=self.tc.get('shuffle_data_seed', 42)
         )
         self.val_dataset = SceneDataset(
             data_dir=self.tc['data_dir'],
@@ -143,7 +143,7 @@ class Trainer:
             split='val',
             max_dataset_size=self.tc.get('max_dataset_size', None),
             shuffle=self.tc.get('shuffle_dataset', True),
-            shuffle_seed=self.tc.get('shuffle_seed', 42)
+            shuffle_seed=self.tc.get('shuffle_data_seed', 42)
         )
         
         batch_size = self.tc['batch_size']

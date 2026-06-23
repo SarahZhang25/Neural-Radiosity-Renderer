@@ -64,24 +64,21 @@ class SceneDataset(Dataset):
         # Filter out any corrupted images (NaN or Inf values in target HDR image)
         corrupted_paths = []
         for file_path in self.files:
-            ## Old:
-            # npz_data = np.load(file_path)
-            # img_hdr = npz_data["hdr_target_image"]
-            # if np.isnan(img_hdr).any() or np.isinf(img_hdr).any():
-            #     corrupted_paths.append(file_path)
-
             exr_path = os.path.splitext(file_path)[0] + '_0.exr' # TODO: resolve these paths.....
-            if not os.path.exists(exr_path):
-                print(f"Warning: Missing {exr_path}")
-                corrupted_paths.append(file_path)
-                continue
-            
-            try:
-                img_hdr = load_exr(exr_path)
-                if np.isnan(img_hdr).any() or np.isinf(img_hdr).any():
+            if os.path.exists(exr_path):
+                try:
+                    img_hdr = load_exr(exr_path)
+                except Exception as e:
+                    print(f"Error loading {exr_path}: {e}")
                     corrupted_paths.append(file_path)
-            except Exception as e:
-                print(f"Error loading {exr_path}: {e}")
+            else:
+                npz_data = np.load(file_path)
+                if "hdr_target_image" not in npz_data:
+                    print(f"Warning: Missing 'hdr_target_image' in {file_path}")
+                    continue
+                img_hdr = npz_data["hdr_target_image"]
+            
+            if np.isnan(img_hdr).any() or np.isinf(img_hdr).any():
                 corrupted_paths.append(file_path)
 
         self.files = [item for item in self.files if item not in corrupted_paths]

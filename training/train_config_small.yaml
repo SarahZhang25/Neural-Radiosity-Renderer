@@ -1,10 +1,11 @@
 # Training Configuration
 # reduce model size significantly: 50M params
 
-# Training: 
+# Training: test small set overfitting ability
 # Model: using new model with no state manager
 # -- fixed rope dims, fixed ray dirs in camera space
-# Use blender-rendered dataset renderformer/tmp/dataset_single_obj -- 10 scenes
+# Sample 4 from attempt6_table_chair_540, shuffle using seed 43
+# 10k epochs
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
@@ -64,17 +65,17 @@ predictor:
 training:
   batch_size: 64
   learning_rate: 1.0e-4
-  num_epochs: 5000
-  warmup_epochs: 500
+  num_epochs: 10000
+  warmup_epochs: 1000
   save_interval: 100  # for visualization
   checkpoint_interval: 1000  # for saving model checkpoint 
   image_res: 128
-  data_dir: "renderformer/data_generation/datasets/ds1_single_obj_ball_cbox3"
-  log_dir: "training/logs/rf_ds1_single_obj_ball_cbox3"
-  # run_name: "" # Optional string tag for log dir name
-  # max_dataset_size: 10   # Optional max samples for dataset
-  # shuffle_data: true
-  # shuffle_data_seed: 42
+  data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
+  log_dir: "training/logs/attempt6_table_chair_540"
+  run_name: "overfit_n4_shuffleseed43_epochs10k" # Optional string tag for log dir name
+  max_dataset_size: 4   # Optional max samples for dataset
+  shuffle_data: true
+  shuffle_data_seed: 43
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'
   lpips_loss_weighting: 0.05
