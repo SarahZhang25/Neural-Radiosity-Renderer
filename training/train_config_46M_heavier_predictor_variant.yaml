@@ -1,25 +1,29 @@
 # Training Configuration
-# 47.1M param model
-# Total Parameters: 47,114,126
-# Trainable Parameters: 47,114,118
-#   pointnet_encoder: 3,908,608 params
-#   scene_transformer: 12,617,732 params
-#   ray_encoder: 3,540,992 params
-#   predictor: 27,046,794 params
+# about 46M param --- 
+# WAIT THIS IS UNIDEAL - WE WANT HEAVIER ENCODER LIGHTER PREDICTOR DON'T WE
+# Total Parameters: 46,232,462
+# Trainable Parameters: 46,232,454
+#   pointnet_encoder: 7,491,584 params
+#   scene_transformer: 7,104,004 params
+#   ray_encoder: 2,655,744 params
+#   predictor: 28,981,130 params
+#     dpt_head: 10,042,243 params
 
-# Training: 
+# Training: test small set overfitting ability
 # Model: using new model with no state manager
 # -- fixed rope dims, fixed ray dirs in camera space
-# Use blender-rendered dataset renderformer/tmp/dataset_single_obj -- 10 scenes
+# Sample 4 from attempt6_table_chair_540, shuffle using seed 43
+# 10k epochs
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
-  hidden_dims: [128, 256, 512]
-  output_dim: 512
+  hidden_dims: [1024, 1024, 2048]
+  output_dim: 384
   backbone_dim: 512
+  property_embed_dim: 128
   pooling_type: 'hierarchical' #'set_abstraction' # Replaced 'hierarchical' and 'max' with set abstraction for local features
   num_hierarchical_levels: 3 # Ignored
-  num_centroids: 64
+  # num_centroids: 64
 
 # state:
 #   num_tokens: 8  # 2x2x2 grid
@@ -28,10 +32,10 @@ encoder:
 #   init_scale: 0.1
 
 decoder:
-  hidden_dim: 512
-  num_layers: 4
+  hidden_dim: 384
+  num_layers: 4 
   num_heads: 4
-  feedforward_dim: 2048 # 512 * 4??? The number of frequencies in the positional encoding for vertex positions
+  feedforward_dim: 1536 # 512 * 4??? The number of frequencies in the positional encoding for vertex positions
   dropout: 0.0
   activation: 'gelu'
   return_all_layers: true
@@ -49,14 +53,14 @@ ray_encoder:
   vdir_num_freqs: 4
   patch_size: 16
   norm_type: 'layer_norm'
-  view_transformer_latent_dim: 512 # Must match predictor hidden_dim
+  view_transformer_latent_dim: 384 # Must match predictor hidden_dim
   view_transformer_n_heads: 4
 
 predictor:
   # TODO: add a obj num_freq term?
-  hidden_dim: 512
+  hidden_dim: 384
+  num_layers: 8
   num_heads: 4
-  num_layers: 4
   dropout: 0
   activation: 'gelu'
   norm_type: 'layer_norm'
@@ -70,17 +74,17 @@ predictor:
 training:
   batch_size: 64
   learning_rate: 1.0e-4
-  num_epochs: 5000
-  warmup_epochs: 500
+  num_epochs: 10000
+  warmup_epochs: 1000
   save_interval: 100  # for visualization
   checkpoint_interval: 1000  # for saving model checkpoint 
   image_res: 128
-  data_dir: "renderformer/data_generation/datasets/ds1_single_obj_ball_cbox3"
-  log_dir: "training/logs/rf_ds1_single_obj_ball_cbox3"
-  # run_name: "" # Optional string tag for log dir name
-  # max_dataset_size: 10   # Optional max samples for dataset
-  # shuffle_data: true
-  # shuffle_data_seed: 42
+  data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
+  log_dir: "training/logs/attempt6_table_chair_540"
+  run_name: "overfit_n4_shuffleseed43_epochs10k" # Optional string tag for log dir name
+  max_dataset_size: 4   # Optional max samples for dataset
+  shuffle_data: true
+  shuffle_data_seed: 43
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'
   lpips_loss_weighting: 0.05
