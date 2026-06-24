@@ -1,11 +1,12 @@
 # Training Configuration
-# 47.1M param model
-# Total Parameters: 47,114,126
-# Trainable Parameters: 47,114,118
-#   pointnet_encoder: 3,908,608 params
+# about 46M param
+# Total Parameters: 45,930,062
+# Trainable Parameters: 45,930,054
+#   pointnet_encoder: 6,637,056 params
 #   scene_transformer: 12,617,732 params
 #   ray_encoder: 3,540,992 params
-#   predictor: 27,046,794 params
+#   predictor: 23,134,282 params
+#     dpt_head: 6,314,051 params
 
 # Training: test small set overfitting ability
 # Model: using new model with no state manager
@@ -15,12 +16,13 @@
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
-  hidden_dims: [128, 256, 512]
+  hidden_dims: [768, 1024, 1536]
   output_dim: 512
   backbone_dim: 512
+  property_embed_dim: 128
   pooling_type: 'hierarchical' #'set_abstraction' # Replaced 'hierarchical' and 'max' with set abstraction for local features
   num_hierarchical_levels: 3 # Ignored
-  num_centroids: 64
+  # num_centroids: 64
 
 # state:
 #   num_tokens: 8  # 2x2x2 grid
@@ -30,7 +32,7 @@ encoder:
 
 decoder:
   hidden_dim: 512
-  num_layers: 4
+  num_layers: 4 
   num_heads: 4
   feedforward_dim: 2048 # 512 * 4??? The number of frequencies in the positional encoding for vertex positions
   dropout: 0.0
@@ -56,8 +58,8 @@ ray_encoder:
 predictor:
   # TODO: add a obj num_freq term?
   hidden_dim: 512
-  num_heads: 4
   num_layers: 4
+  num_heads: 4
   dropout: 0
   activation: 'gelu'
   norm_type: 'layer_norm'
@@ -65,7 +67,7 @@ predictor:
   pe_num_freqs: 8 # is this redunant to vertex_pe_num_freqs? TODO: figure this out 
   use_dpt_decoder: true
   dpt_features: 128
-  dpt_out_channels: [96, 192, 384, 768] 
+  dpt_out_channels: [64, 128, 256, 512] 
   include_alpha: false
 
 training:
