@@ -178,8 +178,6 @@ def get_material_vector(material_dict):
     specular = material_dict.get("specular", [0.0, 0.0, 0.0])
     emission = material_dict.get("emissive", [0.0, 0.0, 0.0])
     roughness = material_dict.get("roughness", 0.5)
-    # return np.concatenate([diffuse, emission, [roughness]]).astype(np.float32)
-
     return np.concatenate([diffuse, specular, emission, [roughness]]).astype(np.float32)
 
 
