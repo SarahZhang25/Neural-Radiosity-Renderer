@@ -1,6 +1,10 @@
 .DS_Store
 *__pycache__
-renderformer/
 examples/
-point-cloud-dynamics-model/
 outputs/
+*.log
+
+point-cloud-dynamics-model/
+renderformer
+renderformer_tex_src
+rigidformer

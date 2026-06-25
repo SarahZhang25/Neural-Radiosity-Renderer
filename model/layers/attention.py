@@ -195,8 +195,16 @@ class MultiHeadAttention(nn.Module):
                 )
                 max_seqlen_q = src_len
 
-                k_unpad, indices_k, cu_seqlens_k, max_seqlen_k, _ = unpad_input(k.transpose(1, 2), src_key_padding_mask)
-                v_unpad, _, _, _, _ = unpad_input(v.transpose(1, 2), src_key_padding_mask)
+                if src_key_padding_mask is not None:
+                    k_unpad, indices_k, cu_seqlens_k, max_seqlen_k, _ = unpad_input(k.transpose(1, 2), src_key_padding_mask)
+                    v_unpad, _, _, _, _ = unpad_input(v.transpose(1, 2), src_key_padding_mask)
+                else:
+                    k_unpad = rearrange(k, "b h s d -> (b s) h d")
+                    v_unpad = rearrange(v, "b h s d -> (b s) h d")
+                    cu_seqlens_k = torch.arange(
+                        0, (bs + 1) * ctx_len, step=ctx_len, dtype=torch.int32, device=q_unpad.device
+                    )
+                    max_seqlen_k = ctx_len
                 kv_unpad = torch.stack([k_unpad, v_unpad], dim=1)
 
                 out_unpad = flash_attn_varlen_kvpacked_func(
@@ -552,6 +560,7 @@ class TransformerEncoder(nn.Module):
         rope_type: Literal['object', 'object_learned', 'object_mixed'] = 'object',
         rope_double_max_freq: bool = False,
         qk_norm: bool = False,
+        return_all_layers: bool = True,
     ):
         super().__init__()
         assert norm_first, "Only support norm_first=True"
@@ -583,6 +592,7 @@ class TransformerEncoder(nn.Module):
                 dim=rope_dim,
                 double_max_freq=rope_double_max_freq,
             )
+        self.return_all_layers = return_all_layers
 
     def forward(self, x, src_key_padding_mask=None, obj_pos=None):
         # src_key_padding_mask: (B, N), key padding mask, things you want to attend to is True
@@ -593,8 +603,16 @@ class TransformerEncoder(nn.Module):
         else:
             rope_cos = rope_sin = None
 
+        all_layers = [] if self.return_all_layers else None
+
         for layer in self.layers:
             x = layer(x, src_key_padding_mask=src_key_padding_mask, rope_cos=rope_cos, rope_sin=rope_sin)
+            if self.return_all_layers:
+                all_layers.append(x)
+                
+        if self.return_all_layers:
+            return all_layers
+            
         return x
 
 

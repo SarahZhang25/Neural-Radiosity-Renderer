@@ -1,26 +1,29 @@
 # Training Configuration
-# 47.1M param model
-# Total Parameters: 47,114,126
-# Trainable Parameters: 47,114,118
-#   pointnet_encoder: 3,908,608 params
+# about 46M param
+# Total Parameters: 45,930,062
+# Trainable Parameters: 45,930,054
+#   pointnet_encoder: 6,637,056 params
 #   scene_transformer: 12,617,732 params
 #   ray_encoder: 3,540,992 params
-#   predictor: 27,046,794 params
+#   predictor: 23,134,282 params
+#     dpt_head: 6,314,051 params
 
-# Training: test small set overfitting ability
+# Training:
 # Model: using new model with no state manager
 # -- fixed rope dims, fixed ray dirs in camera space
-# Sample 4 from attempt6_table_chair_540, shuffle using seed 43
-# 10k epochs
+# Data: rf ds1_single_obj_ball_cbox3
+# 20k epochs
+# Compare with RF run: renderformer/training/logs/ds1_single_obj_ball_cbox3/20260623-155702_full_ds_params46M_res128x128/config.yaml
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
-  hidden_dims: [128, 256, 512]
+  hidden_dims: [768, 1024, 1536]
   output_dim: 512
   backbone_dim: 512
+  property_embed_dim: 128
   pooling_type: 'hierarchical' #'set_abstraction' # Replaced 'hierarchical' and 'max' with set abstraction for local features
   num_hierarchical_levels: 3 # Ignored
-  num_centroids: 64
+  # num_centroids: 64
 
 # state:
 #   num_tokens: 8  # 2x2x2 grid
@@ -30,7 +33,7 @@ encoder:
 
 decoder:
   hidden_dim: 512
-  num_layers: 4
+  num_layers: 4 
   num_heads: 4
   feedforward_dim: 2048 # 512 * 4??? The number of frequencies in the positional encoding for vertex positions
   dropout: 0.0
@@ -56,8 +59,8 @@ ray_encoder:
 predictor:
   # TODO: add a obj num_freq term?
   hidden_dim: 512
-  num_heads: 4
   num_layers: 4
+  num_heads: 4
   dropout: 0
   activation: 'gelu'
   norm_type: 'layer_norm'
@@ -65,23 +68,23 @@ predictor:
   pe_num_freqs: 8 # is this redunant to vertex_pe_num_freqs? TODO: figure this out 
   use_dpt_decoder: true
   dpt_features: 128
-  dpt_out_channels: [96, 192, 384, 768] 
+  dpt_out_channels: [64, 128, 256, 512] 
   include_alpha: false
 
 training:
-  batch_size: 64
+  batch_size: 10 #64
   learning_rate: 1.0e-4
-  num_epochs: 10000
-  warmup_epochs: 1000
-  save_interval: 100  # for visualization
+  num_epochs: 20000
+  warmup_epochs: 2000
+  save_interval: 200  # for visualization
   checkpoint_interval: 1000  # for saving model checkpoint 
   image_res: 128
-  data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
-  log_dir: "training/logs/attempt6_table_chair_540"
-  run_name: "overfit_n4_shuffleseed43_epochs10k" # Optional string tag for log dir name
-  max_dataset_size: 4   # Optional max samples for dataset
-  shuffle_data: true
-  shuffle_data_seed: 43
+  data_dir: "renderformer/datasets/processed_datasets/ds1_single_obj_ball_cbox3"
+  log_dir: "training/logs/rf_ds1_single_obj_ball_cbox3"
+  run_name: "full_ds_params46M_res128x128" # Optional string tag for log dir name
+  # max_dataset_size: 4   # Optional max samples for dataset. If not specified, uses whole dataset
+  # shuffle_data: true
+  # shuffle_data_seed: 43
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'
   lpips_loss_weighting: 0.05

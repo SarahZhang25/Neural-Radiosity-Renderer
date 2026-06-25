@@ -9,11 +9,12 @@ import yaml
 from typing import Dict, Tuple, Optional
 
 from model.encoder import PointNetEncoder
+from model.layers.attention import TransformerEncoder
 from model.decoder import TransformerDecoder
 from model.layers.bidirectional_attention import BidirectionalTransformerEncoder
 # from model.predictor import RadiancePredictor
 from model.predictor_rope import RadiancePredictor
-from model.state_manager import StateManager
+# from model.state_manager import StateManager
 from model.ray_encoder import RayEncoder
 
 class GlobalIlluminationModel(nn.Module):
@@ -28,6 +29,20 @@ class GlobalIlluminationModel(nn.Module):
         super().__init__()
         self.use_dpt_decoder = config['predictor']['use_dpt_decoder']
 
+        # Calculate rope_dim
+        if config['predictor']['pe_type'] == 'nerf':
+            self.rope_dim = None
+        elif config['predictor']['pe_type'] == 'rope':
+            # rope_dim controls how many frequency bands are used for positional encoding.
+            # It must not exceed the head's capacity: 3 coords × (rope_dim//2) freqs ≤ head_dim//2.
+            # Using max capacity (~42 for head_dim=128) starves content attention; use the config
+            # value (typically 8) clamped to the max as a safety bound.
+            decoder_head_dim = config['decoder']['hidden_dim'] // config['decoder']['num_heads']
+            max_rope_dim = ((decoder_head_dim // 2) // 3) * 2
+            self.rope_dim = min(config['ray_encoder']['vertex_pe_num_freqs'], max_rope_dim)
+        else:
+            raise ValueError(f"Invalid positional encoding type: {config['predictor']['pe_type']}")
+
         # Scene Representation Stage
         # 1. Object Encoder
         self.pointnet_encoder = PointNetEncoder(
@@ -35,35 +50,54 @@ class GlobalIlluminationModel(nn.Module):
             hidden_dims=config['encoder']['hidden_dims'],
             output_dim=config['encoder']['output_dim'],
             backbone_dim=config['encoder']['backbone_dim'],
+            property_embed_dim=config['encoder'].get('property_embed_dim', 128),
             pooling_type=config['encoder']['pooling_type'],
             num_hierarchical_levels=config['encoder']['num_hierarchical_levels'],
         )
         
-        # 2. State Manager (Learnable 3D Grid)
-        self.state_manager = StateManager(
-            num_tokens=config['state']['num_tokens'],
-            token_dim=config['state']['token_dim'],
-            learnable_init=config['state']['learnable_init'],
-            init_scale=config['state']['init_scale']
-        )
+        # # 2. State Manager (Learnable 3D Grid)
+        # self.state_manager = StateManager(
+        #     num_tokens=config['state']['num_tokens'],
+        #     token_dim=config['state']['token_dim'],
+        #     learnable_init=config['state']['learnable_init'],
+        #     init_scale=config['state']['init_scale']
+        # )
 
-        # 3. View-Independent Bi-Directional Transformer
-        self.scene_transformer = BidirectionalTransformerEncoder(
-        # self.scene_transformer = TransformerDecoder(
-            state_dim=config['decoder']['hidden_dim'],
+        # 3. View-Independent Scene Transformer
+        # TODO: possibly redo the config... I don't like "decoder".
+        # should be like, representation learning phase or something
+        self.scene_transformer = TransformerEncoder(
             num_layers=config['decoder']['num_layers'],
             num_heads=config['decoder']['num_heads'],
-            feedforward_dim=config['decoder']['feedforward_dim'],
+            hidden_dim=config['decoder']['hidden_dim'],
+            ffn_hidden_dim=config['decoder']['feedforward_dim'],
             dropout=config['decoder']['dropout'],
             activation=config['decoder']['activation'],
-            return_all_layers=config['decoder']['return_all_layers'],
-            use_self_attention=config['decoder']['use_self_attention'],
             norm_type=config['decoder']['norm_type'],
+            rope_dim=self.rope_dim,
+            rope_type='object',
+            bias=config['decoder']['bias'],# True by default...
             qk_norm=config['decoder']['qk_norm'],
-            num_register_tokens=config['decoder']['num_register_tokens'],
-            rope_dim=((config['decoder']['hidden_dim'] // config['decoder']['num_heads']) // 2) // 3 * 2, # Total angles must fit in head_dim // 2
-            rope_type='object'
+            rope_double_max_freq=config['decoder']['rope_double_max_freq'],
+            return_all_layers=config['decoder']['return_all_layers']
         )
+        ## OLD VERSION
+        # self.scene_transformer = BidirectionalTransformerEncoder(
+        # # self.scene_transformer = TransformerDecoder(
+        #     state_dim=config['decoder']['hidden_dim'],
+        #     num_layers=config['decoder']['num_layers'],
+        #     num_heads=config['decoder']['num_heads'],
+        #     feedforward_dim=config['decoder']['feedforward_dim'],
+        #     dropout=config['decoder']['dropout'],
+        #     activation=config['decoder']['activation'],
+        #     return_all_layers=config['decoder']['return_all_layers'],
+        #     use_self_attention=config['decoder']['use_self_attention'],
+        #     norm_type=config['decoder']['norm_type'],
+        #     qk_norm=config['decoder']['qk_norm'],
+        #     num_register_tokens=config['decoder']['num_register_tokens'],
+        #     rope_dim=((config['decoder']['hidden_dim'] // config['decoder']['num_heads']) // 2) // 3 * 2, # Total angles must fit in head_dim // 2
+        #     rope_type='object'
+        # )
 
         # Rendering Stage
         # 4. Ray Encoder
@@ -90,7 +124,7 @@ class GlobalIlluminationModel(nn.Module):
             norm_type=config['predictor']['norm_type'],
             pe_type=config['predictor']['pe_type'],
             pe_num_freqs=config['predictor']['pe_num_freqs'],
-            use_dpt_decoder=config['predictor']['use_dpt_decoder'],
+            use_dpt_decoder=config['predictor'].get('use_dpt_decoder', True),
             dpt_features=config['predictor'].get('dpt_features', None),
             dpt_out_channels=config['predictor'].get('dpt_out_channels', None),
             include_alpha=config['predictor'].get('include_alpha', False)            
@@ -143,19 +177,24 @@ class GlobalIlluminationModel(nn.Module):
         object_tokens = obj_features_flat.view(B, N_obj, -1)
 
         # 2. Get State Tokens
-        state_tokens = self.state_manager.get_tokens(B)  # (B, N_state, D)
+        # state_tokens = self.state_manager.get_tokens(B)  # (B, N_state, D)
 
         # 3. Spatial Positional Encoding (RoPE preparation)
         # Calculate Object Centroids for RoPE
         object_centroids = obj_positions.mean(dim=2)  # (B, N_obj, 3)
 
-        state_positions = self.state_manager.get_positions(B)  # (B, N_state, 3)
+        # state_positions = None # no longer using self.state_manager.get_positions(B)  # (B, N_state, 3)
 
         # 4. Bi-Directional Interaction
-        all_state_layers, all_obj_layers = self.scene_transformer(
-            state_tokens=state_tokens,
-            obj_tokens=object_tokens,
-            state_pos=state_positions,
+        # all_state_layers, all_obj_layers = self.scene_transformer(
+        #     state_tokens=state_tokens,
+        #     obj_tokens=object_tokens,
+        #     state_pos=state_positions,
+        #     obj_pos=object_centroids
+        # )
+        # self-attn only transformer
+        all_obj_layers =  self.scene_transformer(
+            x=object_tokens,
             obj_pos=object_centroids
         )
 
@@ -167,19 +206,23 @@ class GlobalIlluminationModel(nn.Module):
              
         # ray_tokens: (B, N_patches, D)
         if w2c is not None:
-             # operating in camera space, camera origin is 0
+             # rotate rays to camera space, where camera origin is 0
              rays_o_input = torch.zeros_like(rays_o) 
+             w2c_R = w2c[:, :3, :3]
+             rays_d_input = torch.einsum('bij,bhwj->bhwi', w2c_R, rays_d)
         else:
              rays_o_input = rays_o
+             rays_d_input = rays_d
              
-        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d)
+        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d_input)
 
         # 6. Predict Radiance
         # Ray tokens query the scene (object + state features)
+        # If no state features, predictor gracefully handles None input and sets scene_features using only object features
         radiance = self.predictor(
             multi_scale_features=all_obj_layers,
             query_view_features=ray_tokens,
-            multi_scale_state_features=all_state_layers,
+            # multi_scale_state_features=all_state_layers,
             patch_h=rays_d.shape[1] // self.ray_encoder.patch_size,
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,

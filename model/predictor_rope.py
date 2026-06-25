@@ -63,8 +63,12 @@ class RadiancePredictor(nn.Module):
 
         # RoPE needs to fit 3 coordinates. Each coordinate needs rope_dim // 2 angles.
         # Total angles = 3 * (rope_dim // 2). This must be <= head_dim // 2.
-        # So rope_dim // 2 * 3 <= head_dim // 2  => rope_dim <= (head_dim // 2) // 3 * 2
-        rope_dim = (((hidden_dim // num_heads) // 2) // 3) * 2 if pe_type == 'rope' else None
+        # Use pe_num_freqs (config value, typically 8) clamped to the max capacity.
+        if pe_type == 'rope':
+            max_rope_dim = (((hidden_dim // num_heads) // 2) // 3) * 2
+            self.rope_dim = min(pe_num_freqs, max_rope_dim)
+        else:
+            self.rope_dim = None
         
         self.transformer = TransformerDecoder(
             num_layers=num_layers,
@@ -75,7 +79,7 @@ class RadiancePredictor(nn.Module):
             include_self_attn=include_self_attn,
             activation=activation,
             norm_type=norm_type,
-            rope_dim=rope_dim,
+            rope_dim=self.rope_dim,
             rope_type='object'
         )
 
@@ -163,9 +167,10 @@ class RadiancePredictor(nn.Module):
             patch_w = patch_w or patch_grid_size
 
         # Weighted fusion of multi-scale object features
-        layer_weights = torch.softmax(self.layer_weights, dim=0)
+        num_feats = min(3, len(multi_scale_features))
+        layer_weights_obj = torch.softmax(self.layer_weights[:num_feats], dim=0)
         obj_features = sum(
-            w * feat for w, feat in zip(layer_weights, multi_scale_features[:3])
+            w * feat for w, feat in zip(layer_weights_obj, multi_scale_features[:num_feats])
         )  # (B, N_obj, D)
 
         if self.pe_type == 'nerf' and positions_cam_space is not None:
@@ -181,8 +186,10 @@ class RadiancePredictor(nn.Module):
 
         # Optionally concatenate state features
         if multi_scale_state_features is not None:
+            num_state_feats = min(3, len(multi_scale_state_features))
+            layer_weights_state = torch.softmax(self.layer_weights[:num_state_feats], dim=0)
             state_features = sum(
-                w * feat for w, feat in zip(layer_weights, multi_scale_state_features[:3])
+                w * feat for w, feat in zip(layer_weights_state, multi_scale_state_features[:num_state_feats])
             )  # (B, N_state, D)
             scene_features = torch.cat([obj_features, state_features], dim=1)
             
@@ -193,6 +200,9 @@ class RadiancePredictor(nn.Module):
         else:
             scene_features = obj_features
 
+        # print("shapes:")
+        # print(f"query_view_features: {query_view_features.shape}, scene_features: {scene_features.shape}")
+        # print(f"obj_pos: {ctx_pos.shape if ctx_pos is not None else None}, ray_positions: {ray_positions.shape if ray_positions is not None else None}")
         # Cross-attention: rays query scene
         if use_dpt_decoder:
             with torch.autocast(device_type="cuda", dtype=torch.float32 if tf32_mode else torch.bfloat16):

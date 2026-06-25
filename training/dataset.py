@@ -3,9 +3,44 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 import glob
-from training.ray_generator import RayGenerator
-import mitsuba as mi
-mi.set_variant('scalar_rgb')
+
+def load_exr(path):
+    try:
+        import cv2
+        os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
+        img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        if img is not None:
+            if len(img.shape) == 3 and img.shape[2] >= 3:
+                # OpenCV loads in BGR, convert to RGB
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            return img.astype(np.float32)
+    except Exception:
+        pass
+
+    try:
+        import imageio
+        if hasattr(imageio, 'v3'):
+            return imageio.v3.imread(path).astype(np.float32)
+        else:
+            return imageio.imread(path).astype(np.float32)
+    except Exception:
+        pass
+
+    try:
+        import OpenEXR
+        import Imath
+        file = OpenEXR.InputFile(path)
+        dw = file.header()['dataWindow']
+        size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
+        pt = Imath.PixelType(Imath.PixelType.FLOAT)
+        r = np.frombuffer(file.channel('R', pt), dtype=np.float32).reshape(size[1], size[0])
+        g = np.frombuffer(file.channel('G', pt), dtype=np.float32).reshape(size[1], size[0])
+        b = np.frombuffer(file.channel('B', pt), dtype=np.float32).reshape(size[1], size[0])
+        return np.stack([r, g, b], axis=-1)
+    except Exception:
+        pass
+
+    raise RuntimeError(f"Failed to load EXR file: {path}. Ensure cv2, imageio, or OpenEXR is installed.")
 
 class SceneDataset(Dataset):
     def __init__(
@@ -14,6 +49,9 @@ class SceneDataset(Dataset):
         image_res: int = 128,
         num_points_per_object: int = 2048,
         split: str = 'train',
+        max_dataset_size: int = None,
+        shuffle: bool = True,
+        shuffle_seed: int = 42
     ):
         self.data_dir = data_dir
         self.image_res = image_res
@@ -26,51 +64,59 @@ class SceneDataset(Dataset):
         # Filter out any corrupted images (NaN or Inf values in target HDR image)
         corrupted_paths = []
         for file_path in self.files:
-            npz_data = np.load(file_path)
-            img_hdr = npz_data["hdr_target_image"]
+            exr_path = os.path.splitext(file_path)[0] + '_0.exr' # TODO: resolve these paths.....
+            if os.path.exists(exr_path):
+                try:
+                    img_hdr = load_exr(exr_path)
+                except Exception as e:
+                    print(f"Error loading {exr_path}: {e}")
+                    corrupted_paths.append(file_path)
+            else:
+                npz_data = np.load(file_path)
+                if "hdr_target_image" not in npz_data:
+                    print(f"Warning: Missing 'hdr_target_image' in {file_path}")
+                    continue
+                img_hdr = npz_data["hdr_target_image"]
+            
             if np.isnan(img_hdr).any() or np.isinf(img_hdr).any():
                 corrupted_paths.append(file_path)
 
         self.files = [item for item in self.files if item not in corrupted_paths]
         print(f"Removed {len(corrupted_paths)} corrupted images")
 
+        if shuffle:
+            rng = np.random.RandomState(shuffle_seed)
+            rng.shuffle(self.files)
+        
+        if max_dataset_size is not None and len(self.files) > max_dataset_size:
+            self.files = self.files[:max_dataset_size]
+            
         # Shuffle with a fixed seed
         if split == "all":
             print(f"[{split}] Using all {len(self.files)} samples in {data_dir}")
         else:
             assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
-            rng = np.random.RandomState(42)
-            rng.shuffle(self.files)
-            
             split_idx = int(len(self.files) * 0.9)
             if split == 'train':
                 self.files = self.files[:split_idx]
             else:
                 self.files = self.files[split_idx:]
-                
+
         print(f"[{split}] Found {len(self.files)} samples in {data_dir}")
 
-        self.ray_generator = RayGenerator()
-
-        self.cam_up = [0.0, 0.0, 1.0] # TODO: unhardcode....
-        self.fov_deg = 37.5 # TODO: unhardcode...
-        
-        self.fov_rad = torch.tensor(np.deg2rad(self.fov_deg)).float().view(1)
-        self.precomputed_ray_data = None
+        self.cam_up = np.array([0.0, 0.0, 1.0])  # NOTE: may need to unhardcode...
 
     def _compute_c2w(self, pos, target, up):
-        # Camera Coordinate System:
-        # Camera looks down -Z
+        """Build a camera-to-world 4x4 matrix. Camera looks down -Z."""
         z_axis = pos - target
         z_axis = z_axis / np.linalg.norm(z_axis)
-        
+
         x_axis = np.cross(up, z_axis)
         x_axis = x_axis / np.linalg.norm(x_axis)
-        
+
         y_axis = np.cross(z_axis, x_axis)
         y_axis = y_axis / np.linalg.norm(y_axis)
-        
-        # 4x4 Matrix
+
         c2w = np.eye(4)
         c2w[:3, 0] = x_axis
         c2w[:3, 1] = y_axis
@@ -94,7 +140,11 @@ class SceneDataset(Dataset):
         data = np.load(file_path)
         
         # 1. Load Image
-        image_np = data['hdr_target_image']
+        if 'hdr_target_image' in data:
+            image_np = data['hdr_target_image']
+        else:
+            exr_path = os.path.splitext(file_path)[0] + '_0.exr' # TODO: resolve this path
+            image_np = load_exr(exr_path)
         image_np = image_np[..., :3]
         image_tensor = torch.from_numpy(image_np).permute(2, 0, 1).float()
         image_tensor = torch.nn.functional.interpolate(image_tensor.unsqueeze(0), size=(self.image_res, self.image_res), mode='bilinear', align_corners=False).squeeze(0)
@@ -119,25 +169,16 @@ class SceneDataset(Dataset):
         normals = torch.from_numpy(entity_normals).float()
         properties = torch.from_numpy(entity_materials).float()
         
+        cam_fov = data.get('camera_fov')
         cam_pos = data['camera_pos']
         cam_lookat = data['camera_lookat']
-
         c2w = self._compute_c2w(cam_pos, cam_lookat, self.cam_up)
-        w2c = torch.inverse(c2w)
-        
-        # if self.precomputed_ray_data is None:
-        c2w_eye = torch.eye(4)
-        rays_o, rays_d = self.ray_generator(c2w_eye, self.fov_rad, self.image_res)
-        #     self.precomputed_ray_data = (rays_o, rays_d)
-        # else:
-            # rays_o, rays_d = self.precomputed_ray_data
-        
+
         return {
-            'rays_o': rays_o,               # (3,) camera origin in world space
-            'rays_d': rays_d,               # (H, W, 3) - used as ray_map
-            'obj_positions': positions,     # (N_obj, N_p, 3)
-            'obj_normals': normals,         # (N_obj, N_p, 3)
-            'obj_properties': properties,   # (N_obj, C)
-            'w2c': w2c,                     # (4, 4)
-            'target_image': image_tensor    # (3, H, W)
+            'c2w': c2w,                             # (4, 4) camera-to-world
+            'fov_deg': torch.tensor(cam_fov).float(),  # scalar
+            'obj_positions': positions,             # (N_obj, N_p, 3)
+            'obj_normals': normals,                 # (N_obj, N_p, 3)
+            'obj_properties': properties,           # (N_obj, C)
+            'target_image': image_tensor            # (3, H, W)
         }
