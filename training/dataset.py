@@ -104,8 +104,7 @@ class SceneDataset(Dataset):
 
         print(f"[{split}] Found {len(self.files)} samples in {data_dir}")
 
-        self.cam_up = np.array([0.0, 0.0, 1.0])  # TODO: unhardcode....
-        self.fov_deg = 37.5  # TODO: unhardcode...
+        self.cam_up = np.array([0.0, 0.0, 1.0])  # NOTE: may need to unhardcode...
 
     def _compute_c2w(self, pos, target, up):
         """Build a camera-to-world 4x4 matrix. Camera looks down -Z."""
@@ -170,14 +169,14 @@ class SceneDataset(Dataset):
         normals = torch.from_numpy(entity_normals).float()
         properties = torch.from_numpy(entity_materials).float()
         
+        cam_fov = data.get('camera_fov')
         cam_pos = data['camera_pos']
         cam_lookat = data['camera_lookat']
-
         c2w = self._compute_c2w(cam_pos, cam_lookat, self.cam_up)
 
         return {
             'c2w': c2w,                             # (4, 4) camera-to-world
-            'fov_deg': torch.tensor(self.fov_deg).float(),  # scalar
+            'fov_deg': torch.tensor(cam_fov).float(),  # scalar
             'obj_positions': positions,             # (N_obj, N_p, 3)
             'obj_normals': normals,                 # (N_obj, N_p, 3)
             'obj_properties': properties,           # (N_obj, C)

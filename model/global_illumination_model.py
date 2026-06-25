@@ -29,7 +29,7 @@ class GlobalIlluminationModel(nn.Module):
         super().__init__()
         self.use_dpt_decoder = config['predictor']['use_dpt_decoder']
 
-        # TODO: calculate rope_dim here....
+        # Calculate rope_dim
         if config['predictor']['pe_type'] == 'nerf':
             self.rope_dim = None
         elif config['predictor']['pe_type'] == 'rope':
@@ -66,7 +66,6 @@ class GlobalIlluminationModel(nn.Module):
         # 3. View-Independent Scene Transformer
         # TODO: possibly redo the config... I don't like "decoder".
         # should be like, representation learning phase or something
-        # TODO: finish fixing this 
         self.scene_transformer = TransformerEncoder(
             num_layers=config['decoder']['num_layers'],
             num_heads=config['decoder']['num_heads'],

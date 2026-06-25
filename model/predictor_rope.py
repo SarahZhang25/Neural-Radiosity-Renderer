@@ -74,7 +74,6 @@ class RadiancePredictor(nn.Module):
             num_layers=num_layers,
             num_heads=num_heads,
             hidden_dim=hidden_dim,
-            # ctx_dim=hidden_dim, # TODO: is this right????
             ffn_hidden_dim=hidden_dim * 4,
             dropout=dropout,
             include_self_attn=include_self_attn,

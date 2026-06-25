@@ -71,22 +71,23 @@ def process_renderformer_scene(json_path, output_dir, points_per_object=2048):
         "vertices": np.stack(entity_vertices, axis=0).astype(np.float32),
         "normals": np.stack(entity_normals, axis=0).astype(np.float32),
         "materials": np.stack(entity_materials, axis=0).astype(np.float32),
-        "num_objects": len(scene_config['objects'])
     }
     
     # Save Outputs
     os.makedirs(output_dir, exist_ok=True)
 
     npz_path = os.path.join(output_dir, f"{scene_name}.npz")
-
+    
+    # NOTE: renderformer computes and saves c2w directly, instead of saving pos/lookat.
+    # We defer c2w calculation to the dataset loader. Idt it matters where.
     np.savez(
         npz_path,
-        camera_pos=cam_config['position'],          
+        camera_pos=cam_config['position'],
         camera_lookat=cam_config['look_at'],
+        camera_fov=cam_config['fov'],
         entity_vertices=scene_data["vertices"],      # [N, 2048, 3]
         entity_normals=scene_data["normals"],        # [N, 2048, 3]
         entity_materials=scene_data["materials"],    # [N, 10]
-        num_objects=scene_data["num_objects"]        # Scalar
     )
 
 def main():
