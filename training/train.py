@@ -116,6 +116,10 @@ def make_vis_grid(linear_rendered, gt_img, max_images=16, diff_amplify=5.0):
 
 class Trainer:
     def __init__(self, config_path: str, resume_path: str = None):
+        """
+        Initialize the Trainer with the given configuration file.
+        Sets up datasets, model, optimizer, scheduler, and logging directories.
+        """
         print(f"CUDA Available: {torch.cuda.is_available()}")
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
@@ -231,6 +235,10 @@ class Trainer:
         self.writer = SummaryWriter(log_dir=self.log_dir)
 
     def _get_seeded_batch(self, dataset, batch_size: int, seed: int = 42) -> dict:
+        """
+        Retrieve a fixed, reproducible batch from a dataset.
+        Useful for generating consistent visualizations across epochs.
+        """
         g = torch.Generator()
         g.manual_seed(seed)
         loader = DataLoader(
@@ -244,6 +252,9 @@ class Trainer:
         return {k: v.to(self.device) for k, v in batch.items()}
 
     def _load_checkpoint(self, path: str):
+        """
+        Load model, optimizer, scheduler state, and epoch count from a checkpoint file.
+        """
         print(f"Resuming training from checkpoint: {path}")
         checkpoint = torch.load(path, map_location=self.device)
         self.model.load_state_dict(checkpoint['model_state_dict'])
@@ -258,6 +269,10 @@ class Trainer:
                 self.scheduler.step()
 
     def _forward(self, batch: dict) -> torch.Tensor:
+        """
+        Perform a forward pass through the model using the provided batch of data.
+        Handles ray generation and optional mixed-precision context.
+        """
         c2w = batch['c2w'].to(self.device)          # (B, 4, 4)
         fov_deg = batch['fov_deg'].to(self.device)  # (B,)
         fov_rad = (fov_deg * (torch.pi / 180.0)).unsqueeze(-1)  # (B, 1)
@@ -281,6 +296,10 @@ class Trainer:
         return self.model(**kwargs)
 
     def _compute_loss(self, pred: torch.Tensor, target: torch.Tensor):
+        """
+        Calculate the combined loss (e.g., L1 and LPIPS) between the predicted
+        and target HDR images using log-transformed values.
+        """
         # Base core loss on log-transformed HDR predictions. Ensure float32.
         pred_f32 = pred.float()
         target_f32 = target.float()
@@ -298,6 +317,11 @@ class Trainer:
         return loss
 
     def _train_epoch(self) -> tuple[float, float, float, float]:
+        """
+        Run one full training epoch over the GPU-cached inputs.
+        Shuffles the cached list each epoch to preserve stochastic ordering.
+        Returns (avg_loss, avg_psnr, avg_ssim, avg_lpips).
+        """
         self.model.train()
         train_loss, train_psnr, train_ssim, train_lpips = 0.0, 0.0, 0.0, 0.0
         
@@ -316,13 +340,12 @@ class Trainer:
                 pred_f32 = pred_radiance.float()
                 target_f32 = target.float()
                 
-                loss_item = loss.item()
                 psnr_item = calculate_psnr(pred_f32, target_f32)
 
                 pred_ldr = hdr_to_ldr(pred_f32, to_uint8_output=False)
                 target_ldr = hdr_to_ldr(target_f32, to_uint8_output=False)
                         
-                train_loss += loss_item
+                train_loss += loss.item()
                 train_psnr += psnr_item
                 train_ssim += self.ssim_metric(pred_ldr, target_ldr).item()
                 train_lpips += self.lpips_val_metric(pred_ldr, target_ldr).item()
@@ -331,6 +354,10 @@ class Trainer:
         return train_loss / n, train_psnr / n, train_ssim / n, train_lpips / n
 
     def _validate(self, epoch: int):
+        """
+        Evaluate the model on the validation set and compute metrics (Loss, PSNR, SSIM, LPIPS).
+        Logs results and visualizations to TensorBoard.
+        """
         self.model.eval()
         val_loss, val_psnr, val_ssim, val_lpips = 0.0, 0.0, 0.0, 0.0
         
@@ -393,6 +420,10 @@ class Trainer:
         self.model.train()
 
     def run(self):
+        """
+        Execute the main training loop across all epochs.
+        Handles training steps, metric logging, validation intervals, and checkpoint saving.
+        """
         for epoch in tqdm(range(self.start_epoch, self.num_epochs), desc="Epochs"):
             avg_train_loss, avg_train_psnr, avg_train_ssim, avg_train_lpips = self._train_epoch()
 
