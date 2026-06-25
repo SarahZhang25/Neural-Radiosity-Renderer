@@ -122,6 +122,7 @@ class RadiancePredictor(nn.Module):
         patch_w: Optional[int] = None,
         w2c: Optional[torch.Tensor] = None,
         obj_positions: Optional[torch.Tensor] = None,
+        obj_mask: Optional[torch.Tensor] = None,
         ray_positions: Optional[torch.Tensor] = None,
         use_dpt_decoder: Optional[bool] = False,
         tf32_mode=False,
@@ -197,18 +198,24 @@ class RadiancePredictor(nn.Module):
             if ctx_pos is not None:
                 pad_pos = torch.zeros(B, state_features.shape[1], 3, device=ctx_pos.device, dtype=ctx_pos.dtype)
                 ctx_pos = torch.cat([ctx_pos, pad_pos], dim=1)
+                
+            # Build src_key_padding_mask for transformer
+            if obj_mask is not None:
+                state_mask = torch.ones(B, state_features.shape[1], dtype=obj_mask.dtype, device=obj_mask.device)
+                src_key_padding_mask = torch.cat([obj_mask, state_mask], dim=1)
+            else:
+                src_key_padding_mask = None
         else:
             scene_features = obj_features
+            src_key_padding_mask = obj_mask
 
-        # print("shapes:")
-        # print(f"query_view_features: {query_view_features.shape}, scene_features: {scene_features.shape}")
-        # print(f"obj_pos: {ctx_pos.shape if ctx_pos is not None else None}, ray_positions: {ray_positions.shape if ray_positions is not None else None}")
         # Cross-attention: rays query scene
-        if use_dpt_decoder:
-            with torch.autocast(device_type="cuda", dtype=torch.float32 if tf32_mode else torch.bfloat16):
+        with torch.autocast(device_type="cuda", dtype=torch.float32 if tf32_mode else torch.bfloat16):
+            if use_dpt_decoder:
                 out_features = self.transformer(
                     x=query_view_features,        # (B, N_patches, D)
                     ctx=scene_features,           # (B, N_obj+N_state, D)
+                    src_key_padding_mask=src_key_padding_mask,
                     obj_pos=ctx_pos,
                     ray_pos=ray_positions,
                     out_layers=self.out_layers, 
@@ -216,35 +223,37 @@ class RadiancePredictor(nn.Module):
                     patch_h=patch_h,
                     patch_w=patch_w
                 )  # (B, N_patches, D)
-            decoded_img = self.out_dpt(out_features, patch_h, patch_w, patch_size=self.patch_size)
-            return self.out_proj_act(decoded_img)
-    
-        else:
-            ray_features = self.transformer(
-                x=query_view_features,        # (B, N_patches, D)
-                ctx=scene_features,           # (B, N_obj+N_state, D)
-                obj_pos=ctx_pos,
-                ray_pos=ray_positions,
-                patch_h=patch_h,
-                patch_w=patch_w
-            )  # (B, N_patches, D)
-            ray_features = self.out_norm(ray_features)
+                decoded_img = self.out_dpt(out_features, patch_h, patch_w, patch_size=self.patch_size)
+                return self.out_proj_act(decoded_img)
+        
+            else:
+                ray_features = self.transformer(
+                    x=query_view_features,        # (B, N_patches, D)
+                    ctx=scene_features,           # (B, N_obj+N_state, D)
+                    src_key_padding_mask=src_key_padding_mask,
+                    obj_pos=ctx_pos,
+                    ray_pos=ray_positions,
+                    tf32_mode=tf32_mode,
+                    patch_h=patch_h,
+                    patch_w=patch_w
+                )  # (B, N_patches, D)
+                ray_features = self.out_norm(ray_features)
 
-            # Decode to RGB per patch
-            patches = self.out_proj(ray_features)  # (B, N_patches, 3*P*P)
-            patches = self.out_proj_act(patches)
-            # Reshape to image format
-            radiances = rearrange(
-                patches,
-                'b (h w) (c p1 p2) -> b c (h p1) (w p2)',
-                h=patch_h,
-                w=patch_w,
-                p1=self.patch_size,
-                p2=self.patch_size,
-                c=3
-            )  # (B, 3, H, W)
+                # Decode to RGB per patch
+                patches = self.out_proj(ray_features)  # (B, N_patches, 3*P*P)
+                patches = self.out_proj_act(patches)
+                # Reshape to image format
+                radiances = rearrange(
+                    patches,
+                    'b (h w) (c p1 p2) -> b c (h p1) (w p2)',
+                    h=patch_h,
+                    w=patch_w,
+                    p1=self.patch_size,
+                    p2=self.patch_size,
+                    c=3
+                )  # (B, 3, H, W)
 
-            return radiances
+                return radiances
     
 if __name__ == "__main__":
     # Quick sanity check

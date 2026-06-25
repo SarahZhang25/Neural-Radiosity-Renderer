@@ -4,6 +4,44 @@ import numpy as np
 from torch.utils.data import Dataset
 import glob
 
+def scene_collate_fn(batch):
+    max_objs = max(item['obj_positions'].shape[0] for item in batch)
+    
+    batched_data = {
+        'c2w': [],
+        'fov_deg': [],
+        'obj_positions': [],
+        'obj_normals': [],
+        'obj_properties': [],
+        'obj_mask': [],
+        'target_image': []
+    }
+    
+    for item in batch:
+        num_objs = item['obj_positions'].shape[0]
+        pad_size = max_objs - num_objs
+        
+        if pad_size > 0:
+            obj_positions = torch.cat([item['obj_positions'], item['obj_positions'].new_zeros(pad_size, *item['obj_positions'].shape[1:])], dim=0)
+            obj_normals = torch.cat([item['obj_normals'], item['obj_normals'].new_zeros(pad_size, *item['obj_normals'].shape[1:])], dim=0)
+            obj_properties = torch.cat([item['obj_properties'], item['obj_properties'].new_zeros(pad_size, *item['obj_properties'].shape[1:])], dim=0)
+            obj_mask = torch.cat([item['obj_mask'], item['obj_mask'].new_zeros(pad_size, *item['obj_mask'].shape[1:])], dim=0)
+        else:
+            obj_positions = item['obj_positions']
+            obj_normals = item['obj_normals']
+            obj_properties = item['obj_properties']
+            obj_mask = item['obj_mask']
+            
+        batched_data['obj_positions'].append(obj_positions)
+        batched_data['obj_normals'].append(obj_normals)
+        batched_data['obj_properties'].append(obj_properties)
+        batched_data['obj_mask'].append(obj_mask)
+        batched_data['c2w'].append(item['c2w'])
+        batched_data['fov_deg'].append(item['fov_deg'])
+        batched_data['target_image'].append(item['target_image'])
+        
+    return {k: torch.stack(v, dim=0) for k, v in batched_data.items()}
+
 def load_exr(path):
     try:
         import cv2
@@ -168,6 +206,7 @@ class SceneDataset(Dataset):
         positions = torch.from_numpy(entity_vertices).float()
         normals = torch.from_numpy(entity_normals).float()
         properties = torch.from_numpy(entity_materials).float()
+        mask = torch.ones(positions.shape[0], dtype=torch.bool)
         
         cam_fov = data.get('camera_fov')
         cam_pos = data['camera_pos']
@@ -180,5 +219,6 @@ class SceneDataset(Dataset):
             'obj_positions': positions,             # (N_obj, N_p, 3)
             'obj_normals': normals,                 # (N_obj, N_p, 3)
             'obj_properties': properties,           # (N_obj, C)
+            'obj_mask': mask,                       # (N_obj)
             'target_image': image_tensor            # (3, H, W)
         }

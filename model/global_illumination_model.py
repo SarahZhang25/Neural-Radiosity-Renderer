@@ -138,6 +138,7 @@ class GlobalIlluminationModel(nn.Module):
         obj_positions: torch.Tensor,
         obj_properties: torch.Tensor,
         obj_normals: Optional[torch.Tensor] = None,
+        obj_mask: Optional[torch.Tensor] = None,
         w2c: Optional[torch.Tensor] = None, # (B, 4, 4) world to camera transform
     ) -> torch.Tensor:
         """
@@ -149,6 +150,7 @@ class GlobalIlluminationModel(nn.Module):
             obj_positions: Object point clouds (B, N_obj, N_vertices, 3)
             obj_properties: Object properties (B, N_obj, 10)
             obj_normals: Object normals (B, N_obj, N_vertices, 3)
+            obj_mask: Mask for object padding (B, N_obj)
             w2c: Optional world-to-camera transformation (B, 4, 4) for RoPE in camera space
         Returns:
             radiance: Predicted RGB image (B, 3, H, W)
@@ -195,6 +197,7 @@ class GlobalIlluminationModel(nn.Module):
         # self-attn only transformer
         all_obj_layers =  self.scene_transformer(
             x=object_tokens,
+            src_key_padding_mask=obj_mask,
             obj_pos=object_centroids
         )
 
@@ -227,6 +230,7 @@ class GlobalIlluminationModel(nn.Module):
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
             w2c=w2c,
             obj_positions=obj_positions,
+            obj_mask=obj_mask,
             ray_positions=ray_token_pos,  # would use this if using predictor with RoPE supported 
             use_dpt_decoder=self.use_dpt_decoder
         )
