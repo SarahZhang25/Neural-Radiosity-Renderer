@@ -17,7 +17,7 @@ from torchmetrics.image import StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
 from model.global_illumination_model import GlobalIlluminationModel
-from training.dataset import SceneDataset
+from training.dataset import SceneDataset, scene_collate_fn
 from training.ray_generator import RayGenerator
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -159,14 +159,18 @@ class Trainer:
             batch_size=batch_size, 
             shuffle=True, 
             num_workers=num_workers,
-            pin_memory=True
+            pin_memory=True,
+            collate_fn=scene_collate_fn,
+            persistent_workers=True # Prevents tearing down CPU threads between epochs
         )
         self.val_loader = DataLoader(
             self.val_dataset, 
             batch_size=val_batch_size, 
             shuffle=False, 
             num_workers=num_workers,
-            pin_memory=True
+            pin_memory=True,
+            collate_fn=scene_collate_fn,
+            persistent_workers=True # Prevents tearing down CPU threads between epochs
         )
 
         # Fixed batches for visualization
@@ -246,7 +250,8 @@ class Trainer:
             batch_size=batch_size, 
             shuffle=True, 
             num_workers=0,
-            generator=g
+            generator=g,
+            collate_fn=scene_collate_fn
         )
         batch = next(iter(loader))
         return {k: v.to(self.device) for k, v in batch.items()}
@@ -288,6 +293,7 @@ class Trainer:
             obj_positions=batch['obj_positions'].to(self.device),
             obj_properties=batch['obj_properties'].to(self.device),
             obj_normals=batch['obj_normals'].to(self.device),
+            obj_mask=batch.get('obj_mask').to(self.device) if 'obj_mask' in batch else None,
             w2c=w2c,
         )
         if self.use_amp:
