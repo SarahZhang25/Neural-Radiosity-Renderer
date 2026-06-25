@@ -208,7 +208,7 @@ class SceneDataset(Dataset):
         properties = torch.from_numpy(entity_materials).float()
         mask = torch.ones(positions.shape[0], dtype=torch.bool)
         
-        cam_fov = data.get('camera_fov')
+        cam_fov = data.get('camera_fov', 37.5)  # Default FOV if not present
         cam_pos = data['camera_pos']
         cam_lookat = data['camera_lookat']
         c2w = self._compute_c2w(cam_pos, cam_lookat, self.cam_up)

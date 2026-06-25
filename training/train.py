@@ -160,7 +160,8 @@ class Trainer:
             shuffle=True, 
             num_workers=num_workers,
             pin_memory=True,
-            collate_fn=scene_collate_fn
+            collate_fn=scene_collate_fn,
+            persistent_workers=True # Prevents tearing down CPU threads between epochs
         )
         self.val_loader = DataLoader(
             self.val_dataset, 
@@ -168,7 +169,8 @@ class Trainer:
             shuffle=False, 
             num_workers=num_workers,
             pin_memory=True,
-            collate_fn=scene_collate_fn
+            collate_fn=scene_collate_fn,
+            persistent_workers=True # Prevents tearing down CPU threads between epochs
         )
 
         # Fixed batches for visualization
