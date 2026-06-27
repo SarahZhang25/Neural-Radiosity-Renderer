@@ -1,0 +1,3 @@
+num_objects,my_model_time_ms,my_model_mem_mb,renderformer_time_ms,renderformer_mem_mb
+1,,,57.68990478515625,2350.20751953125
+5,,,159.670068359375,2361.49658203125
