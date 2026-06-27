@@ -4,25 +4,48 @@ import argparse
 import time
 import csv
 import sys
-
 # Add project root to path so we can import model code if needed
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 sys.path.append(os.path.join(project_root, "renderformer"))
 
-def run_renderformer_benchmark(model_id, obj_counts, faces_per_object, resolution, warmup=5, repeats=5):
-    try:
-        from renderformer.pipelines.rendering_pipeline import RenderFormerRenderingPipeline
-    except ImportError as e:
-        print(f"Error: {e}")
-        print("Warning: RenderFormer not found. Skipping RenderFormer benchmarking.")
-        return {}
+from renderformer.pipelines.rendering_pipeline import RenderFormerRenderingPipeline
 
-    print(f"\n--- Loading RenderFormer ({model_id}) ---")
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
+def load_pretrained_renderformer(model_id):
+    print(f"\n--- Loading Pre-Trained RenderFormer ({model_id}) ---")
     pipeline = RenderFormerRenderingPipeline.from_pretrained(model_id)
+    return pipeline
+
+def load_checkpoint_renderformer(ckpt_path):
+    import yaml
+    from renderformer.models.config import RenderFormerConfig
+    from renderformer.models.renderformer import RenderFormer
     
+    print(f"\n--- Loading RenderFormer from Checkpoint ({ckpt_path}) ---")
+    
+    # Assume config.yaml is in the parent directory of the 'checkpoints' folder
+    ckpt_dir = os.path.dirname(ckpt_path)
+    run_dir = os.path.dirname(ckpt_dir)
+    config_path = os.path.join(run_dir, "config.yaml")
+    
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Could not find config.yaml at {config_path}")
+        
+    with open(config_path, 'r') as f:
+        config_dict = yaml.safe_load(f)
+        
+    model_config_dict = config_dict.get('model', {})
+    model_config = RenderFormerConfig(**model_config_dict)
+    model = RenderFormer(model_config)
+    
+    pipeline = RenderFormerRenderingPipeline(model)
+    checkpoint = torch.load(ckpt_path, map_location='cpu')
+    pipeline.model.load_state_dict(checkpoint['model_state_dict'])
+    print(f"Loaded custom RenderFormer weights from {ckpt_path}")
+    return pipeline
+    
+def run_renderformer_benchmark(pipeline, obj_counts, faces_per_object, resolution, warmup=5, repeats=5):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda') and os.name == 'posix':
         try:
             from renderformer_liger_kernel import apply_kernels
@@ -41,7 +64,15 @@ def run_renderformer_benchmark(model_id, obj_counts, faces_per_object, resolutio
         
         # Dummy inputs
         triangles = torch.randn(1, num_tris, 3, 3, device=device, dtype=torch.float32)
-        texture = torch.randn(1, num_tris, 13, device=device, dtype=torch.float32)
+        
+        # Texture depends on config
+        tex_c = pipeline.config.texture_channels
+        patch_size = pipeline.config.texture_encode_patch_size
+        if patch_size == 1:
+            texture = torch.randn(1, num_tris, tex_c, device=device, dtype=torch.float32)
+        else:
+            texture = torch.randn(1, num_tris, tex_c, patch_size, patch_size, device=device, dtype=torch.float32)
+            
         mask = torch.ones(1, num_tris, device=device, dtype=torch.bool)
         vn = torch.randn(1, num_tris, 3, 3, device=device, dtype=torch.float32)
         
@@ -183,7 +214,8 @@ def run_mymodel_benchmark(pkg_path, obj_counts, faces_per_object, resolution, wa
 def main():
     parser = argparse.ArgumentParser(description="Benchmark inference efficiency vs scene complexity")
     parser.add_argument("--nmr_pkg_path", type=str, default="training/logs/YOUR_RUN_ID/checkpoints/model_package_epoch_500.pt", help="Path to your packaged model .pt")
-    parser.add_argument("--renderformer_id", type=str, default="microsoft/renderformer-v1.1-swin-large", help="RenderFormer model ID/path")
+    parser.add_argument("--renderformer_checkpoint_path", type=str, default="training/logs/YOUR_RUN_ID/checkpoints/model_package_epoch_500.pt", help="Path to your trained RenderFormer .pt checkpoint (optional)")
+    parser.add_argument("--renderformer_pretrained_id", type=str, default="microsoft/renderformer-v1.1-swin-large", help="RenderFormer model ID/path")
     parser.add_argument("--out_csv", type=str, default="benchmarking/efficiency_benchmark_results.csv", help="Output CSV path")
     parser.add_argument("--resolution", type=int, default=128, help="Rendering resolution for benchmarks")
     parser.add_argument("--faces_per_obj", type=int, default=512, help="Number of faces per object to simulate")
@@ -196,8 +228,16 @@ def main():
     os.makedirs(os.path.dirname(os.path.abspath(args.out_csv)), exist_ok=True)
     
     # Run benchmarks
-    res_my_model =  {} #run_mymodel_benchmark(args.nmr_pkg_path, obj_counts, args.faces_per_obj, args.resolution)
-    res_renderformer = run_renderformer_benchmark(args.renderformer_id, obj_counts, args.faces_per_obj, args.resolution)
+    my_model =  {} #run_mymodel_benchmark(args.nmr_pkg_path, obj_counts, args.faces_per_obj, args.resolution)
+    
+    renderformer_custom = {}
+    renderformer_pt = {}
+    if args.renderformer_checkpoint_path:
+        renderformer_custom_pipeline = load_checkpoint_renderformer(args.renderformer_checkpoint_path)
+        renderformer_custom = run_renderformer_benchmark(renderformer_custom_pipeline, obj_counts, args.faces_per_obj, args.resolution)
+    
+    renderformer_pt_pipeline = load_pretrained_renderformer(args.renderformer_pretrained_id)
+    renderformer_pt = run_renderformer_benchmark(renderformer_pt_pipeline, obj_counts, args.faces_per_obj, args.resolution)
     
     # Save to CSV
     with open(args.out_csv, 'w', newline='') as f:
@@ -205,12 +245,14 @@ def main():
         writer.writerow(['num_objects', 'my_model_time_ms', 'my_model_mem_mb', 'renderformer_time_ms', 'renderformer_mem_mb'])
         
         for n in obj_counts:
-            my_time = res_my_model.get(n, {}).get('time_ms', '')
-            my_mem = res_my_model.get(n, {}).get('mem_mb', '')
-            rf_time = res_renderformer.get(n, {}).get('time_ms', '')
-            rf_mem = res_renderformer.get(n, {}).get('mem_mb', '')
+            my_time = my_model.get(n, {}).get('time_ms', '')
+            my_mem = my_model.get(n, {}).get('mem_mb', '')
+            rf_pt_time = renderformer_pt.get(n, {}).get('time_ms', '')
+            rf_pt_mem = renderformer_pt.get(n, {}).get('mem_mb', '')
+            rf_custom_time = renderformer_custom.get(n, {}).get('time_ms', '')
+            rf_custom_mem = renderformer_custom.get(n, {}).get('mem_mb', '')
             
-            writer.writerow([n, my_time, my_mem, rf_time, rf_mem])
+            writer.writerow([n, my_time, my_mem, rf_pt_time, rf_pt_mem, rf_custom_time, rf_custom_mem])
             
     print(f"\nBenchmarking complete. Results saved to {args.out_csv}")
 
