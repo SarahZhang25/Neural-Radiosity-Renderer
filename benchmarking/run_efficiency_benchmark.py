@@ -228,7 +228,7 @@ def run_mymodel_benchmark(pkg_path, obj_counts, faces_per_object, resolution, wa
     return results
 
 
-def plot_results(csv_file, out_dir):
+def plot_results(csv_file, out_dir, faces_per_obj=512, resolution=128):
     if not os.path.exists(csv_file):
         print(f"Error: Could not find CSV file at {csv_file}")
         return
@@ -254,7 +254,7 @@ def plot_results(csv_file, out_dir):
     if 'renderformer_custom_time_ms' in df.columns and not df['renderformer_custom_time_ms'].isna().all():
         plt.plot(df['num_objects'], df['renderformer_custom_time_ms'], marker='^', label='RenderFormer (Custom, 46M params)', color='green')
         
-    plt.title('Inference Time vs Scene Complexity')
+    plt.title(f'Inference Time vs Scene Complexity\n(resolution: {resolution}x{resolution}, faces per object: {faces_per_obj})')
     plt.xlabel('Number of Objects')
     plt.ylabel('Time (ms)')
     plt.grid(True, linestyle='--', alpha=0.7)
@@ -275,7 +275,7 @@ def plot_results(csv_file, out_dir):
     if 'renderformer_custom_mem_mb' in df.columns and not df['renderformer_custom_mem_mb'].isna().all():
         plt.plot(df['num_objects'], df['renderformer_custom_mem_mb'], marker='^', label='RenderFormer (Custom, 46M params)', color='green')
         
-    plt.title('Peak VRAM vs Scene Complexity')
+    plt.title(f'Peak VRAM vs Scene Complexity\n(resolution: {resolution}x{resolution}, faces per object: {faces_per_obj})')
     plt.xlabel('Number of Objects')
     plt.ylabel('Peak VRAM (MB)')
     plt.grid(True, linestyle='--', alpha=0.7)
@@ -335,7 +335,7 @@ def main():
     print(f"\nBenchmarking complete. Results saved to {args.out_csv}")
     
     print("\nGenerating plots...")
-    plot_results(args.out_csv, os.path.dirname(os.path.abspath(args.out_csv)))
+    plot_results(args.out_csv, os.path.dirname(os.path.abspath(args.out_csv)), args.faces_per_obj, args.resolution)
 
 if __name__ == "__main__":
     main()
