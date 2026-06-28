@@ -3,7 +3,6 @@ Run:
 python benchmarking/run_efficiency_benchmark.py \
     --nmr_pkg_path training/logs/rf_ds2_chairs1-3_cbox0-3/20260627-195131_throwaway_run_for_package/checkpoints/model_package_epoch_5.pt \
     --renderformer_checkpoint_path /home/sazhang/Neural-Radiosity-Renderer/renderformer/training/logs/ds2_chairs1-3_cbox0-3/20260623-154203_full_ds_params46M_res128x128/checkpoints/model_epoch_20000.pt \
-    --renderformer_pretrained_id microsoft/renderformer-v1.1-swin-large \
     --out_csv benchmarking/efficiency_benchmark_results.csv \
     --resolution 128 \
     --faces_per_obj 512
@@ -237,7 +236,7 @@ def plot_results(csv_file, out_dir):
     df = pd.read_csv(csv_file)
     df.replace('OOM', pd.NA, inplace=True)
     
-    cols_to_convert = ['my_model_time_ms', 'my_model_mem_mb', 'renderformer_pretrained_time_ms', 'renderformer_pretrained_mem_mb', 'renderformer_custom_time_ms', 'renderformer_custom_mem_mb']
+    cols_to_convert = ['my_model_time_ms', 'my_model_mem_mb', 'renderformer_large_time_ms', 'renderformer_large_mem_mb', 'renderformer_base_time_ms', 'renderformer_base_mem_mb', 'renderformer_custom_time_ms', 'renderformer_custom_mem_mb']
     for col in cols_to_convert:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -247,11 +246,13 @@ def plot_results(csv_file, out_dir):
     # Plot 1: Inference Time
     plt.figure(figsize=(10, 6))
     if 'my_model_time_ms' in df.columns and not df['my_model_time_ms'].isna().all():
-        plt.plot(df['num_objects'], df['my_model_time_ms'], marker='o', label='My Model', color='blue')
-    if 'renderformer_pretrained_time_ms' in df.columns and not df['renderformer_pretrained_time_ms'].isna().all():
-        plt.plot(df['num_objects'], df['renderformer_pretrained_time_ms'], marker='s', label='RenderFormer (Pretrained)', color='red')
+        plt.plot(df['num_objects'], df['my_model_time_ms'], marker='o', label='My Model (46M params)', color='blue')
+    if 'renderformer_large_time_ms' in df.columns and not df['renderformer_large_time_ms'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_large_time_ms'], marker='s', label='RenderFormer (Swin Large, 483M params)', color='red')
+    if 'renderformer_base_time_ms' in df.columns and not df['renderformer_base_time_ms'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_base_time_ms'], marker='v', label='RenderFormer (Base, 205M params)', color='orange')
     if 'renderformer_custom_time_ms' in df.columns and not df['renderformer_custom_time_ms'].isna().all():
-        plt.plot(df['num_objects'], df['renderformer_custom_time_ms'], marker='^', label='RenderFormer (Custom)', color='green')
+        plt.plot(df['num_objects'], df['renderformer_custom_time_ms'], marker='^', label='RenderFormer (Custom, 46M params)', color='green')
         
     plt.title('Inference Time vs Scene Complexity')
     plt.xlabel('Number of Objects')
@@ -266,11 +267,13 @@ def plot_results(csv_file, out_dir):
     # Plot 2: Memory Cost
     plt.figure(figsize=(10, 6))
     if 'my_model_mem_mb' in df.columns and not df['my_model_mem_mb'].isna().all():
-        plt.plot(df['num_objects'], df['my_model_mem_mb'], marker='o', label='My Model', color='blue')
-    if 'renderformer_pretrained_mem_mb' in df.columns and not df['renderformer_pretrained_mem_mb'].isna().all():
-        plt.plot(df['num_objects'], df['renderformer_pretrained_mem_mb'], marker='s', label='RenderFormer (Pretrained)', color='red')
+        plt.plot(df['num_objects'], df['my_model_mem_mb'], marker='o', label='My Model (46M params)', color='blue')
+    if 'renderformer_large_mem_mb' in df.columns and not df['renderformer_large_mem_mb'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_large_mem_mb'], marker='s', label='RenderFormer (Swin Large, 483M params)', color='red')
+    if 'renderformer_base_mem_mb' in df.columns and not df['renderformer_base_mem_mb'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_base_mem_mb'], marker='v', label='RenderFormer (Base, 205M params)', color='orange')
     if 'renderformer_custom_mem_mb' in df.columns and not df['renderformer_custom_mem_mb'].isna().all():
-        plt.plot(df['num_objects'], df['renderformer_custom_mem_mb'], marker='^', label='RenderFormer (Custom)', color='green')
+        plt.plot(df['num_objects'], df['renderformer_custom_mem_mb'], marker='^', label='RenderFormer (Custom, 46M params)', color='green')
         
     plt.title('Peak VRAM vs Scene Complexity')
     plt.xlabel('Number of Objects')
@@ -287,7 +290,6 @@ def main():
     parser = argparse.ArgumentParser(description="Benchmark inference efficiency vs scene complexity")
     parser.add_argument("--nmr_pkg_path", type=str, default="training/logs/YOUR_RUN_ID/checkpoints/model_package_epoch_500.pt", help="Path to your packaged model .pt")
     parser.add_argument("--renderformer_checkpoint_path", type=str, default=None, help="Path to your trained RenderFormer .pt checkpoint (optional)")
-    parser.add_argument("--renderformer_pretrained_id", type=str, default="microsoft/renderformer-v1.1-swin-large", help="RenderFormer model ID/path")
     parser.add_argument("--out_csv", type=str, default="benchmarking/efficiency_benchmark_results.csv", help="Output CSV path")
     parser.add_argument("--resolution", type=int, default=128, help="Rendering resolution for benchmarks")
     parser.add_argument("--faces_per_obj", type=int, default=512, help="Number of faces per object to simulate")
@@ -303,28 +305,32 @@ def main():
     my_model =  run_mymodel_benchmark(args.nmr_pkg_path, obj_counts, args.faces_per_obj, args.resolution)
     
     renderformer_custom = {}
-    renderformer_pt = {}
     if args.renderformer_checkpoint_path:
         renderformer_custom_pipeline = load_checkpoint_renderformer(args.renderformer_checkpoint_path)
         renderformer_custom = run_renderformer_benchmark(renderformer_custom_pipeline, obj_counts, args.faces_per_obj, args.resolution)
     
-    renderformer_pt_pipeline = load_pretrained_renderformer(args.renderformer_pretrained_id)
-    renderformer_pt = run_renderformer_benchmark(renderformer_pt_pipeline, obj_counts, args.faces_per_obj, args.resolution)
+    renderformer_large_pipeline = load_pretrained_renderformer("microsoft/renderformer-v1.1-swin-large")
+    renderformer_large = run_renderformer_benchmark(renderformer_large_pipeline, obj_counts, args.faces_per_obj, args.resolution)
+    
+    renderformer_base_pipeline = load_pretrained_renderformer("microsoft/renderformer-v1-base")
+    renderformer_base = run_renderformer_benchmark(renderformer_base_pipeline, obj_counts, args.faces_per_obj, args.resolution)
     
     # Save to CSV
     with open(args.out_csv, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['num_objects', 'my_model_time_ms', 'my_model_mem_mb', 'renderformer_pretrained_time_ms', 'renderformer_pretrained_mem_mb', 'renderformer_custom_time_ms', 'renderformer_custom_mem_mb'])
+        writer.writerow(['num_objects', 'my_model_time_ms', 'my_model_mem_mb', 'renderformer_large_time_ms', 'renderformer_large_mem_mb', 'renderformer_base_time_ms', 'renderformer_base_mem_mb', 'renderformer_custom_time_ms', 'renderformer_custom_mem_mb'])
         
         for n in obj_counts:
             my_time = my_model.get(n, {}).get('time_ms', '')
             my_mem = my_model.get(n, {}).get('mem_mb', '')
-            rf_pt_time = renderformer_pt.get(n, {}).get('time_ms', '')
-            rf_pt_mem = renderformer_pt.get(n, {}).get('mem_mb', '')
+            rf_large_time = renderformer_large.get(n, {}).get('time_ms', '')
+            rf_large_mem = renderformer_large.get(n, {}).get('mem_mb', '')
+            rf_base_time = renderformer_base.get(n, {}).get('time_ms', '')
+            rf_base_mem = renderformer_base.get(n, {}).get('mem_mb', '')
             rf_custom_time = renderformer_custom.get(n, {}).get('time_ms', '')
             rf_custom_mem = renderformer_custom.get(n, {}).get('mem_mb', '')
             
-            writer.writerow([n, my_time, my_mem, rf_pt_time, rf_pt_mem, rf_custom_time, rf_custom_mem])
+            writer.writerow([n, my_time, my_mem, rf_large_time, rf_large_mem, rf_base_time, rf_base_mem, rf_custom_time, rf_custom_mem])
             
     print(f"\nBenchmarking complete. Results saved to {args.out_csv}")
     
