@@ -16,6 +16,8 @@ import argparse
 import time
 import csv
 import sys
+import pandas as pd
+import matplotlib.pyplot as plt
 # Add project root to path so we can import model code if needed
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
@@ -23,10 +25,12 @@ sys.path.append(os.path.join(project_root, "renderformer"))
 
 from renderformer.pipelines.rendering_pipeline import RenderFormerRenderingPipeline
 
+
 def load_pretrained_renderformer(model_id):
     print(f"\n--- Loading Pre-Trained RenderFormer ({model_id}) ---")
     pipeline = RenderFormerRenderingPipeline.from_pretrained(model_id)
     return pipeline
+
 
 def load_checkpoint_renderformer(ckpt_path):
     import yaml
@@ -55,7 +59,8 @@ def load_checkpoint_renderformer(ckpt_path):
     pipeline.model.load_state_dict(checkpoint['model_state_dict'])
     print(f"Loaded custom RenderFormer weights from {ckpt_path}")
     return pipeline
-    
+
+ 
 def run_renderformer_benchmark(pipeline, obj_counts, faces_per_object, resolution, warmup=5, repeats=5):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda') and os.name == 'posix':
@@ -144,6 +149,7 @@ def run_renderformer_benchmark(pipeline, obj_counts, faces_per_object, resolutio
             
     return results
 
+
 def run_mymodel_benchmark(pkg_path, obj_counts, faces_per_object, resolution, warmup=5, repeats=5):
     print(f"\n--- Loading My Model from {pkg_path} ---")
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -222,6 +228,61 @@ def run_mymodel_benchmark(pkg_path, obj_counts, faces_per_object, resolution, wa
             
     return results
 
+
+def plot_results(csv_file, out_dir):
+    if not os.path.exists(csv_file):
+        print(f"Error: Could not find CSV file at {csv_file}")
+        return
+        
+    df = pd.read_csv(csv_file)
+    df.replace('OOM', pd.NA, inplace=True)
+    
+    cols_to_convert = ['my_model_time_ms', 'my_model_mem_mb', 'renderformer_pretrained_time_ms', 'renderformer_pretrained_mem_mb', 'renderformer_custom_time_ms', 'renderformer_custom_mem_mb']
+    for col in cols_to_convert:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+    os.makedirs(out_dir, exist_ok=True)
+    
+    # Plot 1: Inference Time
+    plt.figure(figsize=(10, 6))
+    if 'my_model_time_ms' in df.columns and not df['my_model_time_ms'].isna().all():
+        plt.plot(df['num_objects'], df['my_model_time_ms'], marker='o', label='My Model', color='blue')
+    if 'renderformer_pretrained_time_ms' in df.columns and not df['renderformer_pretrained_time_ms'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_pretrained_time_ms'], marker='s', label='RenderFormer (Pretrained)', color='red')
+    if 'renderformer_custom_time_ms' in df.columns and not df['renderformer_custom_time_ms'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_custom_time_ms'], marker='^', label='RenderFormer (Custom)', color='green')
+        
+    plt.title('Inference Time vs Scene Complexity')
+    plt.xlabel('Number of Objects')
+    plt.ylabel('Time (ms)')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
+    plt.tight_layout()
+    time_plot_path = os.path.join(out_dir, "inference_time_plot.png")
+    plt.savefig(time_plot_path)
+    print(f"Saved {time_plot_path}")
+    
+    # Plot 2: Memory Cost
+    plt.figure(figsize=(10, 6))
+    if 'my_model_mem_mb' in df.columns and not df['my_model_mem_mb'].isna().all():
+        plt.plot(df['num_objects'], df['my_model_mem_mb'], marker='o', label='My Model', color='blue')
+    if 'renderformer_pretrained_mem_mb' in df.columns and not df['renderformer_pretrained_mem_mb'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_pretrained_mem_mb'], marker='s', label='RenderFormer (Pretrained)', color='red')
+    if 'renderformer_custom_mem_mb' in df.columns and not df['renderformer_custom_mem_mb'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_custom_mem_mb'], marker='^', label='RenderFormer (Custom)', color='green')
+        
+    plt.title('Peak VRAM vs Scene Complexity')
+    plt.xlabel('Number of Objects')
+    plt.ylabel('Peak VRAM (MB)')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
+    plt.tight_layout()
+    mem_plot_path = os.path.join(out_dir, "memory_cost_plot.png")
+    plt.savefig(mem_plot_path)
+    print(f"Saved {mem_plot_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Benchmark inference efficiency vs scene complexity")
     parser.add_argument("--nmr_pkg_path", type=str, default="training/logs/YOUR_RUN_ID/checkpoints/model_package_epoch_500.pt", help="Path to your packaged model .pt")
@@ -266,6 +327,9 @@ def main():
             writer.writerow([n, my_time, my_mem, rf_pt_time, rf_pt_mem, rf_custom_time, rf_custom_mem])
             
     print(f"\nBenchmarking complete. Results saved to {args.out_csv}")
+    
+    print("\nGenerating plots...")
+    plot_results(args.out_csv, os.path.dirname(os.path.abspath(args.out_csv)))
 
 if __name__ == "__main__":
     main()
