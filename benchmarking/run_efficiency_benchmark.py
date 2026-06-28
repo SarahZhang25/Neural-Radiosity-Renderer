@@ -1,3 +1,15 @@
+"""
+Run:
+python benchmarking/run_efficiency_benchmark.py \
+    --nmr_pkg_path training/logs/rf_ds2_chairs1-3_cbox0-3/20260627-195131_throwaway_run_for_package/checkpoints/model_package_epoch_5.pt \
+    --renderformer_checkpoint_path /home/sazhang/Neural-Radiosity-Renderer/renderformer/training/logs/ds2_chairs1-3_cbox0-3/20260623-154203_full_ds_params46M_res128x128/checkpoints/model_epoch_20000.pt \
+    --renderformer_pretrained_id microsoft/renderformer-v1.1-swin-large \
+    --out_csv benchmarking/efficiency_benchmark_results.csv \
+    --resolution 128 \
+    --faces_per_obj 512
+
+"""
+
 import os
 import torch
 import argparse
@@ -137,7 +149,6 @@ def run_mymodel_benchmark(pkg_path, obj_counts, faces_per_object, resolution, wa
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     try:
-        import torch.package
         imp = torch.package.PackageImporter(pkg_path)
         model = imp.load_pickle("model", "model.pkl")
         model.eval()
@@ -165,7 +176,7 @@ def run_mymodel_benchmark(pkg_path, obj_counts, faces_per_object, resolution, wa
         
         try:
             # Warmup
-            with torch.no_grad():
+            with torch.no_grad(), torch.amp.autocast('cuda', dtype=torch.bfloat16):
                 for _ in range(warmup):
                     _ = model(
                         rays_o=rays_o,
@@ -183,7 +194,7 @@ def run_mymodel_benchmark(pkg_path, obj_counts, faces_per_object, resolution, wa
             end_event = torch.cuda.Event(enable_timing=True)
             
             start_event.record()
-            with torch.no_grad():
+            with torch.no_grad(), torch.amp.autocast('cuda', dtype=torch.bfloat16):
                 for _ in range(repeats):
                     _ = model(
                         rays_o=rays_o,
@@ -214,7 +225,7 @@ def run_mymodel_benchmark(pkg_path, obj_counts, faces_per_object, resolution, wa
 def main():
     parser = argparse.ArgumentParser(description="Benchmark inference efficiency vs scene complexity")
     parser.add_argument("--nmr_pkg_path", type=str, default="training/logs/YOUR_RUN_ID/checkpoints/model_package_epoch_500.pt", help="Path to your packaged model .pt")
-    parser.add_argument("--renderformer_checkpoint_path", type=str, default="training/logs/YOUR_RUN_ID/checkpoints/model_package_epoch_500.pt", help="Path to your trained RenderFormer .pt checkpoint (optional)")
+    parser.add_argument("--renderformer_checkpoint_path", type=str, default=None, help="Path to your trained RenderFormer .pt checkpoint (optional)")
     parser.add_argument("--renderformer_pretrained_id", type=str, default="microsoft/renderformer-v1.1-swin-large", help="RenderFormer model ID/path")
     parser.add_argument("--out_csv", type=str, default="benchmarking/efficiency_benchmark_results.csv", help="Output CSV path")
     parser.add_argument("--resolution", type=int, default=128, help="Rendering resolution for benchmarks")
@@ -222,13 +233,13 @@ def main():
     
     args = parser.parse_args()
     
-    obj_counts = [1, 5]#, 10, 25, 50]
+    obj_counts = [1, 5, 10, 25, 50]
     # obj_counts = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500]
     
     os.makedirs(os.path.dirname(os.path.abspath(args.out_csv)), exist_ok=True)
     
     # Run benchmarks
-    my_model =  {} #run_mymodel_benchmark(args.nmr_pkg_path, obj_counts, args.faces_per_obj, args.resolution)
+    my_model =  run_mymodel_benchmark(args.nmr_pkg_path, obj_counts, args.faces_per_obj, args.resolution)
     
     renderformer_custom = {}
     renderformer_pt = {}
@@ -242,7 +253,7 @@ def main():
     # Save to CSV
     with open(args.out_csv, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['num_objects', 'my_model_time_ms', 'my_model_mem_mb', 'renderformer_time_ms', 'renderformer_mem_mb'])
+        writer.writerow(['num_objects', 'my_model_time_ms', 'my_model_mem_mb', 'renderformer_pretrained_time_ms', 'renderformer_pretrained_mem_mb', 'renderformer_custom_time_ms', 'renderformer_custom_mem_mb'])
         
         for n in obj_counts:
             my_time = my_model.get(n, {}).get('time_ms', '')

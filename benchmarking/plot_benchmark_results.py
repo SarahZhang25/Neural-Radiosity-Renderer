@@ -1,3 +1,8 @@
+"""
+Run python benchmarking/plot_benchmark_results.py --csv_file benchmarking/efficiency_benchmark_results.csv
+
+"""
+
 import os
 import argparse
 import pandas as pd
@@ -5,8 +10,8 @@ import matplotlib.pyplot as plt
 
 def main():
     parser = argparse.ArgumentParser(description="Plot benchmarking results")
-    parser.add_argument("--csv_file", type=str, default="efficiency_benchmark_results.csv", help="Path to the benchmarking CSV file")
-    parser.add_argument("--out_dir", type=str, default=".", help="Directory to save the output plots")
+    parser.add_argument("--csv_file", type=str, default="benchmarking/efficiency_benchmark_results.csv", help="Path to the benchmarking CSV file")
+    parser.add_argument("--out_dir", type=str, default="benchmarking", help="Directory to save the output plots")
     
     args = parser.parse_args()
     
@@ -20,7 +25,7 @@ def main():
     df.replace('OOM', pd.NA, inplace=True)
     
     # Convert numerical columns
-    cols_to_convert = ['my_model_time_ms', 'my_model_mem_mb', 'renderformer_time_ms', 'renderformer_mem_mb']
+    cols_to_convert = ['my_model_time_ms', 'my_model_mem_mb', 'renderformer_pretrained_time_ms', 'renderformer_pretrained_mem_mb', 'renderformer_custom_time_ms', 'renderformer_custom_mem_mb']
     for col in cols_to_convert:
         df[col] = pd.to_numeric(df[col], errors='coerce')
         
@@ -30,8 +35,10 @@ def main():
     plt.figure(figsize=(10, 6))
     if not df['my_model_time_ms'].isna().all():
         plt.plot(df['num_objects'], df['my_model_time_ms'], marker='o', label='My Model', color='blue')
-    if not df['renderformer_time_ms'].isna().all():
-        plt.plot(df['num_objects'], df['renderformer_time_ms'], marker='s', label='RenderFormer', color='red')
+    if not df['renderformer_pretrained_time_ms'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_pretrained_time_ms'], marker='s', label='RenderFormer (Pretrained)', color='red')
+    if not df['renderformer_custom_time_ms'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_custom_time_ms'], marker='^', label='RenderFormer (Custom)', color='green')
         
     plt.title('Inference Time vs Scene Complexity')
     plt.xlabel('Number of Objects')
@@ -47,8 +54,10 @@ def main():
     plt.figure(figsize=(10, 6))
     if not df['my_model_mem_mb'].isna().all():
         plt.plot(df['num_objects'], df['my_model_mem_mb'], marker='o', label='My Model', color='blue')
-    if not df['renderformer_mem_mb'].isna().all():
-        plt.plot(df['num_objects'], df['renderformer_mem_mb'], marker='s', label='RenderFormer', color='red')
+    if not df['renderformer_pretrained_mem_mb'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_pretrained_mem_mb'], marker='s', label='RenderFormer (Pretrained)', color='red')
+    if not df['renderformer_custom_mem_mb'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_custom_mem_mb'], marker='^', label='RenderFormer (Custom)', color='green')
         
     plt.title('Peak VRAM vs Scene Complexity')
     plt.xlabel('Number of Objects')
