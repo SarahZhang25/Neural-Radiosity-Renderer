@@ -1,8 +1,8 @@
 """
 Run:
-python benchmarking/run_efficiency_benchmark.py \
-    --nmr_pkg_path training/logs/rf_ds2_chairs1-3_cbox0-3/20260627-195131_throwaway_run_for_package/checkpoints/model_package_epoch_5.pt \
-    --renderformer_checkpoint_path /home/sazhang/Neural-Radiosity-Renderer/renderformer/training/logs/ds2_chairs1-3_cbox0-3/20260623-154203_full_ds_params46M_res128x128/checkpoints/model_epoch_20000.pt \
+CUDA_VISIBLE_DEVICES=7 python benchmarking/run_efficiency_benchmark.py \
+    --nmr_pkg_path ./training/logs/rf_ds2_chairs1-3_cbox0-3/20260625-155637_full_ds_params46M_res128x128/checkpoints/model_package_epoch_20000.pt \
+    --renderformer_checkpoint_path ./renderformer/training/logs/ds2_chairs1-3_cbox0-3/20260623-154203_full_ds_params46M_res128x128/checkpoints/model_epoch_20000.pt \
     --out_csv benchmarking/efficiency_benchmark_results.csv \
     --resolution 128 \
     --faces_per_obj 512
@@ -228,7 +228,7 @@ def run_mymodel_benchmark(pkg_path, obj_counts, faces_per_object, resolution, wa
     return results
 
 
-def plot_results(csv_file, out_dir, faces_per_obj=512, resolution=128):
+def plot_results(csv_file, out_dir, faces_per_obj=512, resolution=128, nmr_pkg_path=None, renderformer_checkpoint_path=None):
     if not os.path.exists(csv_file):
         print(f"Error: Could not find CSV file at {csv_file}")
         return
@@ -247,13 +247,13 @@ def plot_results(csv_file, out_dir, faces_per_obj=512, resolution=128):
     plt.figure(figsize=(10, 6))
     if 'my_model_time_ms' in df.columns and not df['my_model_time_ms'].isna().all():
         plt.plot(df['num_objects'], df['my_model_time_ms'], marker='o', label='My Model (46M params)', color='blue')
+    if 'renderformer_custom_time_ms' in df.columns and not df['renderformer_custom_time_ms'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_custom_time_ms'], marker='^', label='RenderFormer (Custom, 46M params)', color='green')
     if 'renderformer_large_time_ms' in df.columns and not df['renderformer_large_time_ms'].isna().all():
         plt.plot(df['num_objects'], df['renderformer_large_time_ms'], marker='s', label='RenderFormer (Swin Large, 483M params)', color='red')
     if 'renderformer_base_time_ms' in df.columns and not df['renderformer_base_time_ms'].isna().all():
         plt.plot(df['num_objects'], df['renderformer_base_time_ms'], marker='v', label='RenderFormer (Base, 205M params)', color='orange')
-    if 'renderformer_custom_time_ms' in df.columns and not df['renderformer_custom_time_ms'].isna().all():
-        plt.plot(df['num_objects'], df['renderformer_custom_time_ms'], marker='^', label='RenderFormer (Custom, 46M params)', color='green')
-        
+
     plt.title(f'Inference Time vs Scene Complexity\n(resolution: {resolution}x{resolution}, faces per object: {faces_per_obj})')
     plt.xlabel('Number of Objects')
     plt.ylabel('Time (ms)')
@@ -296,8 +296,8 @@ def main():
     
     args = parser.parse_args()
     
-    obj_counts = [1, 5, 10, 25, 50]
-    # obj_counts = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500]
+    # obj_counts = [1, 5, 10, 25, 50]
+    obj_counts = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500]
     
     os.makedirs(os.path.dirname(os.path.abspath(args.out_csv)), exist_ok=True)
     
@@ -335,7 +335,7 @@ def main():
     print(f"\nBenchmarking complete. Results saved to {args.out_csv}")
     
     print("\nGenerating plots...")
-    plot_results(args.out_csv, os.path.dirname(os.path.abspath(args.out_csv)), args.faces_per_obj, args.resolution)
+    plot_results(args.out_csv, os.path.dirname(os.path.abspath(args.out_csv)), args.faces_per_obj, args.resolution, args.nmr_pkg_path, args.renderformer_checkpoint_path)
 
 if __name__ == "__main__":
     main()
