@@ -54,6 +54,20 @@ Home directory files:
 * `neural_radiosity.ipynb`: Can disregard this. Old notebook copied from https://github.com/krafton-ai/neural-radiosity-tutorial-mitsuba3.
 * `environment.yml`, `requirements.txt`: for environment setup
 
+## Design notes
+### Local patches 
+There is an option to not just use a single token per object, but instead use N tokens where each token represents a patch of the object.
+The motivation for this is that local patch features will preserve more local geometric information than collapsing the object geometry into a single token representation.
+
+The sampling and feature extraction strategy used to create local patches:
+
+*   **Farthest Point Sampling (FPS):** First, we sample a set number of key points (`num_centroids`, default 16) directly from the object's surface point cloud. FPS is used instead of random sampling to guarantee that these centroids are spread as evenly and widely as possible across the entire object's geometry.
+*   **K-Nearest Neighbors (K-NN) Grouping:** For every sampled centroid, we calculate the Euclidean distance to all other points on the object. We then select the `k_neighbors` (default 2048 / 16 = 128) closest points to form a "local patch" around that centroid. Because this is done independently for each centroid, patches can overlap, allowing for smooth, continuous geometric context.
+*   **Local Feature Aggregation (Max-Pooling per Patch):** We take the rich per-point features (which were already computed by the PointNet backbone) for all the points inside each patch. We then apply a **max-pooling** operation across those 128 neighbors. This compresses the structural information of that specific local neighborhood into a single representative feature vector *for that patch*.
+*   **Set Abstraction Refinement:** Finally, those aggregated patch features are passed through a projection layer (`sa_proj` + BatchNorm + SiLU) to refine them. This creates the final sequence of local geometric tokens (`num_centroids` tokens per object, rather than a single global token) that are ready to be fused with the object's material properties.
+
+For positional embeddings, the local patch token's position is given by the mean position of the points sampled to form the patch. 
+
 ## Setup notes
 `conda create -n neural_radiosity_renderer python=3.11`
 Use `environment.yml` and `requirements.txt`
