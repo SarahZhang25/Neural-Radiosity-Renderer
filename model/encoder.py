@@ -86,17 +86,23 @@ class PointNetEncoder(nn.Module):
 
         self.point_net = nn.Sequential(*layers)
 
-        # Set Abstraction projection
-        self.sa_proj = nn.Conv1d(backbone_dim, backbone_dim, 1, bias=not use_batch_norm)
-        if use_batch_norm:
-            self.sa_bn = nn.BatchNorm1d(backbone_dim)
-        self.sa_silu = nn.SiLU()
+        # Hierarchical pooling layers (if enabled)
+        if pooling_type == 'hierarchical':
+            self.hierarchical_layers = nn.ModuleList([
+                nn.Conv1d(backbone_dim, backbone_dim, 1)
+                for _ in range(num_hierarchical_levels)
+            ])
+            # Project concatenated multi-scale features back to backbone_dim
+            # Each level contributes backbone_dim*2 features (max+mean)
+            total_feat_dim = backbone_dim * 2 * (1 + num_hierarchical_levels)
+            self.hierarchical_proj = nn.Linear(total_feat_dim, backbone_dim)
 
         # Set Abstraction projection (used when use_local_patches is True)
-        self.sa_proj = nn.Conv1d(backbone_dim, backbone_dim, 1, bias=not use_batch_norm)
-        if use_batch_norm:
-            self.sa_bn = nn.BatchNorm1d(backbone_dim)
-        self.sa_silu = nn.SiLU()
+        if self.use_local_patches:
+            self.sa_proj = nn.Conv1d(backbone_dim, backbone_dim, 1, bias=not use_batch_norm)
+            if use_batch_norm:
+                self.sa_bn = nn.BatchNorm1d(backbone_dim)
+            self.sa_silu = nn.SiLU()
 
         # Universal property encoders for objects
         self.property_encoder = MaterialPropertyEncoder(

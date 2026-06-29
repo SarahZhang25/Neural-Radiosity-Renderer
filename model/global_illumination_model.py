@@ -176,7 +176,6 @@ class GlobalIlluminationModel(nn.Module):
             properties=flat_props,
             normals=flat_normals
         )
-        n_centroids = self.pointnet_encoder.num_centroids
         
         if self.pointnet_encoder.use_local_patches:
             n_centroids = self.pointnet_encoder.num_centroids
