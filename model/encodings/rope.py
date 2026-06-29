@@ -173,7 +173,7 @@ class ObjectRotaryEmbedding(nn.Module):
 
         self.freqs = nn.Parameter(freqs, requires_grad=False)
         self.register_buffer("dummy", torch.tensor(0), persistent=False)
-        self.apply_rotary_emb = staticmethod(apply_rotary_emb)
+        # self.apply_rotary_emb = staticmethod(apply_rotary_emb) # not accessed as a static method anywhere, leave out so torch.package can work
 
     @property
     def device(self):
