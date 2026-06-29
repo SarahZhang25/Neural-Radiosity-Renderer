@@ -53,7 +53,8 @@ class GlobalIlluminationModel(nn.Module):
             property_embed_dim=config['encoder'].get('property_embed_dim', 128),
             pooling_type=config['encoder']['pooling_type'],
             num_hierarchical_levels=config['encoder']['num_hierarchical_levels'],
-            num_centroids=config['encoder']['num_centroids'],
+            use_local_patches=config['encoder'].get('use_local_patches', False),
+            num_centroids=config['encoder'].get('num_centroids', 64),
         )
         
         # # 2. State Manager (Learnable 3D Grid)
@@ -175,21 +176,29 @@ class GlobalIlluminationModel(nn.Module):
             properties=flat_props,
             normals=flat_normals
         )
-        n_centroids = self.pointnet_encoder.num_centroids
         
-        # obj_features_flat: (B*N_obj, 64, D) -> (B, N_obj, 64, D)
-        object_tokens_patches = obj_features_flat.view(B, N_obj, n_centroids, -1)
-        # object_positions_local: (B*N_obj, 64, 3) -> (B, N_obj, 64, 3)
-        object_positions_patches = obj_positions_local.view(B, N_obj, n_centroids, 3)
+        if self.pointnet_encoder.use_local_patches:
+            n_centroids = self.pointnet_encoder.num_centroids
+            
+            # obj_features_flat: (B*N_obj, n_centroids, D) -> (B, N_obj*n_centroids, D)
+            object_tokens = obj_features_flat.view(B, N_obj * n_centroids, -1)
+            # obj_positions_local: (B*N_obj, n_centroids, 3) -> (B, N_obj*n_centroids, 3)
+            object_centroids = obj_positions_local.view(B, N_obj * n_centroids, 3)
+            
+            # Expand mask to match expanded sequence length
+            if obj_mask is not None:
+                obj_mask = obj_mask.repeat_interleave(n_centroids, dim=1)
+        else:
+            # Global token per object: (B*N_obj, D) -> (B, N_obj, D)
+            object_tokens = obj_features_flat.view(B, N_obj, -1)
+            # Centroid per object: (B*N_obj, 3) -> (B, N_obj, 3)
+            object_centroids = obj_positions_local.view(B, N_obj, 3)
+            # obj_mask: (B, N_obj) -- unchanged
 
         # 2. Get State Tokens
         # state_tokens = self.state_manager.get_tokens(B)  # (B, N_state, D)
 
         # 3. Spatial Positional Encoding (RoPE preparation)
-        # We now use the local 64 centroids over all objects
-        object_centroids = object_positions_patches.view(B, N_obj * n_centroids, 3)  # (B, N_obj * n_centroids, 3)
-        object_tokens = object_tokens_patches.view(B, N_obj * n_centroids, -1) # (B, N_obj * n_centroids, D)
-
         # state_positions = None # no longer using self.state_manager.get_positions(B)  # (B, N_state, 3)
 
         # 4. Bi-Directional Interaction
@@ -200,26 +209,30 @@ class GlobalIlluminationModel(nn.Module):
         #     obj_pos=object_centroids
         # )
         # self-attn only transformer
-        all_obj_layers =  self.scene_transformer(
+        all_obj_layers = self.scene_transformer(
             x=object_tokens,
             src_key_padding_mask=obj_mask,
             obj_pos=object_centroids
-        )
+        ) # list of (B, Seq_Len, D) -- passed directly to predictor
         
-        # Return object layers back to block structure [B, N_obj, 64, D] so Predictor receives this
-        all_obj_layers = [layer.view(B, N_obj, n_centroids, -1) for layer in all_obj_layers]
+        # Pre-extract rotation from w2c once, reused for both token positions and ray directions
+        if w2c is not None:
+            w2c_R = w2c[:, :3, :3]  # (B, 3, 3)
+            w2c_t = w2c[:, :3, 3]   # (B, 3)
+        
+        # 5. Transform per-token world-space centroids to camera space for the predictor
+        if w2c is not None:
+            obj_token_positions = torch.bmm(object_centroids, w2c_R.transpose(1, 2)) + w2c_t.unsqueeze(1)  # (B, Seq_Len, 3)
+        else:
+            obj_token_positions = object_centroids  # (B, Seq_Len, 3)
 
         # --- Stage 2: Rendering ---
 
-        # 5. Ray Encoding
-        if rays_d is None:
-            raise ValueError("ray_map (B, H, W, 3) is required for ray encoding")
-             
+        # 6. Ray Encoding
         # ray_tokens: (B, N_patches, D)
         if w2c is not None:
              # rotate rays to camera space, where camera origin is 0
              rays_o_input = torch.zeros_like(rays_o) 
-             w2c_R = w2c[:, :3, :3]
              rays_d_input = torch.einsum('bij,bhwj->bhwi', w2c_R, rays_d)
         else:
              rays_o_input = rays_o
@@ -227,7 +240,7 @@ class GlobalIlluminationModel(nn.Module):
              
         ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d_input)
 
-        # 6. Predict Radiance
+        # 7. Predict Radiance
         # Ray tokens query the scene (object + state features)
         # If no state features, predictor gracefully handles None input and sets scene_features using only object features
         radiance = self.predictor(
@@ -236,9 +249,8 @@ class GlobalIlluminationModel(nn.Module):
             # multi_scale_state_features=all_state_layers,
             patch_h=rays_d.shape[1] // self.ray_encoder.patch_size,
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
-            w2c=w2c,
-            obj_positions=objectect_positions_patches,
-            obj_mask=obj_mask, # TODO: fix size to make compatible with patches
+            obj_token_positions=obj_token_positions,  # (B, N_obj (* num_centroids), 3) in camera space
+            obj_mask=obj_mask,
             ray_positions=ray_token_pos,
             use_dpt_decoder=self.use_dpt_decoder
         )

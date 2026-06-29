@@ -5,7 +5,7 @@ PointNet-based encoder for extracting features from point clouds.
 
 import torch
 import torch.nn as nn
-from typing import Optional
+from typing import Optional, Tuple
 
 class MaterialPropertyEncoder(nn.Module):
     def __init__(
@@ -49,8 +49,9 @@ class PointNetEncoder(nn.Module):
         backbone_dim: int = 768,
         property_embed_dim: int = 128,
         use_batch_norm: bool = True,
-        pooling_type: str = 'set_abstraction', # Using set abstraction now
+        pooling_type: str = 'local_features', # Using set abstraction now
         num_hierarchical_levels: int = 5,
+        use_local_patches: bool = False,
         num_centroids: int = 64,   # K=64 centroids
         k_neighbors: int = 32,     # number of neighbors to group
     ):
@@ -60,10 +61,11 @@ class PointNetEncoder(nn.Module):
         self.output_dim = output_dim
         self.backbone_dim = backbone_dim
         self.pooling_type = pooling_type
+        self.use_local_patches = use_local_patches
         self.num_centroids = num_centroids
         self.k_neighbors = k_neighbors
 
-        # Assert num_centroids * k_neighbors == # sampled points
+        # TODO: Assert num_centroids * k_neighbors == # sampled points
         # default: 64 centroids * 32 neighbors = 2048 sampled points, which matches num_points_per_object in dataset
 
         # Geometry path: PointNet backbone
@@ -84,7 +86,18 @@ class PointNetEncoder(nn.Module):
 
         self.point_net = nn.Sequential(*layers)
 
-        # Set Abstraction projection
+        # Hierarchical pooling layers (if enabled)
+        if pooling_type == 'hierarchical':
+            self.hierarchical_layers = nn.ModuleList([
+                nn.Conv1d(backbone_dim, backbone_dim, 1)
+                for _ in range(num_hierarchical_levels)
+            ])
+            # Project concatenated multi-scale features back to backbone_dim
+            # Each level contributes backbone_dim*2 features (max+mean)
+            total_feat_dim = backbone_dim * 2 * (1 + num_hierarchical_levels)
+            self.hierarchical_proj = nn.Linear(total_feat_dim, backbone_dim)
+
+        # Set Abstraction projection (used when use_local_patches is True)
         self.sa_proj = nn.Conv1d(backbone_dim, backbone_dim, 1, bias=not use_batch_norm)
         if use_batch_norm:
             self.sa_bn = nn.BatchNorm1d(backbone_dim)
@@ -181,50 +194,91 @@ class PointNetEncoder(nn.Module):
         # PointNet backbone (extract per-point features)
         per_point_features = self.point_net(x)  # (B, backbone_dim, N)
         
-        # 1. FPS to get K=64 centroids
-        fps_idx = self.farthest_point_sample(surface_pos, self.num_centroids) # [B, 64]
-        
-        # 2. Extract local_positions
-        local_positions = self.index_points(surface_pos, fps_idx) # [B, 64, 3]
-        
-        # 3. K-NN grouping around centroids
-        # Compute distances from surface_pos to local_positions
-        dist = torch.cdist(local_positions, surface_pos) # [B, 64, N]
-        _, knn_idx = torch.topk(dist, k=self.k_neighbors, dim=-1, largest=False) # [B, 64, k_neighbors]
-        
-        # Gather features for neighbors
-        # per_point_features is [B, backbone_dim, N], transpose to [B, N, backbone_dim]
-        per_point_feat_t = per_point_features.transpose(1, 2) # [B, N, backbone_dim]
-        
-        # To use index_points, flatten idx temporarily to [B, 64*k_neighbors]
-        knn_idx_flat = knn_idx.view(B, -1)
-        grouped_features_flat = self.index_points(per_point_feat_t, knn_idx_flat) # [B, 64*k_neighbors, backbone_dim]
-        grouped_features = grouped_features_flat.view(B, self.num_centroids, self.k_neighbors, self.backbone_dim)
-        
-        # Max pool over k_neighbors to get local_features per centroid
-        local_features_max = torch.max(grouped_features, dim=2)[0] # [B, 64, backbone_dim]
-        
-        # Additional projection via sa_proj (optional, but standard for Set Abstraction to refine grouped features)
-        local_features_max = local_features_max.transpose(1, 2) # [B, backbone_dim, 64]
-        local_features_proj = self.sa_proj(local_features_max)
-        if hasattr(self, 'sa_bn'):
-            local_features_proj = self.sa_bn(local_features_proj)
-        local_features_proj = self.sa_silu(local_features_proj)
-        geometry_token = local_features_proj.transpose(1, 2) # [B, 64, backbone_dim]
+        if self.use_local_patches:
+            assert self.pooling_type == 'local_features'
+            # 1. FPS to get K centroids
+            fps_idx = self.farthest_point_sample(surface_pos, self.num_centroids) # [B, num_centroids]
+            
+            # 2. Extract local_positions
+            local_positions = self.index_points(surface_pos, fps_idx) # [B, num_centroids, 3]
+            
+            # 3. K-NN grouping around centroids
+            # Compute distances from surface_pos to local_positions
+            dist = torch.cdist(local_positions, surface_pos) # [B, num_centroids, N]
+            _, knn_idx = torch.topk(dist, k=self.k_neighbors, dim=-1, largest=False) # [B, num_centroids, k_neighbors]
+            
+            # Gather features for neighbors
+            # per_point_features is [B, backbone_dim, N], transpose to [B, N, backbone_dim]
+            per_point_feat_t = per_point_features.transpose(1, 2) # [B, N, backbone_dim]
+            
+            # To use index_points, flatten idx temporarily to [B, num_centroids*k_neighbors]
+            knn_idx_flat = knn_idx.view(B, -1)
+            grouped_features_flat = self.index_points(per_point_feat_t, knn_idx_flat) # [B, num_centroids*k_neighbors, backbone_dim]
+            grouped_features = grouped_features_flat.view(B, self.num_centroids, self.k_neighbors, self.backbone_dim)
+            
+            # Max pool over k_neighbors to get local_features per centroid
+            local_features_max = torch.max(grouped_features, dim=2)[0] # [B, num_centroids, backbone_dim]
+            
+            # Additional projection via sa_proj (optional, but standard for Set Abstraction to refine grouped features)
+            local_features_max = local_features_max.transpose(1, 2) # [B, backbone_dim, num_centroids]
+            local_features_proj = self.sa_proj(local_features_max)
+            if hasattr(self, 'sa_bn'):
+                local_features_proj = self.sa_bn(local_features_proj)
+            local_features_proj = self.sa_silu(local_features_proj)
+            geometry_token = local_features_proj.transpose(1, 2) # [B, num_centroids, backbone_dim]
 
-        # Process properties based on object type for each item in batch
-        properties_token = self.property_encoder(properties) # [B, property_embed_dim]
-        properties_token = properties_token.unsqueeze(1).expand(-1, self.num_centroids, -1) # [B, 64, property_embed_dim]
+            # Process properties based on object type for each item in batch
+            properties_token = self.property_encoder(properties) # [B, property_embed_dim]
+            properties_token = properties_token.unsqueeze(1).expand(-1, self.num_centroids, -1) # [B, num_centroids, property_embed_dim]
 
-        # Fuse geometry and physical properties
-        combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, 64, backbone_dim + property_embed_dim)
-        
-        # BatchNorm1d in fusion_mlp expects 2D input (B*N, C) or 3D input (B, C, N). 
-        # Since Linear outputs (B, N, C), we need to reshape combined to 2D before passing through the MLP.
-        B, N_c, C_f = combined.shape
-        combined_flat = combined.view(B * N_c, C_f)
-        output_flat = self.fusion_mlp(combined_flat)
-        output = output_flat.view(B, N_c, -1)  # (B, 64, output_dim)
+            # Fuse geometry and physical properties
+            combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, num_centroids, backbone_dim + property_embed_dim)
+            
+            # BatchNorm1d in fusion_mlp expects 2D input (B*N, C) or 3D input (B, C, N). 
+            # Since Linear outputs (B, N, C), we need to reshape combined to 2D before passing through the MLP.
+            B, N_c, C_f = combined.shape
+            combined_flat = combined.view(B * N_c, C_f)
+            output_flat = self.fusion_mlp(combined_flat)
+            output = output_flat.view(B, N_c, -1)  # (B, num_centroids, output_dim)
 
-        return output, local_positions
+            return output, local_positions
+        else:
+            if self.pooling_type == 'max':
+                geometry_token = torch.max(per_point_features, dim=2)[0]  # (B, backbone_dim)
+
+            elif self.pooling_type == 'hierarchical':
+                # Multi-scale pooling
+                global_max = torch.max(per_point_features, dim=2)[0]
+                global_mean = torch.mean(per_point_features, dim=2)
+                global_feat = torch.cat([global_max, global_mean], dim=1)
+
+                local_features = [global_feat]
+
+                for level, layer in enumerate(self.hierarchical_layers):
+                    stride = 2 ** (level + 1)
+                    sampled_feat = per_point_features[:, :, ::stride]
+
+                    if sampled_feat.shape[2] < 8:
+                        sampled_feat = per_point_features
+
+                    local_feat = layer(sampled_feat)
+                    local_max = torch.max(local_feat, dim=2)[0]
+                    local_mean = torch.mean(local_feat, dim=2)
+                    local_combined = torch.cat([local_max, local_mean], dim=1)
+                    local_features.append(local_combined)
+
+                all_features = torch.cat(local_features, dim=1)
+                geometry_token = self.hierarchical_proj(all_features)  # (B, backbone_dim)
+
+            else:
+                raise ValueError(f"Unknown pooling type: {self.pooling_type}")
+            
+            properties_token = self.property_encoder(properties)  # (B, property_embed_dim)
+            
+            combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, backbone_dim + property_embed_dim)
+            output = self.fusion_mlp(combined)  # (B, output_dim)
+            
+            local_positions = surface_pos.mean(dim=1)  # (B, 3)
+            
+            return output, local_positions
 

@@ -1,4 +1,4 @@
-# Training Configuration
+# Training Configuration -- outdated now, remove??
 
 # Run notes (changes from last run): 
 #     Updated/fixed RoPE implementation in MHA
@@ -23,7 +23,7 @@ encoder:
   hidden_dims: [512, 1024, 2048] # Increase capacity for memorization
   output_dim: 1024 # Increased
   backbone_dim: 768
-  pooling_type: 'set_abstraction' # Replaced 'hierarchical' and 'max' with set abstraction for local features
+  pooling_type: 'local_features' # Replaced 'hierarchical' and 'max' with set abstraction for local features
   num_hierarchical_levels: 3 # Ignored
   num_centroids: 64
 
