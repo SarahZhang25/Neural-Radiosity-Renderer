@@ -9,9 +9,9 @@
 #     dpt_head: 6,314,051 params
 
 # Training: 
-# Model: added local patch features flag, test backward compatibility
+# Model: test using local patch object features: 16 patches per obj, 128 pts/patch
 # Data: attempt6_table_chair_540 -- 5k epochs 
-# -- compare with attempt6_table_chair_540/20260624-103918_full_ds_params46Mnew_res128x128
+# -- compare with attempt6_table_chair_540/20260624-103918_full_ds_params46Mnew_res128x128 or 20260629-130259_full_ds_params46Mnew_res128x128_backwardcomp
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
@@ -19,9 +19,10 @@ encoder:
   output_dim: 512
   backbone_dim: 512
   property_embed_dim: 128
-  pooling_type: 'hierarchical' #'local_features' # Replaced 'hierarchical' and 'max' with set abstraction for local features
-  num_hierarchical_levels: 3 # Ignored
-  # num_centroids: 64
+  pooling_type: 'local_features' # Replaced 'hierarchical' and 'max' with set abstraction for local features
+  num_hierarchical_levels: 3 # Ignored when using local features
+  use_local_patches: true
+  num_centroids: 16
 
 # state:
 #   num_tokens: 8  # 2x2x2 grid
@@ -79,7 +80,7 @@ training:
   image_res: 128
   data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
   log_dir: "training/logs/attempt6_table_chair_540"
-  run_name: "full_ds_params46Mnew_res128x128_backwardcomp" # Optional string tag for log dir name
+  run_name: "full_ds_params46Mnew_res128x128_patches16" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42

@@ -52,8 +52,8 @@ class PointNetEncoder(nn.Module):
         pooling_type: str = 'local_features', # Using set abstraction now
         num_hierarchical_levels: int = 5,
         use_local_patches: bool = False,
-        num_centroids: int = 64,   # K=64 centroids
-        k_neighbors: int = 32,     # number of neighbors to group
+        num_centroids: int = 16,   # K centroids
+        k_neighbors: int = 128,     # number of neighbors to group
     ):
         super().__init__()
 
@@ -65,8 +65,8 @@ class PointNetEncoder(nn.Module):
         self.num_centroids = num_centroids
         self.k_neighbors = k_neighbors
 
-        # TODO: Assert num_centroids * k_neighbors == # sampled points
-        # default: 64 centroids * 32 neighbors = 2048 sampled points, which matches num_points_per_object in dataset
+        # TODO: If using local_features, assert num_centroids * k_neighbors == # sampled points
+        # default: 16 centroids * 128 neighbors = 2048 sampled points, which matches num_points_per_object in dataset
 
         # Geometry path: PointNet backbone
         layers = []
