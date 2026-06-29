@@ -266,12 +266,12 @@ def plot_results(csv_file, out_dir, faces_per_obj=512, resolution=128, nmr_pkg_p
     plt.figure(figsize=(10, 6))
     if 'my_model_mem_mb' in df.columns and not df['my_model_mem_mb'].isna().all():
         plt.plot(df['num_objects'], df['my_model_mem_mb'], marker='o', label='My Model (46M params)', color='blue')
+    if 'renderformer_custom_mem_mb' in df.columns and not df['renderformer_custom_mem_mb'].isna().all():
+        plt.plot(df['num_objects'], df['renderformer_custom_mem_mb'], marker='^', label='RenderFormer (Custom, 46M params)', color='green')
     if 'renderformer_large_mem_mb' in df.columns and not df['renderformer_large_mem_mb'].isna().all():
         plt.plot(df['num_objects'], df['renderformer_large_mem_mb'], marker='s', label='RenderFormer (Swin Large, 483M params)', color='red')
     if 'renderformer_base_mem_mb' in df.columns and not df['renderformer_base_mem_mb'].isna().all():
         plt.plot(df['num_objects'], df['renderformer_base_mem_mb'], marker='v', label='RenderFormer (Base, 205M params)', color='orange')
-    if 'renderformer_custom_mem_mb' in df.columns and not df['renderformer_custom_mem_mb'].isna().all():
-        plt.plot(df['num_objects'], df['renderformer_custom_mem_mb'], marker='^', label='RenderFormer (Custom, 46M params)', color='green')
         
     plt.title(f'Peak VRAM vs Scene Complexity\n(resolution: {resolution}x{resolution}, faces per object: {faces_per_obj})')
     plt.xlabel('Number of Objects')
