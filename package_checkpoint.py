@@ -1,6 +1,6 @@
 """
+Script to package a saved model checkpoint into a torch.package format for later use.
 python package_checkpoint.py --config training/train_config_46M.yaml --checkpoint ./training/logs/rf_ds2_chairs1-3_cbox0-3/20260625-155637_full_ds_params46M_res128x128/checkpoints/checkpoint_epoch_20000.pt
-
 """
 
 import os

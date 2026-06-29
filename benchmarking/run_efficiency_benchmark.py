@@ -6,13 +6,11 @@ CUDA_VISIBLE_DEVICES=7 python benchmarking/run_efficiency_benchmark.py \
     --out_csv benchmarking/efficiency_benchmark_results.csv \
     --resolution 128 \
     --faces_per_obj 512
-
 """
 
 import os
 import torch
 import argparse
-import time
 import csv
 import sys
 import pandas as pd
