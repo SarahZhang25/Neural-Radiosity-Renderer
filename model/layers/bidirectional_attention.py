@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from model.encodings.rope import (
-    ObjectRotaryEmbedding,
+    CentroidRotaryEmbedding,
     freqs_to_cos_sin,
     apply_rotary_emb_cossin,
     apply_rotary_emb_one_cossin
@@ -75,7 +75,7 @@ class BidirectionalTransformerEncoder(nn.Module):
                 assert rope_dim * 3 <= self.head_dim, f"rope_dim {rope_dim} is too large for head_dim {self.head_dim}"
             else:
                 rope_dim = self.head_dim
-            self.rope_emb = ObjectRotaryEmbedding(
+            self.rope_emb = CentroidRotaryEmbedding(
                 dim=rope_dim,
                 double_max_freq=rope_double_max_freq,
             )

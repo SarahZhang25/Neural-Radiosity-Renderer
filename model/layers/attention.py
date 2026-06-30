@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from model.encodings.rope import (
-    ObjectRotaryEmbedding,
+    CentroidRotaryEmbedding,
     freqs_to_cos_sin,
     apply_rotary_emb_cossin,
     apply_rotary_emb_one_cossin
@@ -588,7 +588,7 @@ class TransformerEncoder(nn.Module):
             else:
                 print(f"Overriding rope_dim {rope_dim} with {hidden_dim // num_heads} for object_mixed")
                 rope_dim = hidden_dim // num_heads
-            self.rope_emb = ObjectRotaryEmbedding(
+            self.rope_emb = CentroidRotaryEmbedding(
                 dim=rope_dim,
                 double_max_freq=rope_double_max_freq,
             )
@@ -691,7 +691,7 @@ class TransformerDecoder(nn.Module):
             else:
                 print(f"Overriding rope_dim {rope_dim} with {hidden_dim // num_heads} for object_mixed")
                 rope_dim = hidden_dim // num_heads
-            self.rope_emb = ObjectRotaryEmbedding(
+            self.rope_emb = CentroidRotaryEmbedding(
                 dim=rope_dim,
                 double_max_freq=rope_double_max_freq,
             )

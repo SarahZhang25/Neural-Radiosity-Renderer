@@ -149,7 +149,7 @@ def apply_rotary_emb_one_cossin(one_tensor, cos, sin):
     return one_tensor.type(dtype)
 
 #TODO:[ROPE] need to remake this for object-level single sample or anchor-based
-class ObjectRotaryEmbedding(nn.Module):
+class CentroidRotaryEmbedding(nn.Module):
     def __init__(
         self,
         dim,
@@ -157,7 +157,7 @@ class ObjectRotaryEmbedding(nn.Module):
         double_max_freq=False,
     ):
         """
-        ObjectRotaryEmbedding implements 3D rotary embeddings for object centroids.
+        CentroidRotaryEmbedding implements 3D rotary embeddings for object centroids.
         Args:
             dim (int): The dimension of the rotary embedding per spatial axis.
             hf_format (bool): Whether to use the huggingface RoPE format.
