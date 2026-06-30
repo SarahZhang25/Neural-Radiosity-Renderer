@@ -8,12 +8,10 @@
 #   predictor: 23,134,282 params
 #     dpt_head: 6,314,051 params
 
-# Training:
-# Model: using new model with no state manager
-# -- fixed rope dims, fixed ray dirs in camera space
-# Data: rf ds2_chairs1-3_cbox0-3
-# 20k epochs, 128x128
-# Compare with RF run: renderformer/training/logs/ds2_chairs1-3_cbox0-3/20260623-154203_full_ds_params46M_res128x128
+# Training: 
+# Model: test using local patch object features: 16 patches per obj, 128 pts/patch
+# Data: attempt6_table_chair_540 -- 5k epochs 
+# -- compare with attempt6_table_chair_540/20260624-103918_full_ds_params46Mnew_res128x128 or 20260629-130259_full_ds_params46Mnew_res128x128_backwardcomp
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
@@ -21,9 +19,10 @@ encoder:
   output_dim: 512
   backbone_dim: 512
   property_embed_dim: 128
-  pooling_type: 'hierarchical' #'set_abstraction' # Replaced 'hierarchical' and 'max' with set abstraction for local features
-  num_hierarchical_levels: 3 # Ignored
-  # num_centroids: 64
+  pooling_type: 'local_features' # Replaced 'hierarchical' and 'max' with set abstraction for local features
+  num_hierarchical_levels: 3 # Ignored when using local features
+  use_local_patches: true
+  num_centroids: 16
 
 # state:
 #   num_tokens: 8  # 2x2x2 grid
@@ -74,17 +73,17 @@ predictor:
 training:
   batch_size: 64
   learning_rate: 1.0e-4
-  num_epochs: 5 #20000
-  warmup_epochs: 2000
-  save_interval: 250  # for visualization
-  checkpoint_interval: 2000  # for saving model checkpoint 
+  num_epochs: 5000
+  warmup_epochs: 500
+  save_interval: 200  # for visualization
+  checkpoint_interval: 1000  # for saving model checkpoint 
   image_res: 128
-  data_dir: "renderformer/datasets/processed_datasets/ds2_chairs1-3_cbox0-3"
-  log_dir: "training/logs/rf_ds2_chairs1-3_cbox0-3"
-  run_name: "throwaway_run_for_package" # Optional string tag for log dir name
-  # max_dataset_size: 4   # Optional max samples for dataset. If not specified, uses whole dataset
+  data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
+  log_dir: "training/logs/attempt6_table_chair_540"
+  run_name: "full_ds_params46Mnew_res128x128_patches16" # Optional string tag for log dir name
+  # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
-  # shuffle_data_seed: 43
+  # shuffle_data_seed: 42
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'
   lpips_loss_weighting: 0.05

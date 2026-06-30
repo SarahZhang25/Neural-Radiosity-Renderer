@@ -120,8 +120,7 @@ class RadiancePredictor(nn.Module):
         multi_scale_state_features: Optional[List[torch.Tensor]] = None,
         patch_h: Optional[int] = None,
         patch_w: Optional[int] = None,
-        w2c: Optional[torch.Tensor] = None,
-        obj_positions: Optional[torch.Tensor] = None,
+        obj_token_positions: Optional[torch.Tensor] = None,
         obj_mask: Optional[torch.Tensor] = None,
         ray_positions: Optional[torch.Tensor] = None,
         use_dpt_decoder: Optional[bool] = False,
@@ -132,34 +131,19 @@ class RadiancePredictor(nn.Module):
         Predict radiances using cross-attention between rays and scene.
 
         Args:
-            multi_scale_features: List of object features [(B, N_obj, D), ...]
+            multi_scale_features: List of object features [(B, Seq_Len, D), ...]
             query_view_features: Ray features from encoder (B, N_PATCHES, D)
             multi_scale_state_features: List of state features [(B, N_state, D), ...]
             patch_h: Number of patches in height
             patch_w: Number of patches in width
-            w2c: Optional (B, 4, 4) World to Camera matrix
-            obj_positions: Optional (B, N_obj, N_v, 3) Object point clouds in world space
-            ray_positions: Optional (B, N_patches, 3) Ray positions in world space
+            obj_token_positions: (B, N_obj, 3) per-token positions already in camera space
+            ray_positions: Optional (B, N_patches, 3) Ray positions in camera space
             use_dpt_decoder: Whether to use DPT decoder
 
         Returns:
             Predicted radiances (B, 3, H, W)
         """
         B, N_patches, D = query_view_features.shape
-        
-        positions_cam_space = None
-        if self.pe_type in ['nerf', 'rope'] and w2c is not None and obj_positions is not None:
-            # Transform object positions to camera space
-            # w2c is (B, 4, 4), obj_positions is (B, N_obj, N_v, 3)
-            B, N_obj, N_v, _ = obj_positions.shape
-            w2c_R = w2c[:, :3, :3]  # (B, 3, 3)
-            w2c_t = w2c[:, :3, 3]   # (B, 3)
-            
-            # Use centroids representing each object token
-            centroids = obj_positions.mean(dim=2)  # (B, N_obj, 3)
-            
-            # Transform centroids to camera space
-            positions_cam_space = torch.bmm(centroids, w2c_R.transpose(1, 2)) + w2c_t.unsqueeze(1)
         
         # Infer patch grid if not provided
         if patch_h is None or patch_w is None:
@@ -174,16 +158,16 @@ class RadiancePredictor(nn.Module):
             w * feat for w, feat in zip(layer_weights_obj, multi_scale_features[:num_feats])
         )  # (B, N_obj, D)
 
-        if self.pe_type == 'nerf' and positions_cam_space is not None:
+        if self.pe_type == 'nerf' and obj_token_positions is not None:
             # Generate NeRF positional encoding and add to object features
-            encoded_pos = self.pos_pe(positions_cam_space)
+            encoded_pos = self.pos_pe(obj_token_positions)
             pos_emb = self.pos_pe_norm(self.pe_token_proj(encoded_pos)) # (B, N_obj, D)
             obj_features = obj_features + pos_emb
 
         # Prepare scene context and RoPE context positions
         ctx_pos = None
-        if self.pe_type == 'rope' and positions_cam_space is not None:
-            ctx_pos = positions_cam_space
+        if self.pe_type == 'rope' and obj_token_positions is not None:
+            ctx_pos = obj_token_positions
 
         # Optionally concatenate state features
         if multi_scale_state_features is not None:

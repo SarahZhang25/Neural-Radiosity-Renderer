@@ -21,8 +21,9 @@ encoder:
   output_dim: 384
   backbone_dim: 512
   property_embed_dim: 128
-  pooling_type: 'hierarchical' #'set_abstraction' # Replaced 'hierarchical' and 'max' with set abstraction for local features
+  pooling_type: 'hierarchical' #'local_features' # Replaced 'hierarchical' and 'max' with set abstraction for local features
   num_hierarchical_levels: 3 # Ignored
+  use_local_patches: false
   # num_centroids: 64
 
 # state:

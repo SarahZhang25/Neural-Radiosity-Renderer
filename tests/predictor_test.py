@@ -5,7 +5,7 @@ Run with: pytest tests/predictor_test.py -v
 
 import pytest
 import torch
-from model.predictor import RadiancePredictor
+from model.predictor_rope import RadiancePredictor
 
 
 class TestRadiancePredictor:
