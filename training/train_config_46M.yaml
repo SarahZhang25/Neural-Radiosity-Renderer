@@ -15,26 +15,19 @@
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
-  hidden_dims: [768, 1024, 1536]
+  hidden_dims: [1024, 1024, 1536]
   output_dim: 512
-  backbone_dim: 512
+  backbone_dim: 768
   property_embed_dim: 128
-  pooling_type: 'local_features' # Replaced 'hierarchical' and 'max' with set abstraction for local features
+  pooling_type: 'hierarchical' # 'hierarchical' 'max' or 'local_features'
   num_hierarchical_levels: 3 # Ignored when using local features
-  use_local_patches: true
-  num_centroids: 16
-
-# state:
-#   num_tokens: 8  # 2x2x2 grid
-#   token_dim: 512 # Match encoder output
-#   learnable_init: true
-#   init_scale: 0.1
+  use_local_patches: false
 
 decoder:
   hidden_dim: 512
+  ffn_hidden_dim: 2048 # 512 * 4???
   num_layers: 4 
   num_heads: 4
-  feedforward_dim: 2048 # 512 * 4??? The number of frequencies in the positional encoding for vertex positions
   dropout: 0.0
   activation: 'gelu'
   return_all_layers: true
@@ -58,6 +51,7 @@ ray_encoder:
 predictor:
   # TODO: add a obj num_freq term?
   hidden_dim: 512
+  ffn_hidden_dim: 1024
   num_layers: 4
   num_heads: 4
   dropout: 0

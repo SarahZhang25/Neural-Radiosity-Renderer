@@ -13,7 +13,7 @@ from model.predictor_rope import RadiancePredictor
 # from model.state_manager import StateManager
 from model.ray_encoder import RayEncoder
 
-class GlobalIlluminationModel(torch.nnModule):
+class GlobalIlluminationModel(torch.nn.Module):
     """
     Architecture:
         [Object Point Clouds]   -> *PointNetEncoder ->
@@ -68,7 +68,7 @@ class GlobalIlluminationModel(torch.nnModule):
             num_layers=config['decoder']['num_layers'],
             num_heads=config['decoder']['num_heads'],
             hidden_dim=config['decoder']['hidden_dim'],
-            ffn_hidden_dim=config['decoder']['feedforward_dim'],
+            ffn_hidden_dim=config['decoder']['ffn_hidden_dim'],
             dropout=config['decoder']['dropout'],
             activation=config['decoder']['activation'],
             norm_type=config['decoder']['norm_type'],
@@ -114,6 +114,7 @@ class GlobalIlluminationModel(torch.nnModule):
         print("Using predictor pe_type: ", config['predictor']['pe_type'])
         self.predictor = RadiancePredictor(
             hidden_dim=config['predictor']['hidden_dim'],
+            ffn_hidden_dim=config['predictor']['ffn_hidden_dim'],
             patch_size=config['ray_encoder']['patch_size'],
             num_heads=config['predictor']['num_heads'],
             num_layers=config['predictor']['num_layers'],
