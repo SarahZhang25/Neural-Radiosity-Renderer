@@ -4,20 +4,16 @@ Predict radiance given scene composition and query camera view.
 """
 
 import torch
-import torch.nn as nn
 import yaml
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional
 
 from model.encoder import PointNetEncoder
 from model.layers.attention import TransformerEncoder
-from model.decoder import TransformerDecoder
-from model.layers.bidirectional_attention import BidirectionalTransformerEncoder
-# from model.predictor import RadiancePredictor
 from model.predictor_rope import RadiancePredictor
 # from model.state_manager import StateManager
 from model.ray_encoder import RayEncoder
 
-class GlobalIlluminationModel(nn.Module):
+class GlobalIlluminationModel(torch.nnModule):
     """
     Architecture:
         [Object Point Clouds]   -> *PointNetEncoder ->
@@ -188,7 +184,7 @@ class GlobalIlluminationModel(nn.Module):
             # Expand mask to match expanded sequence length
             if obj_mask is not None:
                 obj_mask = obj_mask.repeat_interleave(n_centroids, dim=1)
-        else:
+        else: # [this should be default branch]
             # Global token per object: (B*N_obj, D) -> (B, N_obj, D)
             object_tokens = obj_features_flat.view(B, N_obj, -1)
             # Centroid per object: (B*N_obj, 3) -> (B, N_obj, 3)

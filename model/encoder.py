@@ -49,7 +49,7 @@ class PointNetEncoder(nn.Module):
         backbone_dim: int = 768,
         property_embed_dim: int = 128,
         use_batch_norm: bool = True,
-        pooling_type: str = 'local_features', # Using set abstraction now
+        pooling_type: str = 'local_features', # 'max', 'hierarchical'
         num_hierarchical_levels: int = 5,
         use_local_patches: bool = False,
         num_centroids: int = 16,   # K centroids
@@ -195,8 +195,8 @@ class PointNetEncoder(nn.Module):
         # PointNet backbone (extract per-point features)
         per_point_features = self.point_net(x)  # (B, backbone_dim, N)
         
-        if self.use_local_patches:
-            assert self.pooling_type == 'local_features'
+        if self.pooling_type == 'local_features':
+            assert self.use_local_patches
             # 1. FPS to get K centroids
             fps_idx = self.farthest_point_sample(surface_pos, self.num_centroids) # [B, num_centroids]
             
@@ -243,43 +243,42 @@ class PointNetEncoder(nn.Module):
             output = output_flat.view(B, N_c, -1)  # (B, num_centroids, output_dim)
 
             return output, local_positions
+        # single object token branches:
+        elif self.pooling_type == 'max':
+            geometry_token = torch.max(per_point_features, dim=2)[0]  # (B, backbone_dim)
+
+        elif self.pooling_type == 'hierarchical':
+            # Multi-scale pooling
+            global_max = torch.max(per_point_features, dim=2)[0]
+            global_mean = torch.mean(per_point_features, dim=2)
+            global_feat = torch.cat([global_max, global_mean], dim=1)
+
+            local_features = [global_feat]
+
+            for level, layer in enumerate(self.hierarchical_layers):
+                stride = 2 ** (level + 1)
+                sampled_feat = per_point_features[:, :, ::stride]
+
+                if sampled_feat.shape[2] < 8:
+                    sampled_feat = per_point_features
+
+                local_feat = layer(sampled_feat)
+                local_max = torch.max(local_feat, dim=2)[0]
+                local_mean = torch.mean(local_feat, dim=2)
+                local_combined = torch.cat([local_max, local_mean], dim=1)
+                local_features.append(local_combined)
+
+            all_features = torch.cat(local_features, dim=1)
+            geometry_token = self.hierarchical_proj(all_features)  # (B, backbone_dim)
         else:
-            if self.pooling_type == 'max':
-                geometry_token = torch.max(per_point_features, dim=2)[0]  # (B, backbone_dim)
-
-            elif self.pooling_type == 'hierarchical':
-                # Multi-scale pooling
-                global_max = torch.max(per_point_features, dim=2)[0]
-                global_mean = torch.mean(per_point_features, dim=2)
-                global_feat = torch.cat([global_max, global_mean], dim=1)
-
-                local_features = [global_feat]
-
-                for level, layer in enumerate(self.hierarchical_layers):
-                    stride = 2 ** (level + 1)
-                    sampled_feat = per_point_features[:, :, ::stride]
-
-                    if sampled_feat.shape[2] < 8:
-                        sampled_feat = per_point_features
-
-                    local_feat = layer(sampled_feat)
-                    local_max = torch.max(local_feat, dim=2)[0]
-                    local_mean = torch.mean(local_feat, dim=2)
-                    local_combined = torch.cat([local_max, local_mean], dim=1)
-                    local_features.append(local_combined)
-
-                all_features = torch.cat(local_features, dim=1)
-                geometry_token = self.hierarchical_proj(all_features)  # (B, backbone_dim)
-
-            else:
-                raise ValueError(f"Unknown pooling type: {self.pooling_type}")
-            
-            properties_token = self.property_encoder(properties)  # (B, property_embed_dim)
-            
-            combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, backbone_dim + property_embed_dim)
-            output = self.fusion_mlp(combined)  # (B, output_dim)
-            
-            local_positions = surface_pos.mean(dim=1)  # (B, 3)
-            
-            return output, local_positions
+            raise ValueError(f"Unknown pooling type: {self.pooling_type}")
+        
+        properties_token = self.property_encoder(properties)  # (B, property_embed_dim)
+        
+        combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, backbone_dim + property_embed_dim)
+        output = self.fusion_mlp(combined)  # (B, output_dim)
+        
+        local_positions = surface_pos.mean(dim=1)  # (B, 3)
+        
+        return output, local_positions
 
