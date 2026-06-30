@@ -54,7 +54,7 @@ class GlobalIlluminationModel(nn.Module):
             pooling_type=config['encoder']['pooling_type'],
             num_hierarchical_levels=config['encoder']['num_hierarchical_levels'],
             use_local_patches=config['encoder'].get('use_local_patches', False),
-            num_centroids=config['encoder'].get('num_centroids', 64),
+            num_centroids=config['encoder'].get('num_centroids', 16),
         )
         
         # # 2. State Manager (Learnable 3D Grid)
