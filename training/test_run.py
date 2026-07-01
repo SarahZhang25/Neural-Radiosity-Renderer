@@ -16,7 +16,7 @@ def main():
         config = yaml.safe_load(f)
     
     # Force settings for a fast, localized test
-    config['training']['num_epochs'] = 2
+    config['training']['num_epochs'] = 5
     config['training']['save_interval'] = 9999
     config['training']['checkpoint_interval'] = 9999
     config['training']['package_model'] = False
@@ -34,7 +34,7 @@ def main():
         
     try:
         trainer = Trainer(temp_config)
-        print("Starting 2-epoch test run...")
+        print(f"Starting {config['training']['num_epochs']}-epoch test run...")
         trainer.run()
         print("Test run completed successfully!")
     finally:

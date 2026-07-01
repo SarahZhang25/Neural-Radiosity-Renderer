@@ -13,6 +13,50 @@ from model.predictor_rope import RadiancePredictor
 # from model.state_manager import StateManager
 from model.ray_encoder import RayEncoder
 
+
+def compute_obb_axes(point_cloud: torch.Tensor) -> torch.Tensor:
+    """
+    Compute oriented bounding box (OBB) scaled principal axes from a point cloud
+    using covariance matrix eigendecomposition.
+
+    Args:
+        point_cloud: (..., N_points, 3) point cloud positions
+
+    Returns:
+        scaled_axes_flat: (..., 9) three scaled principal axis vectors flattened
+            (axis1_x, axis1_y, axis1_z, axis2_x, axis2_y, axis2_z, axis3_x, axis3_y, axis3_z)
+            Each axis is the eigenvector scaled by sqrt(eigenvalue), representing
+            the principal direction and extent of the point distribution.
+    """
+    # Center the point cloud
+    centroid = point_cloud.mean(dim=-2, keepdim=True)  # (..., 1, 3)
+    centered = point_cloud - centroid  # (..., N_points, 3)
+
+    # Covariance matrix: (..., 3, 3)
+    N = point_cloud.shape[-2]
+    cov = centered.transpose(-1, -2) @ centered / N  # (..., 3, 3)
+
+    # Eigendecomposition (eigh is optimized for symmetric PSD matrices)
+    # Convert to float32 as eigh is not implemented for bfloat16 on CUDA
+    orig_dtype = cov.dtype
+    eigenvalues, eigenvectors = torch.linalg.eigh(cov.float())
+    eigenvalues = eigenvalues.to(orig_dtype)
+    eigenvectors = eigenvectors.to(orig_dtype)
+
+    # Clamp eigenvalues to avoid sqrt of negative due to numerical precision
+    eigenvalues = eigenvalues.clamp(min=0.0)
+
+    # Scale eigenvectors by sqrt(eigenvalue) to get extent-scaled axes
+    # eigenvectors: (..., 3, 3), eigenvalues.sqrt(): (..., 3)
+    scaled_axes = eigenvectors * eigenvalues.sqrt().unsqueeze(-2)  # (..., 3, 3)
+
+    # Flatten: (..., 3, 3) -> (..., 9) where each group of 3 is one axis vector
+    # Transpose so rows are axes: (..., 3, 3) with scaled_axes[..., :, i] -> axis i
+    shape = point_cloud.shape[:-2] + (9,)
+    scaled_axes_flat = scaled_axes.transpose(-1, -2).reshape(shape)  # (..., 9)
+
+    return scaled_axes_flat
+
 class GlobalIlluminationModel(torch.nn.Module):
     """
     Architecture:
@@ -25,19 +69,31 @@ class GlobalIlluminationModel(torch.nn.Module):
         super().__init__()
         self.use_dpt_decoder = config['predictor']['use_dpt_decoder']
 
+        # Determine rope variant from pe_type
+        pe_type = config['predictor']['pe_type']
+        if pe_type == 'rope_obb':
+            self.rope_variant = 'obb'
+            n_coords = 12
+        elif 'rope' in pe_type:  # 'rope' or 'rope_centroid'
+            self.rope_variant = 'centroid'
+            n_coords = 3
+        else:
+            self.rope_variant = None
+            n_coords = 3
+
         # Calculate rope_dim
-        if config['predictor']['pe_type'] == 'nerf':
+        if pe_type == 'nerf':
             self.rope_dim = None
-        elif config['predictor']['pe_type'] == 'rope':
+        elif 'rope' in pe_type:
             # rope_dim controls how many frequency bands are used for positional encoding.
-            # It must not exceed the head's capacity: 3 coords × (rope_dim//2) freqs ≤ head_dim//2.
-            # Using max capacity (~42 for head_dim=128) starves content attention; use the config
+            # It must not exceed the head's capacity: n_coords × (rope_dim//2) freqs ≤ head_dim//2.
+            # Using max capacity starves content attention; use the config
             # value (typically 8) clamped to the max as a safety bound.
             decoder_head_dim = config['decoder']['hidden_dim'] // config['decoder']['num_heads']
-            max_rope_dim = ((decoder_head_dim // 2) // 3) * 2
+            max_rope_dim = ((decoder_head_dim // 2) // n_coords) * 2
             self.rope_dim = min(config['ray_encoder']['vertex_pe_num_freqs'], max_rope_dim)
         else:
-            raise ValueError(f"Invalid positional encoding type: {config['predictor']['pe_type']}")
+            raise ValueError(f"Invalid positional encoding type: {pe_type}")
 
         # Scene Representation Stage
         # 1. Object Encoder
@@ -71,6 +127,7 @@ class GlobalIlluminationModel(torch.nn.Module):
             norm_type=config['decoder']['norm_type'],
             rope_dim=self.rope_dim,
             rope_type='object',
+            rope_variant=self.rope_variant or 'centroid',
             bias=config['decoder']['bias'],# True by default...
             qk_norm=config['decoder']['qk_norm'],
             rope_double_max_freq=config['decoder']['rope_double_max_freq'],
@@ -227,9 +284,35 @@ class GlobalIlluminationModel(torch.nn.Module):
         
         # 5. Transform per-token world-space centroids to camera space for the predictor
         if w2c is not None:
-            obj_token_positions = torch.bmm(object_centroids, w2c_R.transpose(1, 2)) + w2c_t.unsqueeze(1)  # (B, Seq_Len, 3)
+            obj_token_positions_cam = torch.bmm(object_centroids, w2c_R.transpose(1, 2)) + w2c_t.unsqueeze(1)  # (B, Seq_Len, 3)
         else:
-            obj_token_positions = object_centroids  # (B, Seq_Len, 3)
+            obj_token_positions_cam = object_centroids  # (B, Seq_Len, 3)
+
+        # 6. Compute OBB if using rope_obb and concatenate centroid + axes -> (B, Seq_Len, 12)
+        if self.rope_variant == 'obb':
+            # Compute OBB axes for each object from its point cloud
+            # obj_positions: (B, N_obj, N_v, 3)
+            obb_axes = compute_obb_axes(obj_positions)  # (B, N_obj, 9)
+
+            # Transform axes to camera space (rotation only, axes are direction vectors)
+            if w2c is not None:
+                # obb_axes: (B, N_obj, 9) -> (B, N_obj, 3, 3) for rotation
+                obb_axes_3x3 = obb_axes.view(B, N_obj, 3, 3)  # 3 axes, each 3D
+                # Rotate each axis: (B, N_obj, 3, 3) @ (B, 1, 3, 3) -> (B, N_obj, 3, 3)
+                obb_axes_cam = torch.einsum('boij,bjk->boik', obb_axes_3x3, w2c_R.transpose(1, 2))  # (B, N_obj, 3, 3)
+                obb_axes_cam_flat = obb_axes_cam.reshape(B, N_obj, 9)  # (B, N_obj, 9)
+            else:
+                obb_axes_cam_flat = obb_axes  # (B, N_obj, 9)
+
+            # Handle register tokens: pad OBB axes with zeros for register tokens
+            if self.num_register_tokens > 0:
+                reg_axes = torch.zeros(B, self.num_register_tokens, 9, device=obb_axes_cam_flat.device, dtype=obb_axes_cam_flat.dtype)
+                obb_axes_cam_flat = torch.cat([reg_axes, obb_axes_cam_flat], dim=1)  # (B, Seq_Len, 9)
+
+            # Concatenate centroid (3D) + axes (9D) -> (B, Seq_Len, 12)
+            obj_token_positions = torch.cat([obj_token_positions_cam, obb_axes_cam_flat], dim=-1)
+        else:
+            obj_token_positions = obj_token_positions_cam
 
         # --- Stage 2: Rendering ---
 
@@ -254,7 +337,7 @@ class GlobalIlluminationModel(torch.nn.Module):
             # multi_scale_state_features=all_state_layers,
             patch_h=rays_d.shape[1] // self.ray_encoder.patch_size,
             patch_w=rays_d.shape[2] // self.ray_encoder.patch_size,
-            obj_token_positions=obj_token_positions,  # (B, N_obj (* num_centroids), 3) in camera space
+            obj_token_positions=obj_token_positions,  # (B, N_obj (* num_centroids), 3 or 12) in camera space
             obj_mask=obj_mask,
             ray_positions=ray_token_pos,
             use_dpt_decoder=self.use_dpt_decoder

@@ -62,13 +62,21 @@ class RadiancePredictor(nn.Module):
         # Feature pooling across encoder layers
         self.layer_weights = nn.Parameter(torch.ones(3))
 
-        # RoPE needs to fit 3 coordinates. Each coordinate needs rope_dim // 2 angles.
-        # Total angles = 3 * (rope_dim // 2). This must be <= head_dim // 2.
+        # RoPE needs to fit coordinates. Each coordinate needs rope_dim // 2 angles.
+        # For centroid: 3 coords, for OBB: 12 coords (centroid + 3 scaled axes).
+        # Total angles = n_coords * (rope_dim // 2). This must be <= head_dim // 2.
         # Use pe_num_freqs (config value, typically 8) clamped to the max capacity.
-        if pe_type == 'rope':
-            max_rope_dim = (((hidden_dim // num_heads) // 2) // 3) * 2
+        if 'rope' in pe_type:
+            if pe_type == 'rope_obb':
+                self.rope_variant = 'obb'
+                n_coords = 12
+            else:  # 'rope' or 'rope_centroid'
+                self.rope_variant = 'centroid'
+                n_coords = 3
+            max_rope_dim = (((hidden_dim // num_heads) // 2) // n_coords) * 2
             self.rope_dim = min(pe_num_freqs, max_rope_dim)
         else:
+            self.rope_variant = None
             self.rope_dim = None
         
         self.transformer = TransformerDecoder(
@@ -81,7 +89,8 @@ class RadiancePredictor(nn.Module):
             activation=activation,
             norm_type=norm_type,
             rope_dim=self.rope_dim,
-            rope_type='object'
+            rope_type='object',
+            rope_variant=self.rope_variant or 'centroid',
         )
 
 
@@ -167,8 +176,9 @@ class RadiancePredictor(nn.Module):
 
         # Prepare scene context and RoPE context positions
         ctx_pos = None
-        if self.pe_type == 'rope' and obj_token_positions is not None:
-            ctx_pos = obj_token_positions
+        pos_dim = 12 if self.rope_variant == 'obb' else 3
+        if 'rope' in self.pe_type and obj_token_positions is not None:
+            ctx_pos = obj_token_positions  # (B, N_obj, pos_dim)
 
         # Optionally concatenate state features
         if multi_scale_state_features is not None:
@@ -181,7 +191,7 @@ class RadiancePredictor(nn.Module):
             
             # If using RoPE, pad ctx_pos with zeros for state tokens
             if ctx_pos is not None:
-                pad_pos = torch.zeros(B, state_features.shape[1], 3, device=ctx_pos.device, dtype=ctx_pos.dtype)
+                pad_pos = torch.zeros(B, state_features.shape[1], pos_dim, device=ctx_pos.device, dtype=ctx_pos.dtype)
                 ctx_pos = torch.cat([ctx_pos, pad_pos], dim=1)
                 
             # Build src_key_padding_mask for transformer
@@ -196,13 +206,21 @@ class RadiancePredictor(nn.Module):
 
         # Cross-attention: rays query scene
         with torch.autocast(device_type="cuda", dtype=torch.float32 if tf32_mode else torch.bfloat16):
+            # Zero-pad ray_positions to match pos_dim for OBB variant
+            rope_ray_pos = ray_positions
+            if rope_ray_pos is not None and self.rope_variant == 'obb' and rope_ray_pos.shape[-1] == 3:
+                rope_ray_pos = torch.cat([
+                    rope_ray_pos,
+                    torch.zeros(*rope_ray_pos.shape[:-1], 9, device=rope_ray_pos.device, dtype=rope_ray_pos.dtype)
+                ], dim=-1)  # (B, N_patches, 12)
+
             if use_dpt_decoder:
                 out_features = self.transformer(
                     x=query_view_features,        # (B, N_patches, D)
                     ctx=scene_features,           # (B, N_obj+N_state, D)
                     src_key_padding_mask=src_key_padding_mask,
                     obj_pos=ctx_pos,
-                    ray_pos=ray_positions,
+                    ray_pos=rope_ray_pos,
                     out_layers=self.out_layers, 
                     tf32_mode=tf32_mode,
                     patch_h=patch_h,
@@ -217,7 +235,7 @@ class RadiancePredictor(nn.Module):
                     ctx=scene_features,           # (B, N_obj+N_state, D)
                     src_key_padding_mask=src_key_padding_mask,
                     obj_pos=ctx_pos,
-                    ray_pos=ray_positions,
+                    ray_pos=rope_ray_pos,
                     tf32_mode=tf32_mode,
                     patch_h=patch_h,
                     patch_w=patch_w

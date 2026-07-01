@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from model.encodings.rope import (
-    CentroidRotaryEmbedding,
+    ObjectRotaryEmbedding,
     freqs_to_cos_sin,
     apply_rotary_emb_cossin,
     apply_rotary_emb_one_cossin
@@ -75,7 +75,7 @@ class BidirectionalTransformerEncoder(nn.Module):
                 assert rope_dim * 3 <= self.head_dim, f"rope_dim {rope_dim} is too large for head_dim {self.head_dim}"
             else:
                 rope_dim = self.head_dim
-            self.rope_emb = CentroidRotaryEmbedding(
+            self.rope_emb = ObjectRotaryEmbedding(
                 dim=rope_dim,
                 double_max_freq=rope_double_max_freq,
             )
@@ -105,10 +105,10 @@ class BidirectionalTransformerEncoder(nn.Module):
 
         if getattr(self, 'rope_emb', None) is not None:
             assert obj_pos is not None and state_pos is not None, "Positional encodings must be provided when using RoPE."
-            obj_freqs = self.rope_emb.get_centroid_freqs(obj_pos)
+            obj_freqs = self.rope_emb.get_freqs(obj_pos)
             rope_obj_cos, rope_obj_sin = freqs_to_cos_sin(obj_freqs, head_dim=self.head_dim)
             
-            state_freqs = self.rope_emb.get_centroid_freqs(state_pos)
+            state_freqs = self.rope_emb.get_freqs(state_pos)
             rope_state_cos, rope_state_sin = freqs_to_cos_sin(state_freqs, head_dim=self.head_dim)
 
         all_state_layers = []
