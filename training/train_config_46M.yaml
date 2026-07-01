@@ -17,11 +17,10 @@
 # -- compare with attempt6_table_chair_540/20260630-164755_full_ds_params46M_regtokens2 (same but uses rope_centroid)
 
 encoder:
-  input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
+  input_dim: 16  # Position (x,y,z) + Normal (nx,ny,nz) + Material (10)
   hidden_dims: [1024, 1024, 1536]
   output_dim: 512
   backbone_dim: 768
-  property_embed_dim: 128
   pooling_type: 'hierarchical' # 'hierarchical' 'max' or 'local_features'
   num_hierarchical_levels: 3 # Ignored when using local features
   use_local_patches: false

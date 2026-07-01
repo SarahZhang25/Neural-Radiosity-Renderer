@@ -21,8 +21,8 @@ def main():
     config['training']['checkpoint_interval'] = 9999
     config['training']['package_model'] = False
     
-    config['training']['data_dir'] = "data_generation/output_auto/datasets/attempt6_table_chair_540"
-    config['training']['log_dir'] = "tmp/test_run_rope_obb"
+    config['training']['data_dir'] = "renderformer/datasets/processed_datasets/ds_sinusoidal_tex"
+    config['training']['log_dir'] = "tmp/test_run"
     config['training']['run_name'] = 'test_run'
     # Ensure num_register_tokens is tested
     config['decoder']['num_register_tokens'] = 2
