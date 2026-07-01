@@ -21,7 +21,7 @@ def main():
     config['training']['checkpoint_interval'] = 9999
     config['training']['package_model'] = False
     
-    config['training']['data_dir'] = "data_generation/output_auto/datasets/attempt3_fixed_view_table"
+    config['training']['data_dir'] = "renderformer/datasets/processed_datasets/ds_sinusoidal_tex"
     config['training']['log_dir'] = "tmp/test_run"
     config['training']['run_name'] = 'test_run'
     # Ensure num_register_tokens is tested

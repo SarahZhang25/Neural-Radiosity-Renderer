@@ -172,13 +172,36 @@ def get_transform_matrix(transform_dict, mesh):
     
     return T
 
-def get_material_vector(material_dict):
-    """Converts a material dict into a flat 10D feature array."""
+def get_material_vector(material_dict, local_points=None):
+    """Converts a material dict into a flat 10D feature array per point if local_points is provided."""
     diffuse = material_dict.get("diffuse", [0.8, 0.8, 0.8])
     specular = material_dict.get("specular", [0.0, 0.0, 0.0])
     emission = material_dict.get("emissive", [0.0, 0.0, 0.0])
     roughness = material_dict.get("roughness", 0.5)
-    return np.concatenate([diffuse, specular, emission, [roughness]]).astype(np.float32)
+
+    if local_points is not None:
+        N = local_points.shape[0]
+        if material_dict.get("random_diffuse_type") == "procedural":
+            from renderformer.scene_processor.scene_mesh import get_procedural_color
+            from renderformer.scene_processor.scene_config import MaterialConfig
+            config = MaterialConfig(
+                diffuse=diffuse, specular=specular, roughness=roughness, emissive=emission,
+                smooth_shading=material_dict.get("smooth_shading", True),
+                procedural_pattern=material_dict.get("procedural_pattern"),
+                procedural_frequency=material_dict.get("procedural_frequency"),
+                procedural_color_a=material_dict.get("procedural_color_a"),
+                procedural_color_b=material_dict.get("procedural_color_b")
+            )
+            diffuse_colors = get_procedural_color(local_points, config)
+        else:
+            diffuse_colors = np.tile(diffuse, (N, 1))
+
+        specular_colors = np.tile(specular, (N, 1))
+        emission_colors = np.tile(emission, (N, 1))
+        roughness_vals = np.full((N, 1), roughness)
+        return np.concatenate([diffuse_colors, specular_colors, emission_colors, roughness_vals], axis=1).astype(np.float32)
+    else:
+        return np.concatenate([diffuse, specular, emission, [roughness]]).astype(np.float32)
 
 
 def construct_full_config(template_path, additional_objs_config=None, cam_config=None):

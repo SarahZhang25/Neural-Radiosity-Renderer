@@ -1,34 +1,12 @@
 """
 PointNet-based encoder for extracting features from point clouds.
-(Compare with point-cloud-dynamics-model)
+
+TODO: replace this whole module with LitePT or PointTransformerV3 backbone
 """
 
 import torch
 import torch.nn as nn
 from typing import Optional, Tuple
-
-class MaterialPropertyEncoder(nn.Module):
-    def __init__(
-        self,
-        prop_dim: int = 10,    # [diffuse_color (3), specular_color (3), emissive_color (3), roughness (1)]
-        embed_dim: int = 128,  # Output dimension
-        use_batch_norm: bool = True
-    ):
-        super().__init__()
-
-        self.mlp = nn.Sequential(
-            nn.Linear(prop_dim, embed_dim, bias=not use_batch_norm),
-            nn.BatchNorm1d(embed_dim) if use_batch_norm else nn.Identity(),
-            nn.SiLU()
-        )
-
-    def forward(self, properties: torch.Tensor) -> torch.Tensor:
-        """
-        properties: (B, 10) [diffuse_color (3), specular_color (3), emissive_color (3), roughness (1)]
-        """
-        # log transform emmissive color to handle high dynamic range
-        properties[:, 6:9] = torch.log1p(properties[:, 6:9])
-        return self.mlp(properties)
 
 
 class PointNetEncoder(nn.Module):
@@ -47,12 +25,11 @@ class PointNetEncoder(nn.Module):
         hidden_dims: list = [2048, 2048],
         output_dim: int = 512,
         backbone_dim: int = 768,
-        property_embed_dim: int = 128,
         use_batch_norm: bool = True,
-        pooling_type: str = 'local_features', # 'max', 'hierarchical'
+        pooling_type: str = 'hierarchical', # 'local_features', 'max' 
         num_hierarchical_levels: int = 5,
         use_local_patches: bool = False,
-        num_centroids: int = 16,   # K centroids
+        num_centroids: int = 16,   # K centroids    
         k_neighbors: int = 128,     # number of neighbors to group
     ):
         super().__init__()
@@ -104,19 +81,9 @@ class PointNetEncoder(nn.Module):
                 self.sa_bn = nn.BatchNorm1d(backbone_dim)
             self.sa_silu = nn.SiLU()
 
-        # Universal property encoders for objects
-        self.property_encoder = MaterialPropertyEncoder(
-            prop_dim=10,
-            embed_dim=property_embed_dim
-        )  
-
-        # Fusion MLP: Combine geometry and physics
-        fusion_input_dim = backbone_dim + property_embed_dim
-        self.fusion_mlp = nn.Sequential(
-            nn.Linear(fusion_input_dim, output_dim, bias=not use_batch_norm),
-            nn.BatchNorm1d(output_dim) if use_batch_norm else nn.Identity(),
-            nn.SiLU(),
-            nn.Linear(output_dim, output_dim, bias=not use_batch_norm),
+        # Output projection
+        self.out_proj = nn.Sequential(
+            nn.Linear(backbone_dim, output_dim, bias=not use_batch_norm),
             nn.BatchNorm1d(output_dim) if use_batch_norm else nn.Identity(),
             nn.SiLU()
         )
@@ -188,6 +155,7 @@ class PointNetEncoder(nn.Module):
         features = [surface_pos]
         if normals is not None:
             features.append(normals)
+        features.append(properties)
 
         x = torch.cat(features, dim=-1)  # (B, N, input_dim)
         x = x.transpose(1, 2)  # (B, input_dim, N)
@@ -228,19 +196,10 @@ class PointNetEncoder(nn.Module):
             local_features_proj = self.sa_silu(local_features_proj)
             geometry_token = local_features_proj.transpose(1, 2) # [B, num_centroids, backbone_dim]
 
-            # Process properties based on object type for each item in batch
-            properties_token = self.property_encoder(properties) # [B, property_embed_dim]
-            properties_token = properties_token.unsqueeze(1).expand(-1, self.num_centroids, -1) # [B, num_centroids, property_embed_dim]
-
-            # Fuse geometry and physical properties
-            combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, num_centroids, backbone_dim + property_embed_dim)
-            
-            # BatchNorm1d in fusion_mlp expects 2D input (B*N, C) or 3D input (B, C, N). 
-            # Since Linear outputs (B, N, C), we need to reshape combined to 2D before passing through the MLP.
-            B, N_c, C_f = combined.shape
-            combined_flat = combined.view(B * N_c, C_f)
-            output_flat = self.fusion_mlp(combined_flat)
-            output = output_flat.view(B, N_c, -1)  # (B, num_centroids, output_dim)
+            # backbone handled both geometry and properties, so just project the geometry token
+            geometry_token_flat = geometry_token.contiguous().view(B * self.num_centroids, self.backbone_dim)
+            output_flat = self.out_proj(geometry_token_flat)
+            output = output_flat.view(B, self.num_centroids, -1)
 
             return output, local_positions
         # single object token branches:
@@ -273,10 +232,7 @@ class PointNetEncoder(nn.Module):
         else:
             raise ValueError(f"Unknown pooling type: {self.pooling_type}")
         
-        properties_token = self.property_encoder(properties)  # (B, property_embed_dim)
-        
-        combined = torch.cat([geometry_token, properties_token], dim=-1)  # (B, backbone_dim + property_embed_dim)
-        output = self.fusion_mlp(combined)  # (B, output_dim)
+        output = self.out_proj(geometry_token)  # (B, output_dim)
         
         local_positions = surface_pos.mean(dim=1)  # (B, 3)
         
