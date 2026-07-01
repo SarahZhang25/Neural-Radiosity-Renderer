@@ -16,7 +16,7 @@ def main():
         config = yaml.safe_load(f)
     
     # Force settings for a fast, localized test
-    config['training']['num_epochs'] = 5
+    config['training']['num_epochs'] = 25
     config['training']['save_interval'] = 9999
     config['training']['checkpoint_interval'] = 9999
     config['training']['package_model'] = False

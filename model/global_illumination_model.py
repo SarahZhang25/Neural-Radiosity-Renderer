@@ -102,7 +102,7 @@ class GlobalIlluminationModel(torch.nn.Module):
             hidden_dims=config['encoder']['hidden_dims'],
             output_dim=config['encoder']['output_dim'],
             backbone_dim=config['encoder']['backbone_dim'],
-            property_embed_dim=config['encoder'].get('property_embed_dim', 128),
+            # property_embed_dim=config['encoder'].get('property_embed_dim', 128),
             pooling_type=config['encoder']['pooling_type'],
             num_hierarchical_levels=config['encoder']['num_hierarchical_levels'],
             use_local_patches=config['encoder'].get('use_local_patches', False),
