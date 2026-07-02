@@ -17,7 +17,8 @@ from torchmetrics.image import StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
 from model.global_illumination_model import GlobalIlluminationModel
-from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
+# from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
+from training.dataset import H5SceneDataset as SceneDataset, scene_collate_fn
 from training.ray_generator import RayGenerator
 
 torch.backends.cuda.matmul.allow_tf32 = True

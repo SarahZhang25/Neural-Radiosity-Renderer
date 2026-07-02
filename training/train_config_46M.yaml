@@ -10,12 +10,21 @@
 
 # Training: 
 # Model: 
+<<<<<<< HEAD
 # -- >> camray ray encoder -- frees up 6M params, increased pointnet capacity
 # --  unified encoder -- frees up enough  params for another hidden dim in pointnet
 # --  uses OBB-based RoPE
 # --  use 2 register tokens
 # Data: attempt6_table_chair_540-- 5k epochs 
 # -- compare with last run full_ds_params46M_unified_encoder_regtokens2
+=======
+# --  Using chunked h5 --> mainly evaluating this for training speed
+# --  implements and uses OBB-based RoPE
+# --  use 2 register tokens
+# --  using param split that allocates 50% of params to encoder, moved some capacity from predictor to the encoder.
+# Data: rf ds1_single_obj_ball_cbox3-- 20k epochs 
+# -- compare (speed) with last run 20260624-104932_full_ds_params46M_res128x128
+>>>>>>> 862b18a (Fixed h5 path selection. Validated training works with test run)
 
 encoder:
   input_dim: 16  # Position (x,y,z) + Normal (nx,ny,nz) + Material (10)
@@ -68,16 +77,16 @@ predictor:
   include_alpha: false
 
 training:
-  batch_size: 64
+  batch_size: 10 #64
   learning_rate: 1.0e-4
-  num_epochs: 5000
-  warmup_epochs: 500
+  num_epochs: 20000
+  warmup_epochs: 200
   save_interval: 500  # for visualization
-  checkpoint_interval: 1000  # for saving model checkpoint 
+  checkpoint_interval: 2500  # for saving model checkpoint 
   image_res: 128
-  data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
-  log_dir: "training/logs/attempt6_table_chair_540"
-  run_name: "full_ds_params46M_camray" # Optional string tag for log dir name
+  data_dir: "renderformer/datasets/processed_datasets/dataset_single_obj"
+  log_dir: "training/logs/dataset_single_obj"
+  run_name: "test_run" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42
