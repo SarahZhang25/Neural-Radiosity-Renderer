@@ -42,6 +42,7 @@ def scene_collate_fn(batch):
         
     return {k: torch.stack(v, dim=0) for k, v in batched_data.items()}
 
+# NOTE: is this a duplicate function now? It also exists in data_generation/to_npz_from_json_scenes.py
 def load_exr(path):
     try:
         import cv2
@@ -80,7 +81,7 @@ def load_exr(path):
 
     raise RuntimeError(f"Failed to load EXR file: {path}. Ensure cv2, imageio, or OpenEXR is installed.")
 
-class SceneDataset(Dataset):
+class NPZSceneDataset(Dataset):
     def __init__(
         self, 
         data_dir: str, 
@@ -122,6 +123,7 @@ class SceneDataset(Dataset):
         self.files = [item for item in self.files if item not in corrupted_paths]
         print(f"Removed {len(corrupted_paths)} corrupted images")
 
+        # Shuffle with a fixed seed
         if shuffle:
             rng = np.random.RandomState(shuffle_seed)
             rng.shuffle(self.files)
@@ -129,7 +131,6 @@ class SceneDataset(Dataset):
         if max_dataset_size is not None and len(self.files) > max_dataset_size:
             self.files = self.files[:max_dataset_size]
             
-        # Shuffle with a fixed seed
         if split == "all":
             print(f"[{split}] Using all {len(self.files)} samples in {data_dir}")
         else:
@@ -271,7 +272,6 @@ class H5SceneDataset(Dataset):
                 
         print(f"[{split}] Found {len(self.scene_index)} samples across {len(self.chunk_files)} chunks in {data_dir}")
 
-        self.cam_up = np.array([0.0, 0.0, 1.0])
         # Lazily store opened H5 handles per worker to avoid multiprocess fork issues
         self._h5_handles = {}
 
@@ -280,24 +280,6 @@ class H5SceneDataset(Dataset):
             # swmr=True enables Single Writer Multiple Reader, safe for multiprocess dataloading
             self._h5_handles[chunk_path] = h5py.File(chunk_path, 'r', swmr=True)
         return self._h5_handles[chunk_path]
-
-    def _compute_c2w(self, pos, target, up):
-        """Build a camera-to-world 4x4 matrix. Camera looks down -Z."""
-        z_axis = pos - target
-        z_axis = z_axis / np.linalg.norm(z_axis)
-
-        x_axis = np.cross(up, z_axis)
-        x_axis = x_axis / np.linalg.norm(x_axis)
-
-        y_axis = np.cross(z_axis, x_axis)
-        y_axis = y_axis / np.linalg.norm(y_axis)
-
-        c2w = np.eye(4)
-        c2w[:3, 0] = x_axis
-        c2w[:3, 1] = y_axis
-        c2w[:3, 2] = z_axis
-        c2w[:3, 3] = pos
-        return torch.from_numpy(c2w).float()
 
     def _sample_points(self, points, num_points, normals=None):
         N = points.shape[0]
@@ -353,9 +335,7 @@ class H5SceneDataset(Dataset):
         
         # 3. Camera config
         cam_fov = grp['camera_fov'][()]
-        cam_pos = grp['camera_pos'][:]
-        cam_lookat = grp['camera_lookat'][:]
-        c2w = self._compute_c2w(cam_pos, cam_lookat, self.cam_up)
+        c2w = torch.from_numpy(grp['c2w'][:]).float()
 
         return {
             'c2w': c2w,                             # (4, 4) camera-to-world
