@@ -60,7 +60,13 @@ def process_renderformer_scene(json_path, output_dir, points_per_object=2048):
         points, face_indices = trimesh.sample.sample_surface(mesh, points_per_object)
         normals = mesh.face_normals[face_indices]
         
-        mat_vec = get_material_vector(obj_data['material'])
+        # Transform points back to normalized local space for texturing
+        inv_T = np.linalg.inv(T)
+        points_homogeneous = np.hstack((points, np.ones((points_per_object, 1))))
+        local_points = (inv_T @ points_homogeneous.T).T[:, :3]
+        
+        # Pass local_points to evaluate per-point textures
+        mat_vec = get_material_vector(obj_data['material'], local_points=local_points)
         
         entity_vertices.append(points)
         entity_normals.append(normals)
@@ -87,7 +93,7 @@ def process_renderformer_scene(json_path, output_dir, points_per_object=2048):
         camera_fov=cam_config['fov'],
         entity_vertices=scene_data["vertices"],      # [N, 2048, 3]
         entity_normals=scene_data["normals"],        # [N, 2048, 3]
-        entity_materials=scene_data["materials"],    # [N, 10]
+        entity_materials=scene_data["materials"],    # [N, 2048, 10]
     )
 
 def main():

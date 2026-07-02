@@ -16,13 +16,13 @@ def main():
         config = yaml.safe_load(f)
     
     # Force settings for a fast, localized test
-    config['training']['num_epochs'] = 5
+    config['training']['num_epochs'] = 25
     config['training']['save_interval'] = 9999
     config['training']['checkpoint_interval'] = 9999
     config['training']['package_model'] = False
     
-    config['training']['data_dir'] = "data_generation/output_auto/datasets/attempt6_table_chair_540"
-    config['training']['log_dir'] = "tmp/test_run_rope_obb"
+    config['training']['data_dir'] = "renderformer/datasets/processed_datasets/ds_sinusoidal_tex"
+    config['training']['log_dir'] = "tmp/test_run"
     config['training']['run_name'] = 'test_run'
     # Ensure num_register_tokens is tested
     config['decoder']['num_register_tokens'] = 2

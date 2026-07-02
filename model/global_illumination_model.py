@@ -102,7 +102,7 @@ class GlobalIlluminationModel(torch.nn.Module):
             hidden_dims=config['encoder']['hidden_dims'],
             output_dim=config['encoder']['output_dim'],
             backbone_dim=config['encoder']['backbone_dim'],
-            property_embed_dim=config['encoder'].get('property_embed_dim', 128),
+            # property_embed_dim=config['encoder'].get('property_embed_dim', 128),
             pooling_type=config['encoder']['pooling_type'],
             num_hierarchical_levels=config['encoder']['num_hierarchical_levels'],
             use_local_patches=config['encoder'].get('use_local_patches', False),
@@ -201,7 +201,7 @@ class GlobalIlluminationModel(torch.nn.Module):
             rays_o: Camera origin (B, 3)
             rays_d: Camera view directions (B, H, W, 3)
             obj_positions: Object point clouds (B, N_obj, N_vertices, 3)
-            obj_properties: Object properties (B, N_obj, 10)
+            obj_properties: Object properties (B, N_obj, N_v, 10) per-point. Legacy: (B, N_obj, 10) uniform texture per object
             obj_normals: Object normals (B, N_obj, N_vertices, 3)
             obj_mask: Mask for object padding (B, N_obj)
             w2c: Optional world-to-camera transformation (B, 4, 4) for RoPE in camera space
@@ -220,7 +220,11 @@ class GlobalIlluminationModel(torch.nn.Module):
         if obj_normals is not None:
              flat_normals = obj_normals.view(B * N_obj, N_v, 3)
 
-        flat_props = obj_properties.view(B * N_obj, 10)
+        if obj_properties.dim() == 3:
+            # Legacy dataset with uniform texture per object: (B, N_obj, 10) -> (B, N_obj, N_v, 10)
+            obj_properties = obj_properties.unsqueeze(2).expand(-1, -1, N_v, -1)
+            
+        flat_props = obj_properties.reshape(B * N_obj, N_v, -1)
         
         obj_features_flat, obj_positions_local = self.pointnet_encoder(
             surface_pos=flat_positions,
