@@ -157,7 +157,9 @@ class ObjectRotaryEmbedding(nn.Module):
         double_max_freq=False,
     ):
         """
-        ObjectRotaryEmbedding implements 3D rotary embeddings for object centroids.
+        ObjectRotaryEmbedding implements rotary embeddings for object tokens.
+        It supports variable positional dimensions (e.g., 3D centroid or 12D OBB) dynamically based on input shape.
+
         Args:
             dim (int): The dimension of the rotary embedding per spatial axis.
             hf_format (bool): Whether to use the huggingface RoPE format.
@@ -179,15 +181,15 @@ class ObjectRotaryEmbedding(nn.Module):
     def device(self):
         return self.dummy.device
 
-    def get_centroid_freqs(self, pos: Tensor):
+    def get_freqs(self, pos: Tensor):
         """
-        pos expected shape: (Batch, N_objs, 3)
+        pos expected shape: (Batch, N_objs, n_coords)
+        n_coords is typically 3 (centroid) or 12 (OBB).
         """
-        # Outer product of coords and freqs -> (Batch, N_objs, 3, dim//2)
+        # Outer product of coords and freqs -> (Batch, N_objs, n_coords, dim//2)
         freqs = self.forward(pos)
         
-        # Flatten the 3 spatial coordinates (X,Y,Z) with the frequency dimensions
-        # 'coords' will explicitly catch the length-3 dimension
+        # Flatten the spatial coordinates with the frequency dimensions
         freqs = rearrange(
             freqs, "batch n_objs coords d -> batch 1 n_objs (coords d)"
         )  
@@ -202,8 +204,8 @@ class ObjectRotaryEmbedding(nn.Module):
     @autocast("cuda", enabled=False)
     def forward(self, t: Tensor, seq_len=None, offset=0):
         freqs = self.freqs
-        # t shape: (B, N, 3)
+        # t shape: (B, N, n_coords)
         # freqs shape: (dim//2)
-        # output shape: (B, N, 3, dim//2)
+        # output shape: (B, N, n_coords, dim//2)
         freqs = einsum("..., f -> ... f", t.type(freqs.dtype), freqs)
         return freqs

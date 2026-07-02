@@ -105,10 +105,10 @@ class BidirectionalTransformerEncoder(nn.Module):
 
         if getattr(self, 'rope_emb', None) is not None:
             assert obj_pos is not None and state_pos is not None, "Positional encodings must be provided when using RoPE."
-            obj_freqs = self.rope_emb.get_centroid_freqs(obj_pos)
+            obj_freqs = self.rope_emb.get_freqs(obj_pos)
             rope_obj_cos, rope_obj_sin = freqs_to_cos_sin(obj_freqs, head_dim=self.head_dim)
             
-            state_freqs = self.rope_emb.get_centroid_freqs(state_pos)
+            state_freqs = self.rope_emb.get_freqs(state_pos)
             rope_state_cos, rope_state_sin = freqs_to_cos_sin(state_freqs, head_dim=self.head_dim)
 
         all_state_layers = []

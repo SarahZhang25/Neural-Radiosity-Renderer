@@ -559,6 +559,7 @@ class TransformerEncoder(nn.Module):
         rope_dim: Optional[int] = None,
         rope_type: Literal['object', 'object_learned', 'object_mixed'] = 'object',
         rope_double_max_freq: bool = False,
+        rope_variant: Literal['centroid', 'obb'] = 'centroid',
         qk_norm: bool = False,
         return_all_layers: bool = True,
     ):
@@ -566,6 +567,7 @@ class TransformerEncoder(nn.Module):
         assert norm_first, "Only support norm_first=True"
 
         self.head_dim = hidden_dim // num_heads
+        self.rope_variant = rope_variant
 
         self.layers = nn.ModuleList([
             AttentionLayer(
@@ -582,9 +584,10 @@ class TransformerEncoder(nn.Module):
         ])
         self.rope_dim = rope_dim
         if rope_dim is not None:
+            n_coords = 12 if rope_variant == 'obb' else 3
             assert rope_dim % 2 == 0, "rope_dim must be even"
             if rope_type != 'object_mixed':
-                assert rope_dim // 2 * 3 <= (hidden_dim // num_heads) // 2, f"rope_dim {rope_dim} is too large for hidden_dim {hidden_dim} and num_heads {num_heads}"
+                assert rope_dim // 2 * n_coords <= (hidden_dim // num_heads) // 2, f"rope_dim {rope_dim} is too large for hidden_dim {hidden_dim} and num_heads {num_heads} (n_coords={n_coords})"
             else:
                 print(f"Overriding rope_dim {rope_dim} with {hidden_dim // num_heads} for object_mixed")
                 rope_dim = hidden_dim // num_heads
@@ -598,7 +601,7 @@ class TransformerEncoder(nn.Module):
         # src_key_padding_mask: (B, N), key padding mask, things you want to attend to is True
         if self.rope_dim is not None:
             assert obj_pos is not None, "obj_pos must be provided if rope_dim is not None"
-            rope_freqs = self.rope_emb.get_centroid_freqs(obj_pos)
+            rope_freqs = self.rope_emb.get_freqs(obj_pos)
             rope_cos, rope_sin = freqs_to_cos_sin(rope_freqs, head_dim=self.head_dim)
         else:
             rope_cos = rope_sin = None
@@ -638,6 +641,7 @@ class TransformerDecoder(nn.Module):
         rope_dim: Optional[int] = None,
         rope_type: Literal['object', 'object_learned', 'object_mixed'] = 'object',
         rope_double_max_freq: bool = False,
+        rope_variant: Literal['centroid', 'obb'] = 'centroid',
     ):
         """
         Transformer decoder. Each layer has cross-attention and self-attention.
@@ -659,10 +663,12 @@ class TransformerDecoder(nn.Module):
             rope_dim (int): rotary position embedding dimension, if None, no RoPE is used
             rope_type (str): rotary position embedding type, choose from 'object', 'object_learned', 'object_mixed', default 'object'
             rope_double_max_freq (bool): whether to double the max frequency for RoPE, default False
+            rope_variant (str): 'centroid' for 3D centroid-based RoPE, 'obb' for 12D OBB-based RoPE, default 'centroid'
         """
         super().__init__()
         ctx_dim = hidden_dim if ctx_dim is None else ctx_dim
         self.head_dim = hidden_dim // num_heads
+        self.rope_variant = rope_variant
 
         self.layers = nn.ModuleList([
             AttentionLayer(
@@ -685,9 +691,10 @@ class TransformerDecoder(nn.Module):
 
         self.rope_dim = rope_dim
         if rope_dim is not None:
+            n_coords = 12 if rope_variant == 'obb' else 3
             assert rope_dim % 2 == 0, "rope_dim must be even"
             if rope_type != 'object_mixed':
-                assert rope_dim // 2 * 3 <= (hidden_dim // num_heads) // 2, f"rope_dim {rope_dim} is too large for hidden_dim {hidden_dim} and num_heads {num_heads}"
+                assert rope_dim // 2 * n_coords <= (hidden_dim // num_heads) // 2, f"rope_dim {rope_dim} is too large for hidden_dim {hidden_dim} and num_heads {num_heads} (n_coords={n_coords})"
             else:
                 print(f"Overriding rope_dim {rope_dim} with {hidden_dim // num_heads} for object_mixed")
                 rope_dim = hidden_dim // num_heads
@@ -710,9 +717,9 @@ class TransformerDecoder(nn.Module):
         ):
         if self.rope_dim is not None:
             assert obj_pos is not None and ray_pos is not None, "obj_pos and ray_pos must be provided if rope_dim is not None"
-            rope_freqs = self.rope_emb.get_centroid_freqs(ray_pos)
+            rope_freqs = self.rope_emb.get_freqs(ray_pos)
+            rope_ctx_freqs = self.rope_emb.get_freqs(obj_pos)
             rope_cos, rope_sin = freqs_to_cos_sin(rope_freqs, head_dim=self.head_dim)
-            rope_ctx_freqs = self.rope_emb.get_centroid_freqs(obj_pos)
             rope_ctx_cos, rope_ctx_sin = freqs_to_cos_sin(rope_ctx_freqs, head_dim=self.head_dim)
         else:
             rope_cos = rope_sin = rope_ctx_cos = rope_ctx_sin = None

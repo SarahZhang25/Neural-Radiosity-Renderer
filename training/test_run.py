@@ -16,13 +16,13 @@ def main():
         config = yaml.safe_load(f)
     
     # Force settings for a fast, localized test
-    config['training']['num_epochs'] = 2
+    config['training']['num_epochs'] = 5
     config['training']['save_interval'] = 9999
     config['training']['checkpoint_interval'] = 9999
     config['training']['package_model'] = False
     
-    config['training']['data_dir'] = "data_generation/output_auto/datasets/attempt3_fixed_view_table"
-    config['training']['log_dir'] = "tmp/test_run"
+    config['training']['data_dir'] = "data_generation/output_auto/datasets/attempt6_table_chair_540"
+    config['training']['log_dir'] = "tmp/test_run_rope_obb"
     config['training']['run_name'] = 'test_run'
     # Ensure num_register_tokens is tested
     config['decoder']['num_register_tokens'] = 2
@@ -34,7 +34,7 @@ def main():
         
     try:
         trainer = Trainer(temp_config)
-        print("Starting 2-epoch test run...")
+        print(f"Starting {config['training']['num_epochs']}-epoch test run...")
         trainer.run()
         print("Test run completed successfully!")
     finally:

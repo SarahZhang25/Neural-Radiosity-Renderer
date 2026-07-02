@@ -74,6 +74,21 @@ To capture global scene context and reduce high-frequency noise without relying 
 * **Translation Invariance:** To ensure the register tokens are invariant to scene translations, their spatial positional encoding is derived from the mean centroid position of all valid object patches in the scene.
 * **Cross-Attention:** Because they are part of the scene representation sequence, the predictor automatically computes cross-attention against both the object geometry tokens and the register tokens when querying rays.
 
+### Rotary Positional Embedding (RoPE)
+We adapt Rotary Positional Embedding (RoPE) for object-level spatial reasoning. The model supports different geometric representations for RoPE (`pe_type`):
+
+**1. Centroid-based RoPE (`pe_type: 'rope_centroid'`)**
+Uses the 3D geometric centroid of each object (or local patch). This provides a spatial proximity bias based on the inverse-square law of light transport.
+- Positional dimensionality: 3D (x, y, z)
+- Data flow: `PointNetEncoder` computes centroids → transformed to camera space in `GlobalIlluminationModel` → passed to `TransformerEncoder` / `TransformerDecoder`.
+
+**2. OBB-based RoPE (`pe_type: 'rope_obb'`)**
+Uses an Oriented Bounding Box (OBB) representation, giving 12D positional information: the 3D centroid plus 3 scaled principal axis vectors (9D).
+- Why? Light transport (radiometric form factors) depends on both relative position and mutual orientation. OBB-RoPE encodes both spatial proximity and shape/orientation similarity.
+- Computation: We compute the covariance matrix of each object's point cloud and use eigendecomposition (`eigh`) to find principal axes. The axes are scaled by their extents (sqrt of eigenvalues).
+- Data flow: `GlobalIlluminationModel` computes OBB from raw point clouds → centroid gets full affine camera transform, axes get rotation only (translation invariant) → 12D positions passed to transformers.
+- Note on capacity: Because the 12D representation requires more frequency bands, the maximum `rope_dim` ceiling is lower than for the 3D centroid variant. Ray tokens (which have no OBB) are zero-padded to 12D.
+
 ## Setup notes
 `conda create -n neural_radiosity_renderer python=3.11`
 Use `environment.yml` and `requirements.txt`

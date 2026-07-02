@@ -10,10 +10,11 @@
 
 # Training: 
 # Model: 
-# --  added 2 register tokens. negligble param different. selected 2 as to not overpower # objects in scene...
+# --  implements and uses OBB-based RoPE
+# --  use 2 register tokens
 # --  using param split that allocates 50% of params to encoder, moved some capacity from predictor to the encoder.
 # Data: attempt6_table_chair_540 -- 5k epochs 
-# -- compare with attempt6_table_chair_540/20260630-150547_full_ds_params46M_encoder_bias (same model comp)
+# -- compare with attempt6_table_chair_540/20260630-164755_full_ds_params46M_regtokens2 (same but uses rope_centroid)
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
@@ -41,7 +42,7 @@ decoder:
   num_register_tokens: 2
 
 ray_encoder:
-  pe_type: 'rope' # ROPE handles spatial position encoding
+  pe_type: 'rope_obb' # RoPE handles spatial position encoding. Options: 'rope_centroid' (3D centroid), 'rope_obb' (12D OBB)
   vertex_pe_num_freqs: 8 # this controls how many frequencies are applied for the pe
   vdir_pe_type: 'nerf'
   vdir_num_freqs: 4
@@ -59,7 +60,7 @@ predictor:
   dropout: 0
   activation: 'gelu'
   norm_type: 'layer_norm'
-  pe_type: 'rope' # <-- TODO: take this out of the predictor section? since it also applies for decoder
+  pe_type: 'rope_obb' # Options: 'rope_centroid' (3D centroid), 'rope_obb' (12D OBB), 'nerf'
   pe_num_freqs: 8 # is this redunant to vertex_pe_num_freqs? TODO: figure this out 
   use_dpt_decoder: true
   dpt_features: 128
@@ -76,7 +77,7 @@ training:
   image_res: 128
   data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
   log_dir: "training/logs/attempt6_table_chair_540"
-  run_name: "full_ds_params46M_regtokens2" # Optional string tag for log dir name
+  run_name: "full_ds_params46M_ropeOBB_regtokens2" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42

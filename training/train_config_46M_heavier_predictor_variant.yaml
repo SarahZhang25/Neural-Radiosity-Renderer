@@ -26,12 +26,6 @@ encoder:
   use_local_patches: false
   # num_centroids: 64
 
-# state:
-#   num_tokens: 8  # 2x2x2 grid
-#   token_dim: 512 # Match encoder output
-#   learnable_init: true
-#   init_scale: 0.1
-
 decoder:
   hidden_dim: 384
   num_layers: 4 
@@ -48,7 +42,7 @@ decoder:
   num_register_tokens: 0
 
 ray_encoder:
-  pe_type: 'rope' # ROPE handles spatial position encoding
+  pe_type: 'rope_centroid' # RoPE handles spatial position encoding. Options: 'rope_centroid' (3D centroid), 'rope_obb' (12D OBB)
   vertex_pe_num_freqs: 8 # this controls how many frequencies are applied for the pe
   vdir_pe_type: 'nerf'
   vdir_num_freqs: 4
@@ -65,7 +59,7 @@ predictor:
   dropout: 0
   activation: 'gelu'
   norm_type: 'layer_norm'
-  pe_type: 'rope' # <-- TODO: take this out of the predictor section? since it also applies for decoder
+  pe_type: 'rope_centroid' # Options: 'rope_centroid' (3D centroid), 'rope_obb' (12D OBB), 'nerf'
   pe_num_freqs: 8 # is this redunant to vertex_pe_num_freqs? TODO: figure this out 
   use_dpt_decoder: true
   dpt_features: 128
