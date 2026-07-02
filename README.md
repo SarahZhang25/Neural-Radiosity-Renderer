@@ -4,13 +4,13 @@ Current working repo for object-based neural rendering model.
 Model architecture flow:
 
     [view-independent stage]
-    scene data (point clouds and properties) 
+    scene data (positions, normals, texture properties per point in point cloud) 
         ➡️ `encoder.PointNetEncoder` 
-        ➡️  global object tokens          - state manager ⤵️
+        ➡️  global object tokens    - register tokens ⤵️       - state manager ⤵️ [REMOVED]
         ➡️ `layers.bidirectional_attention.BidirectionalTransformerEncoder` 
-        ➡️ multiscale object and state tokens (context) ⤵️
+        ➡️ multiscale object and register tokens (context) ⤵️
 
-    [view-dependnet stage]
+    [view-dependent stage]
         query ray bundles 
             ➡️ `ray_encoder.RayEncoder` 
             ➡️ ray tokens (query) 
@@ -18,7 +18,6 @@ Model architecture flow:
             ➡️ predicted radiance
 
 Notes:
-* Positional embedding: Centroid-based RoPE. We adapt RenderFormer's Relative Spatial Positional Embedding, which uses the 3 vertex positions of each triangle, to the object-level by using the centroid position of each object. 
 * Training recipe is designed to mimic RenderFormer based on the paper training description. 
 
 
@@ -55,7 +54,30 @@ Home directory files:
 * `environment.yml`, `requirements.txt`: for environment setup
 
 ## Design notes
-### Local patches 
+
+### Register Tokens
+To capture global scene context and reduce high-frequency noise without relying on a dedicated spatial state manager, the architecture supports appending learnable **register tokens** to the scene representation.
+* **Initialization:** A configurable number of learnable embeddings (`num_register_tokens`) are prepended to the input sequence of the view-independent scene transformer.
+* **Translation Invariance:** To ensure the register tokens are invariant to scene translations, their spatial positional encoding is derived from the mean centroid position of all valid object patches in the scene.
+* **Cross-Attention:** Because they are part of the scene representation sequence, the predictor automatically computes cross-attention against both the object geometry tokens and the register tokens when querying rays.
+
+### Rotary Positional Embedding (RoPE)
+We adapt Rotary Positional Embedding (RoPE) for object-level spatial reasoning. The model supports different geometric representations for RoPE (`pe_type`):
+
+**1. Centroid-based RoPE (`pe_type: 'rope_centroid'`)**:
+Uses the 3D geometric centroid of each object (or local patch). This provides a spatial proximity bias based on the inverse-square law of light transport.
+- Positional dimensionality: 3D (x, y, z)
+- Data flow: `PointNetEncoder` computes centroids → transformed to camera space in `GlobalIlluminationModel` → passed to `TransformerEncoder` / `TransformerDecoder`.
+
+**2. OBB-based RoPE (`pe_type: 'rope_obb'`)** [better performance]:
+Uses an Oriented Bounding Box (OBB) representation, giving 12D positional information: the 3D centroid plus 3 scaled principal axis vectors (9D).
+- Why? Light transport (radiometric form factors) depends on both relative position and mutual orientation. OBB-RoPE encodes both spatial proximity and shape/orientation similarity.
+- Computation: We compute the covariance matrix of each object's point cloud and use eigendecomposition (`eigh`) to find principal axes. The axes are scaled by their extents (sqrt of eigenvalues).
+- Data flow: `GlobalIlluminationModel` computes OBB from raw point clouds → centroid gets full affine camera transform, axes get rotation only (translation invariant) → 12D positions passed to transformers.
+- Note on capacity: Because the 12D representation requires more frequency bands, the maximum `rope_dim` ceiling is lower than for the 3D centroid variant. Ray tokens (which have no OBB) are zero-padded to 12D.
+
+
+### Local patches [found to not work well]
 There is an option to not just use a single token per object, but instead use N tokens where each token represents a patch of the object.
 The motivation for this is that local patch features will preserve more local geometric information than collapsing the object geometry into a single token representation.
 
@@ -67,28 +89,6 @@ The sampling and feature extraction strategy used to create local patches:
 *   **Set Abstraction Refinement:** Finally, those aggregated patch features are passed through a projection layer (`sa_proj` + BatchNorm + SiLU) to refine them. This creates the final sequence of local geometric tokens (`num_centroids` tokens per object, rather than a single global token) that are ready to be fused with the object's material properties.
 
 For positional embeddings, the local patch token's position is given by the mean position of the points sampled to form the patch. 
-
-### Register Tokens
-To capture global scene context and reduce high-frequency noise without relying on a dedicated spatial state manager, the architecture supports appending learnable **register tokens** to the scene representation.
-* **Initialization:** A configurable number of learnable embeddings (`num_register_tokens`) are prepended to the input sequence of the view-independent scene transformer.
-* **Translation Invariance:** To ensure the register tokens are invariant to scene translations, their spatial positional encoding is derived from the mean centroid position of all valid object patches in the scene.
-* **Cross-Attention:** Because they are part of the scene representation sequence, the predictor automatically computes cross-attention against both the object geometry tokens and the register tokens when querying rays.
-
-### Rotary Positional Embedding (RoPE)
-We adapt Rotary Positional Embedding (RoPE) for object-level spatial reasoning. The model supports different geometric representations for RoPE (`pe_type`):
-
-**1. Centroid-based RoPE (`pe_type: 'rope_centroid'`)**
-Uses the 3D geometric centroid of each object (or local patch). This provides a spatial proximity bias based on the inverse-square law of light transport.
-- Positional dimensionality: 3D (x, y, z)
-- Data flow: `PointNetEncoder` computes centroids → transformed to camera space in `GlobalIlluminationModel` → passed to `TransformerEncoder` / `TransformerDecoder`.
-
-**2. OBB-based RoPE (`pe_type: 'rope_obb'`)**
-Uses an Oriented Bounding Box (OBB) representation, giving 12D positional information: the 3D centroid plus 3 scaled principal axis vectors (9D).
-- Why? Light transport (radiometric form factors) depends on both relative position and mutual orientation. OBB-RoPE encodes both spatial proximity and shape/orientation similarity.
-- Computation: We compute the covariance matrix of each object's point cloud and use eigendecomposition (`eigh`) to find principal axes. The axes are scaled by their extents (sqrt of eigenvalues).
-- Data flow: `GlobalIlluminationModel` computes OBB from raw point clouds → centroid gets full affine camera transform, axes get rotation only (translation invariant) → 12D positions passed to transformers.
-- Note on capacity: Because the 12D representation requires more frequency bands, the maximum `rope_dim` ceiling is lower than for the 3D centroid variant. Ray tokens (which have no OBB) are zero-padded to 12D.
-
 ## Setup notes
 `conda create -n neural_radiosity_renderer python=3.11`
 Use `environment.yml` and `requirements.txt`
