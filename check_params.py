@@ -28,12 +28,12 @@ def check_params(config_path):
     # Iterate through top-level components
     for name, module in model.named_children():
         comp_total, comp_trainable = count_parameters(module)
-        print(f"  {name}: {comp_total:,} params")
+        print(f"  {name}: {comp_total:,} params ({comp_total/total:.2%} of total)")
         
     # Print size of DPT head specifically
     if hasattr(model, 'predictor') and hasattr(model.predictor, 'out_dpt'):
         dpt_total, _ = count_parameters(model.predictor.out_dpt)
-        print(f"    dpt_head: {dpt_total:,} params")
+        print(f"    dpt_head: {dpt_total:,} params ({dpt_total/total:.2%} of total)")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Check model parameters.")

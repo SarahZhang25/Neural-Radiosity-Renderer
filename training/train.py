@@ -357,6 +357,9 @@ class Trainer:
                 train_lpips += self.lpips_val_metric(pred_ldr, target_ldr).item()
 
         n = len(self.train_loader)
+        # Reset metric states to prevent memory leaks across epochs
+        self.ssim_metric.reset()
+        self.lpips_val_metric.reset()
         return train_loss / n, train_psnr / n, train_ssim / n, train_lpips / n
 
     def _validate(self, epoch: int):

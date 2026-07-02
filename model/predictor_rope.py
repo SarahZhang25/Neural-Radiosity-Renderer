@@ -21,6 +21,7 @@ class RadiancePredictor(nn.Module):
     def __init__(
         self,
         hidden_dim: int = 512,
+        ffn_hidden_dim: int = 2048,
         patch_size: int = 16,
         num_heads: int = 8,
         num_layers: int = 4,
@@ -74,7 +75,7 @@ class RadiancePredictor(nn.Module):
             num_layers=num_layers,
             num_heads=num_heads,
             hidden_dim=hidden_dim,
-            ffn_hidden_dim=hidden_dim * 4,
+            ffn_hidden_dim=ffn_hidden_dim,
             dropout=dropout,
             include_self_attn=include_self_attn,
             activation=activation,

@@ -68,6 +68,12 @@ The sampling and feature extraction strategy used to create local patches:
 
 For positional embeddings, the local patch token's position is given by the mean position of the points sampled to form the patch. 
 
+### Register Tokens
+To capture global scene context and reduce high-frequency noise without relying on a dedicated spatial state manager, the architecture supports appending learnable **register tokens** to the scene representation.
+* **Initialization:** A configurable number of learnable embeddings (`num_register_tokens`) are prepended to the input sequence of the view-independent scene transformer.
+* **Translation Invariance:** To ensure the register tokens are invariant to scene translations, their spatial positional encoding is derived from the mean centroid position of all valid object patches in the scene.
+* **Cross-Attention:** Because they are part of the scene representation sequence, the predictor automatically computes cross-attention against both the object geometry tokens and the register tokens when querying rays.
+
 ## Setup notes
 `conda create -n neural_radiosity_renderer python=3.11`
 Use `environment.yml` and `requirements.txt`

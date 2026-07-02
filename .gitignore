@@ -3,6 +3,7 @@
 examples/
 outputs/
 *.log*
+tmp*
 
 point-cloud-dynamics-model/
 renderformer

@@ -1,40 +1,35 @@
 # Training Configuration
 # about 46M param
-# Total Parameters: 45,930,062
-# Trainable Parameters: 45,930,054
-#   pointnet_encoder: 6,637,056 params
-#   scene_transformer: 12,617,732 params
-#   ray_encoder: 3,540,992 params
-#   predictor: 23,134,282 params
-#     dpt_head: 6,314,051 params
+# Total Parameters: 46,127,182
+# Trainable Parameters: 46,127,174
+#   pointnet_encoder: 11,031,552 params (23.92% of total)
+#   scene_transformer: 12,617,732 params (27.35% of total)
+#   ray_encoder: 3,540,992 params (7.68% of total)
+#   predictor: 18,935,882 params (41.05% of total)
+#     dpt_head: 6,314,051 params (13.69% of total)
 
 # Training: 
-# Model: test using local patch object features: 16 patches per obj, 128 pts/patch
+# Model: 
+# --  added 2 register tokens. negligble param different. selected 2 as to not overpower # objects in scene...
+# --  using param split that allocates 50% of params to encoder, moved some capacity from predictor to the encoder.
 # Data: attempt6_table_chair_540 -- 5k epochs 
-# -- compare with attempt6_table_chair_540/20260624-103918_full_ds_params46Mnew_res128x128 or 20260629-130259_full_ds_params46Mnew_res128x128_backwardcomp
+# -- compare with attempt6_table_chair_540/20260630-150547_full_ds_params46M_encoder_bias (same model comp)
 
 encoder:
   input_dim: 6  # Position (x,y,z) + Normal (nx,ny,nz)
-  hidden_dims: [768, 1024, 1536]
+  hidden_dims: [1024, 1024, 1536]
   output_dim: 512
-  backbone_dim: 512
+  backbone_dim: 768
   property_embed_dim: 128
-  pooling_type: 'local_features' # Replaced 'hierarchical' and 'max' with set abstraction for local features
+  pooling_type: 'hierarchical' # 'hierarchical' 'max' or 'local_features'
   num_hierarchical_levels: 3 # Ignored when using local features
-  use_local_patches: true
-  num_centroids: 16
-
-# state:
-#   num_tokens: 8  # 2x2x2 grid
-#   token_dim: 512 # Match encoder output
-#   learnable_init: true
-#   init_scale: 0.1
+  use_local_patches: false
 
 decoder:
   hidden_dim: 512
+  ffn_hidden_dim: 2048 # 512 * 4???
   num_layers: 4 
   num_heads: 4
-  feedforward_dim: 2048 # 512 * 4??? The number of frequencies in the positional encoding for vertex positions
   dropout: 0.0
   activation: 'gelu'
   return_all_layers: true
@@ -43,7 +38,7 @@ decoder:
   qk_norm: true
   bias: true
   rope_double_max_freq: false
-  num_register_tokens: 0
+  num_register_tokens: 2
 
 ray_encoder:
   pe_type: 'rope' # ROPE handles spatial position encoding
@@ -58,6 +53,7 @@ ray_encoder:
 predictor:
   # TODO: add a obj num_freq term?
   hidden_dim: 512
+  ffn_hidden_dim: 1024
   num_layers: 4
   num_heads: 4
   dropout: 0
@@ -75,12 +71,12 @@ training:
   learning_rate: 1.0e-4
   num_epochs: 5000
   warmup_epochs: 500
-  save_interval: 200  # for visualization
+  save_interval: 250  # for visualization
   checkpoint_interval: 1000  # for saving model checkpoint 
   image_res: 128
   data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
   log_dir: "training/logs/attempt6_table_chair_540"
-  run_name: "full_ds_params46Mnew_res128x128_patches16" # Optional string tag for log dir name
+  run_name: "full_ds_params46M_regtokens2" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42
@@ -90,4 +86,4 @@ training:
   use_amp: True
   use_compile: False
   package_model: True
-  num_workers: 16
+  num_workers: 4

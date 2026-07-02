@@ -13,7 +13,7 @@ from model.predictor_rope import RadiancePredictor
 # from model.state_manager import StateManager
 from model.ray_encoder import RayEncoder
 
-class GlobalIlluminationModel(torch.nnModule):
+class GlobalIlluminationModel(torch.nn.Module):
     """
     Architecture:
         [Object Point Clouds]   -> *PointNetEncoder ->
@@ -53,13 +53,10 @@ class GlobalIlluminationModel(torch.nnModule):
             num_centroids=config['encoder'].get('num_centroids', 16),
         )
         
-        # # 2. State Manager (Learnable 3D Grid)
-        # self.state_manager = StateManager(
-        #     num_tokens=config['state']['num_tokens'],
-        #     token_dim=config['state']['token_dim'],
-        #     learnable_init=config['state']['learnable_init'],
-        #     init_scale=config['state']['init_scale']
-        # )
+        # 2. Register Tokens
+        self.num_register_tokens = config['decoder'].get('num_register_tokens', 0)
+        if self.num_register_tokens > 0:
+            self.register_tokens = torch.nn.Parameter(torch.randn(1, self.num_register_tokens, config['decoder']['hidden_dim']))
 
         # 3. View-Independent Scene Transformer
         # TODO: possibly redo the config... I don't like "decoder".
@@ -68,7 +65,7 @@ class GlobalIlluminationModel(torch.nnModule):
             num_layers=config['decoder']['num_layers'],
             num_heads=config['decoder']['num_heads'],
             hidden_dim=config['decoder']['hidden_dim'],
-            ffn_hidden_dim=config['decoder']['feedforward_dim'],
+            ffn_hidden_dim=config['decoder']['ffn_hidden_dim'],
             dropout=config['decoder']['dropout'],
             activation=config['decoder']['activation'],
             norm_type=config['decoder']['norm_type'],
@@ -114,6 +111,7 @@ class GlobalIlluminationModel(torch.nnModule):
         print("Using predictor pe_type: ", config['predictor']['pe_type'])
         self.predictor = RadiancePredictor(
             hidden_dim=config['predictor']['hidden_dim'],
+            ffn_hidden_dim=config['predictor']['ffn_hidden_dim'],
             patch_size=config['ray_encoder']['patch_size'],
             num_heads=config['predictor']['num_heads'],
             num_layers=config['predictor']['num_layers'],
@@ -191,11 +189,22 @@ class GlobalIlluminationModel(torch.nnModule):
             object_centroids = obj_positions_local.view(B, N_obj, 3)
             # obj_mask: (B, N_obj) -- unchanged
 
-        # 2. Get State Tokens
-        # state_tokens = self.state_manager.get_tokens(B)  # (B, N_state, D)
-
-        # 3. Spatial Positional Encoding (RoPE preparation)
-        # state_positions = None # no longer using self.state_manager.get_positions(B)  # (B, N_state, 3)
+        # Prepend Register Tokens if configured
+        if self.num_register_tokens > 0:
+            reg_tokens = self.register_tokens.expand(B, -1, -1)
+            object_tokens = torch.cat([reg_tokens, object_tokens], dim=1)
+            
+            if obj_mask is not None:
+                mask_weight = (obj_mask.float() / (obj_mask.sum(dim=1, keepdim=True) + 1e-5)).unsqueeze(-1)
+                center_pos = (object_centroids * mask_weight).sum(dim=1, keepdim=True)
+                
+                reg_mask = torch.ones((B, self.num_register_tokens), dtype=obj_mask.dtype, device=obj_mask.device)
+                obj_mask = torch.cat([reg_mask, obj_mask], dim=1)
+            else:
+                center_pos = object_centroids.mean(dim=1, keepdim=True)
+                
+            center_pos = center_pos.expand(-1, self.num_register_tokens, -1)
+            object_centroids = torch.cat([center_pos, object_centroids], dim=1)
 
         # 4. Bi-Directional Interaction
         # all_state_layers, all_obj_layers = self.scene_transformer(

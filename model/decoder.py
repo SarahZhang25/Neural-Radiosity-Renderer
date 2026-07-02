@@ -1,5 +1,6 @@
 """
 Bidirectional Transformer decoder for cross-attention between state and object tokens.
+Note: not in use anymore...
 """
 
 import torch
