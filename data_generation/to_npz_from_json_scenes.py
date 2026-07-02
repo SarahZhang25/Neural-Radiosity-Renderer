@@ -156,6 +156,7 @@ def process_renderformer_scene(json_path, exr_dir, points_per_object=2048):
         points, face_indices = trimesh.sample.sample_surface(mesh, points_per_object)
         normals = mesh.face_normals[face_indices]
         
+        # Transform points back to normalized local space for texturing
         inv_T = np.linalg.inv(T)
         points_homogeneous = np.hstack((points, np.ones((points_per_object, 1))))
         local_points = (inv_T @ points_homogeneous.T).T[:, :3]
