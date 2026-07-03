@@ -330,7 +330,11 @@ class GlobalIlluminationModel(torch.nn.Module):
              rays_o_input = rays_o
              rays_d_input = rays_d
              
-        ray_tokens, ray_token_pos = self.ray_encoder(rays_o_input, rays_d_input)
+        ray_tokens, ray_token_pos = self.ray_encoder(
+            rays_o_input, 
+            rays_d_input, 
+            normalize=(self.ray_encoder.vdir_pe_type == 'nerf')
+        )
 
         # 7. Predict Radiance
         # Ray tokens query the scene (object + state features)

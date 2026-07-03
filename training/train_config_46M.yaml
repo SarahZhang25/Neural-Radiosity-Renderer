@@ -1,17 +1,17 @@
 # Training Configuration
 # about 46M param
-# Total Parameters: 45,930,574
-# Trainable Parameters: 45,930,566
+# Total Parameters: 45,939,278
+# Trainable Parameters: 45,939,270
 #   pointnet_encoder: 10,834,944 params (23.59% of total)
-#   scene_transformer: 12,617,732 params (27.47% of total)
-#   ray_encoder: 3,540,992 params (7.71% of total)
-#   predictor: 18,935,882 params (41.23% of total)
-#     dpt_head: 6,314,051 params (13.75% of total)
+#   scene_transformer: 15,772,164 params (34.33% of total)
+#   ray_encoder: 395,264 params (0.86% of total)
+#   predictor: 18,935,882 params (41.22% of total)
+#     dpt_head: 6,314,051 params (13.74% of total)
 
 # Training: 
 # Model: 
-# --  new encoder structure: materials go into pointnet too, gets rid of old mlp branch + fusion approach 
-#     -- frees up enough ~100K params for another hidden dim in pointnet
+# --  camray ray encoder -- frees up 6M params so added a layer to scene transformer 
+# --  unified encoder -- frees up enough  params for another hidden dim in pointnet
 # --  uses OBB-based RoPE
 # --  use 2 register tokens
 # Data: ds2_chairs1-3_cbox0-3 -- 20k epochs 
@@ -20,7 +20,7 @@
 
 encoder:
   input_dim: 16  # Position (x,y,z) + Normal (nx,ny,nz) + Material (10)
-  hidden_dims: [512, 768, 1024, 1536]
+  hidden_dims: [512, 1024, 1536, 2048]
   output_dim: 512
   backbone_dim: 768
   pooling_type: 'hierarchical' # 'hierarchical' 'max' or 'local_features'
@@ -30,7 +30,7 @@ encoder:
 decoder:
   hidden_dim: 512
   ffn_hidden_dim: 2048 # 512 * 4???
-  num_layers: 4 
+  num_layers: 4
   num_heads: 4
   dropout: 0.0
   activation: 'gelu'
@@ -45,7 +45,7 @@ decoder:
 ray_encoder:
   pe_type: 'rope_obb' # RoPE handles spatial position encoding. Options: 'rope_centroid' (3D centroid), 'rope_obb' (12D OBB)
   vertex_pe_num_freqs: 8 # this controls how many frequencies are applied for the pe
-  vdir_pe_type: 'nerf'
+  vdir_pe_type: 'camray'
   vdir_num_freqs: 4
   patch_size: 16
   norm_type: 'layer_norm'

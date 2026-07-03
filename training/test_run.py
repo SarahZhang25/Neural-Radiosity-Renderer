@@ -23,7 +23,7 @@ def main():
     
     config['training']['data_dir'] = "renderformer/datasets/processed_datasets/ds_sinusoidal_tex"
     config['training']['log_dir'] = "tmp/test_run"
-    config['training']['run_name'] = 'test_run'
+    config['training']['run_name'] = 'test_camray'
     # Ensure num_register_tokens is tested
     config['decoder']['num_register_tokens'] = 2
     

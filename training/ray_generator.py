@@ -24,7 +24,7 @@ class RayGenerator(nn.Module):
         
         Returns:
             rays_o: (*BATCH_SHAPE, 3)  # per batch camera origin, assume perspective camera
-            rays_d: (*BATCH_SHAPE, H, W, 3)
+            rays_d: (*BATCH_SHAPE, H, W, 3) unnormalized ray directions
         """
         
         batch_shape = c2w.shape[:-2]
@@ -45,7 +45,6 @@ class RayGenerator(nn.Module):
         t = c2w[..., :3, 3]  # [*batch_shape, 3]
 
         rays_d = torch.sum(dirs[..., None, :] * R[..., None, None, :, :], dim=-1)  # [*batch_shape, H, W, 3]
-        rays_d = F.normalize(rays_d, dim=-1, p=2)
 
         return t, rays_d
 
