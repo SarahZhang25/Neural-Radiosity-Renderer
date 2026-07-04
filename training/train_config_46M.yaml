@@ -10,12 +10,14 @@
 
 # Training: 
 # Model: 
+# --  Using chunked h5 --> mainly evaluating this for training speed
 # -- >> camray ray encoder -- frees up 6M params, increased pointnet capacity
 # --  unified encoder -- frees up enough  params for another hidden dim in pointnet
 # --  uses OBB-based RoPE
 # --  use 2 register tokens
-# Data: attempt6_table_chair_540-- 5k epochs 
-# -- compare with last run full_ds_params46M_unified_encoder_regtokens2
+# --  using param split that allocates 50% of params to encoder, moved some capacity from predictor to the encoder.
+# Data: rf ds1_single_obj_ball_cbox3-- 20k epochs 
+# -- compare (speed) with last run 20260624-104932_full_ds_params46M_res128x128
 
 encoder:
   input_dim: 16  # Position (x,y,z) + Normal (nx,ny,nz) + Material (10)
