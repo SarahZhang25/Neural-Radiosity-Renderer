@@ -8,9 +8,9 @@ from einops import rearrange
 class RayEncoder(nn.Module):
     def __init__(
         self,
-        pe_type: str = 'rope',
+        pe_type: str = 'rope_obb',
         vertex_pe_num_freqs: int = 12,
-        vdir_pe_type: str = 'nerf',
+        vdir_pe_type: str = 'camray', # 'camray' or 'nerf'
         vdir_num_freqs: int = 0,
         patch_size: int = 8,
         norm_type: str = 'rms_norm',
@@ -44,15 +44,8 @@ class RayEncoder(nn.Module):
                 self.token_pos_pe_norm = nn.RMSNorm(view_transformer_latent_dim)
             else:
                 raise ValueError(f"Unsupported normalization type: {norm_type}")
-            self.rope_dim = None
         elif 'rope' in pe_type:
-            if pe_type == 'rope_obb':
-                n_coords = 12
-            else:  # 'rope' or 'rope_centroid'
-                n_coords = 3
-            self.rope_dim = min(vertex_pe_num_freqs, ((view_transformer_latent_dim // view_transformer_n_heads) // 2) // n_coords * 2) 
-            # centroid: 6 = 3 (centroid pos xyz) * 2 (sin and cos)
-            # obb: 24 = (3 (centroid pos xyz) + 3*3 (scaled axis vectors)) * 2 (sin and cos)
+            pass
         else:
             raise ValueError(f"Unsupported positional encoding type: {pe_type}")
 
@@ -73,24 +66,45 @@ class RayEncoder(nn.Module):
                 self.ray_map_encoder_norm = nn.RMSNorm(view_transformer_latent_dim)
             else:
                 raise ValueError(f"Unsupported normalization type: {norm_type}")
+        elif vdir_pe_type == 'camray':
+            self.ray_map_encoder = nn.Linear(
+                3 * patch_size * patch_size,
+                view_transformer_latent_dim
+            )
+            if norm_type == 'layer_norm':
+                self.ray_map_encoder_norm = nn.LayerNorm(view_transformer_latent_dim)
+            elif norm_type == 'rms_norm':
+                self.ray_map_encoder_norm = nn.RMSNorm(view_transformer_latent_dim)
+            else:
+                raise ValueError(f"Unsupported normalization type: {norm_type}")
         else:
             raise ValueError(f"Unsupported view direction positional encoding type: {vdir_pe_type}")
 
-    def forward(self, camera_o, ray_map):
+    def forward(self, camera_o, ray_map, normalize=False):
         """
         Encode ray map.
 
         Args:
             camera_o (torch.Tensor): (B, 3) Camera origin
-            ray_map (torch.Tensor): (B, H, W, 3) Normalized ray directions
+            ray_map (torch.Tensor): (B, H, W, 3) Ray directions
+            normalize (bool): Whether to normalize the ray directions
         Returns:
             ray_tokens: (B, N_PATCHES, D)
             ray_token_pos: (B, N_PATCHES, 3)
         """
 
+        if normalize:
+            ray_map = torch.nn.functional.normalize(ray_map, dim=-1, p=2.0)
+
         # query sequence
         B, H, W, _ = ray_map.shape
-        ray_map_enc = self.vdir_pe(ray_map)
+        if self.vdir_pe_type == 'nerf':
+            ray_map_enc = self.vdir_pe(ray_map)
+        elif self.vdir_pe_type == 'camray':
+            ray_map_enc = ray_map
+        else:
+            raise ValueError(f"Unsupported vdir_pe_type: {self.vdir_pe_type}")
+            
         ray_tokens = rearrange(ray_map_enc, 'b (h1 p1) (w1 p2) c -> b (h1 w1) (c p1 p2)', p1=self.patch_size, p2=self.patch_size)
         
         patch_h = H // self.patch_size
@@ -99,7 +113,12 @@ class RayEncoder(nn.Module):
         ray_tokens = self.ray_map_patch_token + self.ray_map_encoder_norm(self.ray_map_encoder(ray_tokens))  # [B, N_PATCHES, D]
         n_patches = ray_tokens.size(1)
 
-        ray_token_pos = camera_o[:, None].repeat(1, n_patches, 1)  # [B, N_PATCHES, 3]
+        if self.vdir_pe_type == 'camray':
+            # Use camray patch centers for positional encoding
+            camray_patches = rearrange(ray_map, 'b (h1 p1) (w1 p2) c -> b (h1 w1) p1 p2 c', p1=self.patch_size, p2=self.patch_size)
+            ray_token_pos = camray_patches.mean(dim=(2, 3)) # [B, N_PATCHES, 3]
+        else:
+            ray_token_pos = camera_o[:, None].repeat(1, n_patches, 1)  # [B, N_PATCHES, 3]
         if self.pe_type == 'nerf': #NOTE: why do both ray and tri token suse the same pos_pe and pe_token_proj?
             ray_tokens = ray_tokens + self.token_pos_pe_norm(self.pe_token_proj(self.pos_pe(ray_token_pos)))
 

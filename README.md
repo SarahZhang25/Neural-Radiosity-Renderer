@@ -61,6 +61,19 @@ To capture global scene context and reduce high-frequency noise without relying 
 * **Translation Invariance:** To ensure the register tokens are invariant to scene translations, their spatial positional encoding is derived from the mean centroid position of all valid object patches in the scene.
 * **Cross-Attention:** Because they are part of the scene representation sequence, the predictor automatically computes cross-attention against both the object geometry tokens and the register tokens when querying rays.
 
+### Ray Tokenization and View Direction Embeddings
+
+The ray encoder maps continuous ray directions into discrete token embeddings (the "queries") for the cross-attention predictor. The model supports two distinct approaches for this view direction (`vdir`) encoding, configured via `vdir_pe_type`:
+
+**1. NeRF-style Positional Encoding (`nerf`) [Legacy approach]**:
+- **Token Content**: Normalized global/local ray directions are mapped to a higher-dimensional space using high-frequency sine/cosine waves (NeRF PE, controlled by `vdir_num_freqs`). The image grid is then divided into patches (e.g., 16x16), and the high-frequency values in each patch are linearly projected into a single dense token embedding. 
+- **Token Positional Encoding**: Since patches inherently lose fine-grained spatial relationships, a separate geometric positional encoding is required for the attention mechanism. In this legacy approach, the spatial position of all ray tokens for a given camera was tied directly to the camera origin (`[0,0,0]` in local space). This meant the attention mechanism (RoPE) struggled to geographically distinguish the ray queries from each other.
+
+**2. CamRay Encoding (`camray`) [New]**:
+Inspired by the PRoPE paper (https://arxiv.org/pdf/2507.10496), this uses "CamRay"—the *unnormalized* camera-frame ray directions ($K^{-1} [u, v, 1]^T$)—which preserve the 2D linearity of the image plane and explicitly encode the focal length in their magnitude.
+- **Token Content**: Bypasses high-frequency sine/cosine encoding entirely. The raw, low-frequency CamRay values for each patch are linearly projected directly into the token embedding. This provides a much cleaner, alias-free signal for the Transformer's MLPs to learn absolute viewing directions.
+- **Token Positional Encoding**: The 3D centroid of the CamRay vectors for each patch is used as its explicit geometric coordinate (`ray_token_pos`). When passed into RoPE in the predictor, this provides distinct, geometrically meaningful 3D spatial positions for every ray token, allowing the attention mechanism to naturally calculate the relative angular and spatial distances between different image patches and 3D objects.
+
 ### Rotary Positional Embedding (RoPE)
 We adapt Rotary Positional Embedding (RoPE) for object-level spatial reasoning. The model supports different geometric representations for RoPE (`pe_type`):
 
