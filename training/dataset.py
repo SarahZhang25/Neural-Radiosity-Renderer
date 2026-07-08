@@ -239,7 +239,7 @@ class H5SceneDataset(Dataset):
         self.image_res = image_res
         self.num_points = num_points_per_object
         
-        self.chunk_files = sorted(glob.glob(os.path.join(data_dir, "dataset_chunk*.h5")))
+        self.chunk_files = sorted(glob.glob(os.path.join(data_dir, "nmr_dataset_chunk*.h5")))
         self.scene_index = []
         
         # Build index mapping global_idx -> (chunk_file, scene_name)
