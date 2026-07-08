@@ -5,17 +5,16 @@ python package_checkpoint.py --config training/train_config_46M.yaml --checkpoin
 
 import os
 import argparse
-import yaml
 import torch
 import torch.package
+from model.config import NeuralRadiosityConfig
 from model.global_illumination_model import GlobalIlluminationModel
 
 def package_checkpoint(config_path, checkpoint_path):
     print(f"Loading config from {config_path}...")
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
+    config = NeuralRadiosityConfig.from_yaml(config_path)
         
-    device = torch.device(config.get('training', {}).get('device', 'cuda' if torch.cuda.is_available() else 'cpu'))
+    device = torch.device(config.training.device if torch.cuda.is_available() or config.training.device != 'cuda' else 'cpu')
     print(f"Using device: {device}")
     
     print("Initializing model...")

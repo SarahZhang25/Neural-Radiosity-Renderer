@@ -5,8 +5,7 @@ Example Usage:
 """
 
 import argparse
-import yaml
-import torch
+from model.config import NeuralRadiosityConfig
 from model.global_illumination_model import GlobalIlluminationModel
 
 def count_parameters(model):
@@ -15,8 +14,7 @@ def count_parameters(model):
     return total_params, trainable_params
 
 def check_params(config_path):
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
+    config = NeuralRadiosityConfig.from_yaml(config_path)
         
     model = GlobalIlluminationModel(config)
     

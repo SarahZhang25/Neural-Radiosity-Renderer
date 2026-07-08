@@ -31,6 +31,7 @@ Directories:
 * `model/`: All model components are here:
     * `encodings/`: Contains nerf and rope encodings
     * `layers/`: Contains custom attention layers (supporting custom RoPE embeddings) and DPT head class.
+    * `config.py`: Structured model configuration using frozen dataclasses. Defines `NeuralRadiosityConfig` with nested sub-configs (`EncoderConfig`, `SceneTransformerConfig`, `RayEncoderConfig`, `PredictorConfig`, `TrainingConfig`). Default values correspond to the 46M-parameter model. Use `NeuralRadiosityConfig.from_yaml(path)` to load from a YAML file with automatic default merging.
     * `decoder.py`: Bidirectional Transformer decoder module performing cross-attention between state and object tokens using torch.nn transformer layers. *Not currently in use, superceded by layers/bidirectional_attention.py implementation.*
     * `encoder.py`: PointNet-based encoder module for extracting features from point clouds. Includes simple material property encoder for representing diffuse color, specular color, emissive color, and roughness.
     * `global_illumination_model.py`: contains full neural rendering model.

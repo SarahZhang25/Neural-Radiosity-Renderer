@@ -4,8 +4,9 @@ Predict radiance given scene composition and query camera view.
 """
 
 import torch
-import yaml
-from typing import Dict, Optional
+from typing import Optional
+
+from model.config import NeuralRadiosityConfig
 
 from model.encoder import PointNetEncoder
 from model.layers.attention import TransformerEncoder
@@ -65,12 +66,12 @@ class GlobalIlluminationModel(torch.nn.Module):
                                    [Ray Query]      -> *Ray Encoder  -> *Predictor -> Radiance
     (Key: [] Inputs, * Learnable)
     """
-    def __init__(self, config: Dict):
+    def __init__(self, config: NeuralRadiosityConfig):
         super().__init__()
-        self.use_dpt_decoder = config['predictor']['use_dpt_decoder']
+        self.use_dpt_decoder = config.predictor.use_dpt_decoder
 
         # Determine rope variant from pe_type
-        pe_type = config['predictor']['pe_type']
+        pe_type = config.predictor.pe_type
         if pe_type == 'rope_obb':
             self.rope_variant = 'obb'
             n_coords = 12
@@ -89,98 +90,82 @@ class GlobalIlluminationModel(torch.nn.Module):
             # It must not exceed the head's capacity: n_coords × (rope_dim//2) freqs ≤ head_dim//2.
             # Using max capacity starves content attention; use the config
             # value (typically 8) clamped to the max as a safety bound.
-            decoder_head_dim = config['decoder']['hidden_dim'] // config['decoder']['num_heads']
+            decoder_head_dim = config.decoder.hidden_dim // config.decoder.num_heads
             max_rope_dim = ((decoder_head_dim // 2) // n_coords) * 2
-            self.rope_dim = min(config['ray_encoder']['vertex_pe_num_freqs'], max_rope_dim)
+            self.rope_dim = min(config.ray_encoder.vertex_pe_num_freqs, max_rope_dim)
         else:
             raise ValueError(f"Invalid positional encoding type: {pe_type}")
 
         # Scene Representation Stage
         # 1. Object Encoder
+        enc = config.encoder
         self.pointnet_encoder = PointNetEncoder(
-            input_dim=config['encoder']['input_dim'],
-            hidden_dims=config['encoder']['hidden_dims'],
-            output_dim=config['encoder']['output_dim'],
-            backbone_dim=config['encoder']['backbone_dim'],
-            # property_embed_dim=config['encoder'].get('property_embed_dim', 128),
-            pooling_type=config['encoder']['pooling_type'],
-            num_hierarchical_levels=config['encoder']['num_hierarchical_levels'],
-            use_local_patches=config['encoder'].get('use_local_patches', False),
-            num_centroids=config['encoder'].get('num_centroids', 16),
+            input_dim=enc.input_dim,
+            hidden_dims=enc.hidden_dims,
+            output_dim=enc.output_dim,
+            backbone_dim=enc.backbone_dim,
+            pooling_type=enc.pooling_type,
+            num_hierarchical_levels=enc.num_hierarchical_levels,
+            use_local_patches=enc.use_local_patches,
+            num_centroids=enc.num_centroids,
         )
         
         # 2. Register Tokens
-        self.num_register_tokens = config['decoder'].get('num_register_tokens', 0)
+        dec = config.decoder
+        self.num_register_tokens = dec.num_register_tokens
         if self.num_register_tokens > 0:
-            self.register_tokens = torch.nn.Parameter(torch.randn(1, self.num_register_tokens, config['decoder']['hidden_dim']))
+            self.register_tokens = torch.nn.Parameter(torch.randn(1, self.num_register_tokens, dec.hidden_dim))
 
         # 3. View-Independent Scene Transformer
-        # TODO: possibly redo the config... I don't like "decoder".
-        # should be like, representation learning phase or something
         self.scene_transformer = TransformerEncoder(
-            num_layers=config['decoder']['num_layers'],
-            num_heads=config['decoder']['num_heads'],
-            hidden_dim=config['decoder']['hidden_dim'],
-            ffn_hidden_dim=config['decoder']['ffn_hidden_dim'],
-            dropout=config['decoder']['dropout'],
-            activation=config['decoder']['activation'],
-            norm_type=config['decoder']['norm_type'],
+            num_layers=dec.num_layers,
+            num_heads=dec.num_heads,
+            hidden_dim=dec.hidden_dim,
+            ffn_hidden_dim=dec.ffn_hidden_dim,
+            dropout=dec.dropout,
+            activation=dec.activation,
+            norm_type=dec.norm_type,
             rope_dim=self.rope_dim,
             rope_type='object',
             rope_variant=self.rope_variant or 'centroid',
-            bias=config['decoder']['bias'],# True by default...
-            qk_norm=config['decoder']['qk_norm'],
-            rope_double_max_freq=config['decoder']['rope_double_max_freq'],
-            return_all_layers=config['decoder']['return_all_layers']
+            bias=dec.bias,
+            qk_norm=dec.qk_norm,
+            rope_double_max_freq=dec.rope_double_max_freq,
+            return_all_layers=dec.return_all_layers
         )
-        ## OLD VERSION
-        # self.scene_transformer = BidirectionalTransformerEncoder(
-        # # self.scene_transformer = TransformerDecoder(
-        #     state_dim=config['decoder']['hidden_dim'],
-        #     num_layers=config['decoder']['num_layers'],
-        #     num_heads=config['decoder']['num_heads'],
-        #     feedforward_dim=config['decoder']['feedforward_dim'],
-        #     dropout=config['decoder']['dropout'],
-        #     activation=config['decoder']['activation'],
-        #     return_all_layers=config['decoder']['return_all_layers'],
-        #     use_self_attention=config['decoder']['use_self_attention'],
-        #     norm_type=config['decoder']['norm_type'],
-        #     qk_norm=config['decoder']['qk_norm'],
-        #     num_register_tokens=config['decoder']['num_register_tokens'],
-        #     rope_dim=((config['decoder']['hidden_dim'] // config['decoder']['num_heads']) // 2) // 3 * 2, # Total angles must fit in head_dim // 2
-        #     rope_type='object'
-        # )
 
         # Rendering Stage
         # 4. Ray Encoder
+        rc = config.ray_encoder
         self.ray_encoder = RayEncoder(
-            pe_type=config['ray_encoder']['pe_type'],
-            vertex_pe_num_freqs=config['ray_encoder']['vertex_pe_num_freqs'],
-            vdir_pe_type=config['ray_encoder']['vdir_pe_type'],
-            vdir_num_freqs=config['ray_encoder']['vdir_num_freqs'],
-            patch_size=config['ray_encoder']['patch_size'],
-            norm_type=config['ray_encoder']['norm_type'],
-            view_transformer_latent_dim=config['ray_encoder']['view_transformer_latent_dim'],
-            view_transformer_n_heads=config['ray_encoder']['view_transformer_n_heads']
+            pe_type=rc.pe_type,
+            vertex_pe_num_freqs=rc.vertex_pe_num_freqs,
+            vdir_pe_type=rc.vdir_pe_type,
+            vdir_num_freqs=rc.vdir_num_freqs,
+            patch_size=rc.patch_size,
+            norm_type=rc.norm_type,
+            view_transformer_latent_dim=rc.view_transformer_latent_dim,
+            view_transformer_n_heads=rc.view_transformer_n_heads
         )
 
         # 5. Predictor Transformer
-        print("Using predictor pe_type: ", config['predictor']['pe_type'])
+        pred = config.predictor
+        print("Using predictor pe_type: ", pred.pe_type)
         self.predictor = RadiancePredictor(
-            hidden_dim=config['predictor']['hidden_dim'],
-            ffn_hidden_dim=config['predictor']['ffn_hidden_dim'],
-            patch_size=config['ray_encoder']['patch_size'],
-            num_heads=config['predictor']['num_heads'],
-            num_layers=config['predictor']['num_layers'],
-            dropout=config['predictor']['dropout'],
-            activation=config['predictor']['activation'],
-            norm_type=config['predictor']['norm_type'],
-            pe_type=config['predictor']['pe_type'],
-            pe_num_freqs=config['predictor']['pe_num_freqs'],
-            use_dpt_decoder=config['predictor'].get('use_dpt_decoder', True),
-            dpt_features=config['predictor'].get('dpt_features', None),
-            dpt_out_channels=config['predictor'].get('dpt_out_channels', None),
-            include_alpha=config['predictor'].get('include_alpha', False)            
+            hidden_dim=pred.hidden_dim,
+            ffn_hidden_dim=pred.ffn_hidden_dim,
+            patch_size=rc.patch_size,
+            num_heads=pred.num_heads,
+            num_layers=pred.num_layers,
+            dropout=pred.dropout,
+            activation=pred.activation,
+            norm_type=pred.norm_type,
+            pe_type=pred.pe_type,
+            pe_num_freqs=pred.pe_num_freqs,
+            use_dpt_decoder=pred.use_dpt_decoder,
+            dpt_features=pred.dpt_features,
+            dpt_out_channels=pred.dpt_out_channels,
+            include_alpha=pred.include_alpha
         )
 
 
@@ -366,8 +351,7 @@ def load_model(config_path: str, checkpoint_path: Optional[str] = None) -> Globa
     Returns:
         Initialized model
     """
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
+    config = NeuralRadiosityConfig.from_yaml(config_path)
 
     model = GlobalIlluminationModel(config)
 
