@@ -1,1 +1,2 @@
-litept/libs/pointrope/build/
+libs/pointrope/build/*
+libs/pointrope/pointrope.egg-info/*
