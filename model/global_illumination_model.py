@@ -8,7 +8,7 @@ from typing import Optional
 
 from model.config import NeuralRadiosityConfig
 
-from model.encoder import PointNetEncoder
+from model.encoder import PointNetEncoder, LitePTEncoderAdapter
 from model.layers.attention import TransformerEncoder
 from model.predictor_rope import RadiancePredictor
 # from model.state_manager import StateManager
@@ -98,17 +98,29 @@ class GlobalIlluminationModel(torch.nn.Module):
 
         # Scene Representation Stage
         # 1. Object Encoder
-        enc = config.encoder
-        self.pointnet_encoder = PointNetEncoder(
-            input_dim=enc.input_dim,
-            hidden_dims=enc.hidden_dims,
-            output_dim=enc.output_dim,
-            backbone_dim=enc.backbone_dim,
-            pooling_type=enc.pooling_type,
-            num_hierarchical_levels=enc.num_hierarchical_levels,
-            use_local_patches=enc.use_local_patches,
-            num_centroids=enc.num_centroids,
-        )
+        if getattr(config, 'encoder_type', 'pointnet') == 'pointnet':
+            enc = config.pointnet_encoder
+            self.pointnet_encoder = PointNetEncoder(
+                input_dim=enc.input_dim,
+                hidden_dims=enc.hidden_dims,
+                output_dim=enc.output_dim,
+                backbone_dim=enc.backbone_dim,
+                pooling_type=enc.pooling_type,
+                num_hierarchical_levels=enc.num_hierarchical_levels,
+                use_local_patches=enc.use_local_patches,
+                num_centroids=enc.num_centroids,
+            )
+        elif config.encoder_type == 'litept':
+            enc = config.litept_encoder
+            self.pointnet_encoder = LitePTEncoderAdapter(
+                in_channels=enc.in_channels,
+                out_channels=enc.out_channels,
+                pretrained_weights_path=enc.pretrained_weights_path,
+                drop_path=enc.drop_path,
+                use_local_patches=getattr(config.pointnet_encoder, 'use_local_patches', False) # using pointnet's for now as placeholder
+            )
+        else:
+            raise ValueError(f"Unknown encoder type: {config.encoder_type}")
         
         # 2. Register Tokens
         dec = config.decoder

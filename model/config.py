@@ -29,7 +29,7 @@ class _ConfigMixin:
 
 
 @dataclass(frozen=True)
-class EncoderConfig(_ConfigMixin):
+class PointNetConfig(_ConfigMixin):
     """Configuration for the PointNet-based point cloud encoder."""
 
     input_dim: int = 16
@@ -55,6 +55,23 @@ class EncoderConfig(_ConfigMixin):
 
     num_centroids: int = 16
     """Number of FPS centroids when use_local_patches is True."""
+
+
+@dataclass(frozen=True)
+class LitePTConfig(_ConfigMixin):
+    """Configuration for the LitePT point cloud encoder."""
+
+    in_channels: int = 16
+    """Input feature channels (e.g. 3 pos + 3 normal + 10 properties)."""
+
+    out_channels: int = 512
+    """Final global output dimension (matches pointnet's output_dim)."""
+    
+    pretrained_weights_path: Optional[str] = "LitePT-S.pth"
+    """Path to the pretrained weights for the LitePT backbone."""
+
+    drop_path: float = 0.2
+    """Stochastic depth / drop path rate for LitePT."""
 
 
 @dataclass(frozen=True)
@@ -253,8 +270,14 @@ class NeuralRadiosityConfig(_ConfigMixin):
     load from a YAML file via ``NeuralRadiosityConfig.from_yaml(path)``.
     """
 
-    encoder: EncoderConfig = field(default_factory=EncoderConfig)
+    encoder_type: Literal['pointnet', 'litept'] = 'pointnet'
+    """Which point cloud encoder to use."""
+
+    pointnet_encoder: PointNetConfig = field(default_factory=PointNetConfig)
     """PointNet encoder configuration."""
+
+    litept_encoder: LitePTConfig = field(default_factory=LitePTConfig)
+    """LitePT encoder configuration."""
 
     decoder: SceneTransformerConfig = field(default_factory=SceneTransformerConfig)
     """Scene transformer configuration (YAML key: 'decoder')."""
@@ -302,7 +325,9 @@ class NeuralRadiosityConfig(_ConfigMixin):
             return dc_cls(**filtered)
 
         return cls(
-            encoder=_build(EncoderConfig, raw.get('encoder')),
+            encoder_type=raw.get('encoder_type', 'pointnet'),
+            pointnet_encoder=_build(PointNetConfig, raw.get('pointnet_encoder') or raw.get('encoder')),
+            litept_encoder=_build(LitePTConfig, raw.get('litept_encoder')),
             decoder=_build(SceneTransformerConfig, raw.get('decoder')),
             ray_encoder=_build(RayEncoderConfig, raw.get('ray_encoder')),
             predictor=_build(PredictorConfig, raw.get('predictor')),
