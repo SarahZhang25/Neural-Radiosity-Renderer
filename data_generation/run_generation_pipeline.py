@@ -7,24 +7,25 @@ thousands of scenes to render before starting H5 processing, it streams complete
 renders directly into the preprocessing pool, and then packs them into chunked H5 
 files on the fly, immediately deleting the heavy raw EXR and PNG files to save space.
 
-PERFORMANCE TIP (tmpfs / RAM Disk):
 To eliminate SSD wear-and-tear and bypass disk I/O bottlenecks for the 
-intermediate raw renders, mount your output directory as a RAM disk before 
-running this script:
+intermediate raw renders, use the system's built-in RAM disk:
+Simply set your output directory to /dev/shm/streaming_dataset instead.
+/dev/shm is already mounted as a tmpfs on Linux and is writable by all users
 
-    # 1. Create the output directory
-    mkdir -p ./tmp/streaming_dataset
-    
-    # 2. Mount it to RAM (e.g., 4GB max)
-    sudo mount -t tmpfs -o size=4G tmpfs ./tmp/streaming_dataset
-    
-    # 3. Run the pipeline, pointing --output_dir to the mount
-    # 4. When finished, unmount to free RAM
-    sudo umount ./tmp/streaming_dataset
+`--start_idx` argument example usage:
+1. Run your initial 5k test run:
+   ```bash
+   python data_generation/run_generation_pipeline.py --num_scenes 5000 --num_views 4 [other args...]
+   ```
+2. When you're ready to do the remaining 20k scenes, point the script to the exact same `--output_dir` and simply tell it to resume at index 5000:
+   ```bash
+   python data_generation/run_generation_pipeline.py --num_scenes 20000 --start_idx 5000 --num_views 4 [other args...]
+   ```
 
-    NO SUDO ACCESS? Use the system's built-in RAM disk:
-    Simply set your output directory to /dev/shm/streaming_dataset instead.
-    /dev/shm is already mounted as a tmpfs on Linux and is writable by all users
+**What this does under the hood:**
+- The new batch will name its scenes starting at `scene_005000` all the way up to `scene_024999`, so no previous JSONs or H5 groups are overwritten.
+- The pipeline's built-in H5 chunker will automatically scan the output directory, detect `dataset_chunk_0004.h5` (or whatever the last one was), and correctly resume chunk numbering from `dataset_chunk_0005.h5`.
+
 
 Example Usage:
     python data_generation/run_generation_pipeline.py \
@@ -35,6 +36,46 @@ Example Usage:
         --chunk_size 20  \
         --spp 128 \
         --workers_per_gpu 5
+
+
+    python data_generation/run_generation_pipeline.py \
+        --num_scenes 10 --num_views 2 --transform_scenes  --texture_mode per-shading-group \
+        --output_dir ./tmp/dataset_test \
+        --tmp_dir /dev/shm/dataset_test \
+        --formats nmr --gpus 0,1 \
+        --chunk_size 1000  \
+        --spp 512 \
+        --workers_per_gpu 5 \
+        --monitor_gpu
+
+    
+    python data_generation/run_generation_pipeline.py \
+        --num_scenes 5000 --num_views 4 --transform_scenes  --texture_mode per-triangle \
+        --output_dir ./datasets/dataset_pertriangle \
+        --tmp_dir /dev/shm/dataset_pertriangle \
+        --formats nmr --gpus 2 \
+        --chunk_size 1000  \
+        --spp 512 \
+        --workers_per_gpu 5 \
+
+    python data_generation/run_generation_pipeline.py \
+        --num_scenes 5000 --num_views 4 --transform_scenes  --texture_mode procedural \
+        --output_dir ./datasets/dataset_procedural \
+        --tmp_dir /dev/shm/dataset_procedural \
+        --formats nmr --gpus 2 \
+        --chunk_size 1000  \
+        --spp 512 \
+        --workers_per_gpu 5 \
+
+
+    python data_generation/run_generation_pipeline.py \
+        --num_scenes 15000 --num_views 4 --transform_scenes  --texture_mode per-shading-group \
+        --output_dir ./datasets/dataset_uniform \
+        --tmp_dir /dev/shm/dataset_uniform \
+        --formats nmr --gpus 3 \
+        --chunk_size 1000  \
+        --spp 512 \
+        --workers_per_gpu 5 \
 """
 
 import os
@@ -273,8 +314,10 @@ def main():
     parser.add_argument("--gpus", type=str, default=None, help="Comma separated list of GPUs to use (e.g. 0,1)")
     parser.add_argument("--workers_per_gpu", type=int, default=1, help="Concurrent Blender processes per GPU")
     parser.add_argument("--transform_scenes", action="store_true", help="Apply random global transformation")
+    parser.add_argument("--texture_mode", type=str, default=None, help="Texture mode to use (per-shading-group, procedural, or per-triangle)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
     parser.add_argument("--monitor_gpu", action="store_true", help="Monitor GPU memory usage")
+    parser.add_argument("--start_idx", type=int, default=0, help="Starting index for scene naming (useful for resuming generation)")
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -363,16 +406,20 @@ def main():
         
     json_files = []
     # have first half use uniform texture, and 3rd qtr procedural/sinusoidal, 4th qtr per-triangle
-    for i in range(args.num_scenes):
-        if i <= args.num_scenes // 2:
-            texture_mode = "per-shading-group"
-        elif i <= args.num_scenes * 3 // 4:
-            texture_mode = "procedural"
-        else:
-            texture_mode = "per-triangle"
+    for loop_idx in range(args.num_scenes):
+        scene_idx = args.start_idx + loop_idx
+
+        # if loop_idx <= args.num_scenes // 2:
+        #     texture_mode = "per-shading-group"
+        # elif loop_idx <= args.num_scenes * 3 // 4:
+        #     texture_mode = "procedural"
+        # else:
+        #     texture_mode = "per-triangle"
+
+        texture_mode = args.texture_mode if args.texture_mode is not None else "per-shading-group"
         
-        generate_scene(template_json, objaverse_objects, i, tmp_dir, num_views=args.num_views, transform_scene=args.transform_scenes, random_diffuse_type=texture_mode)
-        json_file = os.path.join(tmp_dir, f"scene_{i:04d}.json")
+        generate_scene(template_json, objaverse_objects, scene_idx, tmp_dir, num_views=args.num_views, transform_scene=args.transform_scenes, random_diffuse_type=texture_mode)
+        json_file = os.path.join(tmp_dir, f"scene_{scene_idx:06d}.json")
         json_files.append(json_file)
         
     print(f"[*] Generated {len(json_files)} JSONs.")

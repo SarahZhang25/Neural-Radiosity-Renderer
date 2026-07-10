@@ -227,7 +227,7 @@ class NPZSceneDataset(Dataset):
 class H5SceneDataset(Dataset):
     def __init__(
         self, 
-        data_dir: str, 
+        data_dir, # can be a string or a list of strings
         image_res: int = 128,
         num_points_per_object: int = 2048,
         split: str = 'train',
@@ -235,11 +235,19 @@ class H5SceneDataset(Dataset):
         shuffle: bool = True,
         shuffle_seed: int = 42
     ):
-        self.data_dir = data_dir
+        if isinstance(data_dir, str):
+            self.data_dirs = [data_dir]
+        else:
+            self.data_dirs = data_dir
+            
         self.image_res = image_res
         self.num_points = num_points_per_object
         
-        self.chunk_files = sorted(glob.glob(os.path.join(data_dir, "nmr_dataset_chunk*.h5")))
+        self.chunk_files = []
+        for d in self.data_dirs:
+            self.chunk_files.extend(glob.glob(os.path.join(d, "nmr_dataset_chunk*.h5")))
+        self.chunk_files = sorted(self.chunk_files)
+        
         self.scene_index = []
         
         # Build index mapping global_idx -> (chunk_file, scene_name)
