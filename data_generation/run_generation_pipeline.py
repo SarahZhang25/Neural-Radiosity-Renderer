@@ -253,7 +253,7 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
                     scenes_in_current_chunk += 1
                     
                     # Safe to cleanup intermediate files immediately now that it's in the H5
-                    cleanup_files(scene_file, tmp_dir, num_views, remove_json=True, remove_renders=True)
+                    cleanup_files(scene_file, tmp_dir, num_views, remove_json=False, remove_renders=True)
 
                     # If chunk is full, rotate to next
                     if scenes_in_current_chunk >= chunk_size:
@@ -418,8 +418,9 @@ def main():
 
         texture_mode = args.texture_mode if args.texture_mode is not None else "per-shading-group"
         
-        generate_scene(template_json, objaverse_objects, scene_idx, tmp_dir, num_views=args.num_views, transform_scene=args.transform_scenes, random_diffuse_type=texture_mode)
         json_file = os.path.join(tmp_dir, f"scene_{scene_idx:06d}.json")
+        if not os.path.exists(json_file):
+            generate_scene(template_json, objaverse_objects, scene_idx, tmp_dir, num_views=args.num_views, transform_scene=args.transform_scenes, random_diffuse_type=texture_mode)            
         json_files.append(json_file)
         
     print(f"[*] Generated {len(json_files)} JSONs.")
