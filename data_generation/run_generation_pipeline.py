@@ -422,15 +422,18 @@ def main():
                     used_by_workers = 100 # arbitrary small number to prevent division by zero or nonsensical values
                 
                 # Estimate per worker
-                mem_per_worker = used_by_workers / max(1, args.workers_per_gpu)
+                # Important: we only ever run as many concurrent workers per GPU as there are scenes assigned to it
+                import math
+                active_workers_on_this_gpu = min(args.workers_per_gpu, math.ceil(args.num_scenes / num_gpus))
+                mem_per_worker = used_by_workers / max(1, active_workers_on_this_gpu)
                 
                 # Max theoretic workers based on free memory at start (leaving 1000MB safety margin)
                 free_mem_available = total - baseline
-                max_workers = int((free_mem_available - 1000) / mem_per_worker)
+                max_workers = int((free_mem_available - 1000) / max(1, mem_per_worker))
                 max_workers = max(0, max_workers) # Ensure non-negative
                 
                 print(f"GPU {gpu_idx}: Baseline: {baseline}MB | Peak: {peak}MB | Total: {total}MB")
-                print(f"  -> Workers used: {args.workers_per_gpu}")
+                print(f"  -> Max configured workers: {args.workers_per_gpu} (Actual active: {active_workers_on_this_gpu})")
                 print(f"  -> Est. Memory per worker: ~{mem_per_worker:.0f}MB")
                 print(f"  -> You can afford to run roughly {max_workers} workers safely on this GPU.")
 
