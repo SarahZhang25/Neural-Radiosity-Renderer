@@ -180,7 +180,7 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
     # Open first chunk files
     open_chunk(next_chunk_id)
 
-    with tqdm.tqdm(total=total_scenes, desc="Pipeline Progress", unit="scene", mininterval=1.0, maxinterval=120.0) as pbar:
+    with tqdm.tqdm(total=total_scenes, desc="Pipeline Progress", unit="scene") as pbar: #, mininterval=1.0, maxinterval=120.0) as pbar:
         while processed_count < total_scenes:
             try:
                 # Block until a processed scene arrives
@@ -238,6 +238,28 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
     if current_h5_files:
         close_chunk()
 
+def gpu_monitor_thread(gpu_list, stop_event, peak_mem_dict):
+    while not stop_event.is_set():
+        try:
+            output = subprocess.check_output(
+                ["nvidia-smi", "--query-gpu=index,memory.used,memory.total", "--format=csv,noheader,nounits"],
+                text=True
+            )
+            for line in output.strip().split('\n'):
+                parts = line.split(', ')
+                if len(parts) == 3:
+                    idx = int(parts[0])
+                    used = int(parts[1])
+                    total = int(parts[2])
+                    if idx in gpu_list:
+                        if idx not in peak_mem_dict:
+                            peak_mem_dict[idx] = {'peak': used, 'total': total, 'baseline': used}
+                        peak_mem_dict[idx]['peak'] = max(peak_mem_dict[idx]['peak'], used)
+                        peak_mem_dict[idx]['total'] = total
+        except Exception:
+            pass
+        time.sleep(1)
+
 def main():
     parser = argparse.ArgumentParser(description="Streaming Dataset Pipeline: JSON -> GPU Render -> CPU Preprocess -> H5 Chunk -> Cleanup")
     parser.add_argument("--num_scenes", type=int, default=10, help="Number of scenes to generate")
@@ -252,6 +274,7 @@ def main():
     parser.add_argument("--workers_per_gpu", type=int, default=1, help="Concurrent Blender processes per GPU")
     parser.add_argument("--transform_scenes", action="store_true", help="Apply random global transformation")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
+    parser.add_argument("--monitor_gpu", action="store_true", help="Monitor GPU memory usage")
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -261,12 +284,41 @@ def main():
     tmp_dir = args.tmp_dir if args.tmp_dir else args.output_dir
     os.makedirs(tmp_dir, exist_ok=True)
     
+    # Start timer
+    pipeline_start_time = time.time()
+
     # 1. Setup GPU list
     gpu_list = get_available_gpus(args.gpus)
     num_gpus = len(gpu_list) if gpu_list else 1
     max_render_workers = num_gpus * args.workers_per_gpu
     print(f"[*] Detected {len(gpu_list)} GPUs: {gpu_list}. Using {max_render_workers} concurrent Blender render workers.")
     
+    if args.monitor_gpu:
+        # Setup GPU Monitor
+        monitor_stop_event = threading.Event()
+        peak_mem_dict = {}
+        if gpu_list:
+            # Pre-populate baseline memory before workers start
+            try:
+                output = subprocess.check_output(
+                    ["nvidia-smi", "--query-gpu=index,memory.used,memory.total", "--format=csv,noheader,nounits"],
+                    text=True
+                )
+                for line in output.strip().split('\n'):
+                    parts = line.split(', ')
+                    if len(parts) == 3:
+                        idx = int(parts[0])
+                        used = int(parts[1])
+                        total = int(parts[2])
+                        if idx in gpu_list:
+                            peak_mem_dict[idx] = {'peak': used, 'total': total, 'baseline': used}
+            except Exception:
+                pass
+                
+            monitor_thread = threading.Thread(target=gpu_monitor_thread, args=(gpu_list, monitor_stop_event, peak_mem_dict))
+            monitor_thread.daemon = True
+            monitor_thread.start()
+        
     # 2. Setup Executors and Queues
     write_queue = queue.Queue()
     
@@ -312,9 +364,9 @@ def main():
     json_files = []
     # have first half use uniform texture, and 3rd qtr procedural/sinusoidal, 4th qtr per-triangle
     for i in range(args.num_scenes):
-        if i < args.num_scenes // 2:
+        if i <= args.num_scenes // 2:
             texture_mode = "per-shading-group"
-        elif i < args.num_scenes * 3 // 4:
+        elif i <= args.num_scenes * 3 // 4:
             texture_mode = "procedural"
         else:
             texture_mode = "per-triangle"
@@ -344,7 +396,43 @@ def main():
     write_queue.join()
     writer.join()
 
-    print("[*] Pipeline completed successfully!")
+    # Stop GPU monitor
+    if args.monitor_gpu:
+        monitor_stop_event.set()
+        if gpu_list:
+            monitor_thread.join()
+
+    pipeline_end_time = time.time()
+    elapsed_time = pipeline_end_time - pipeline_start_time
+
+    print(f"[*] Pipeline completed successfully in {elapsed_time:.2f} seconds!")
+    
+    if args.monitor_gpu and gpu_list and peak_mem_dict:
+        print("\n--- GPU Memory Profile & Worker Recommendation ---")
+        for gpu_idx in gpu_list:
+            if gpu_idx in peak_mem_dict:
+                stats = peak_mem_dict[gpu_idx]
+                baseline = stats['baseline']
+                peak = stats['peak']
+                total = stats['total']
+                used_by_workers = peak - baseline
+                
+                # Handle cases where memory usage wasn't significant
+                if used_by_workers <= 0:
+                    used_by_workers = 100 # arbitrary small number to prevent division by zero or nonsensical values
+                
+                # Estimate per worker
+                mem_per_worker = used_by_workers / max(1, args.workers_per_gpu)
+                
+                # Max theoretic workers based on free memory at start (leaving 1000MB safety margin)
+                free_mem_available = total - baseline
+                max_workers = int((free_mem_available - 1000) / mem_per_worker)
+                max_workers = max(0, max_workers) # Ensure non-negative
+                
+                print(f"GPU {gpu_idx}: Baseline: {baseline}MB | Peak: {peak}MB | Total: {total}MB")
+                print(f"  -> Workers used: {args.workers_per_gpu}")
+                print(f"  -> Est. Memory per worker: ~{mem_per_worker:.0f}MB")
+                print(f"  -> You can afford to run roughly {max_workers} workers safely on this GPU.")
 
 if __name__ == "__main__":
     main()
