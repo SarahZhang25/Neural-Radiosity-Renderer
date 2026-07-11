@@ -261,12 +261,14 @@ class LitePTEncoderAdapter(nn.Module):
         # TODO: allow for passing in custom arch instead of hard-coded defaults? 
         self.backbone = LitePT(
             in_channels=in_channels,
+            stride=(2, 2, 2),
             enc_depths=(2, 2, 6, 2),
-            enc_channels=(96, 192, 384, 512),
-            enc_num_head=(3, 6, 12, 16),
+            enc_channels=(96, 192, 384, 768),
+            enc_num_head=(4, 8, 16, 32),
             enc_patch_size=(1024, 1024, 1024, 1024),
             enc_conv=(True, True, True, False),
             enc_attn=(False, False, False, True),
+            enc_rope_freq=(100.0, 100.0, 100.0, 100.0),
             drop_path=drop_path,
             enc_mode=True
         )
@@ -285,7 +287,7 @@ class LitePTEncoderAdapter(nn.Module):
                 print(f"Warning: Pretrained weights {pretrained_weights_path} not found.")
 
         # Project LitePT output dimension to out_channels
-        litept_out_dim = 512
+        litept_out_dim = 768
         if litept_out_dim != out_channels:
             self.proj = nn.Linear(litept_out_dim, out_channels)
         else:
@@ -341,19 +343,26 @@ class LitePTEncoderAdapter(nn.Module):
 
         # Forward pass
         out_point = self.backbone(data_dict)
-        out_feat = out_point.feat # (B*N, litept_out_dim)
+        # out_point.feat is (M, litept_out_dim) where M <= B*N due to GridPooling
+        out_feat = self.proj(out_point.feat)  # (M, out_channels)
 
-        out_feat = self.proj(out_feat) # (B*N, out_channels)
-        
-        # Reshape back to (B, N, out_channels)
-        out_feat = out_feat.view(B, N, -1)
-
-        # Global Pooling
+        # Global Pooling — use batch indices from the output Point to aggregate per-batch
+        # GridPooling reduces point count, so we can't reshape to (B, N, ...).
+        # Instead, scatter-max over the batch dimension.
         # TODO: Implement attention pooling as an alternative to global max pooling
-        global_token = torch.max(out_feat, dim=1)[0] # (B, out_channels)
-        
+        batch_idx = out_point.batch  # (M,) with values in [0, B-1]
+        D = out_feat.shape[-1]
+        global_token = torch.zeros(B, D, device=out_feat.device, dtype=out_feat.dtype)
+        global_token.scatter_reduce_(
+            0,
+            batch_idx.unsqueeze(-1).expand(-1, D).long(),
+            out_feat,
+            reduce='amax',
+            include_self=False,
+        )  # (B, out_channels)
+
         # Mean position for centroid
-        global_pos = surface_pos.mean(dim=1) # (B, 3)
+        global_pos = surface_pos.mean(dim=1)  # (B, 3)
 
         # PointNetEncoder outputs (B, output_dim). So we do the same.
         return global_token, global_pos

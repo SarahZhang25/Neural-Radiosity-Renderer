@@ -15,7 +15,7 @@ import torch_scatter
 from addict import Dict
 from timm.layers import DropPath
 
-from libs.pointrope import PointROPE
+from LitePT.libs.pointrope import PointROPE
 from .serialization import encode
 
 
