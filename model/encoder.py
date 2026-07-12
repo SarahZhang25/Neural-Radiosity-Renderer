@@ -1,7 +1,5 @@
 """
-PointNet-based encoder for extracting features from point clouds.
-
-TODO: replace this whole module with LitePT or PointTransformerV3 backbone
+Provides PointNet-based encoder and LitePT-based encoder classes for extracting features from point clouds.
 """
 
 import torch
@@ -238,3 +236,139 @@ class PointNetEncoder(nn.Module):
         
         return output, local_positions
 
+
+class LitePTEncoderAdapter(nn.Module):
+    """
+    Adapter for the LitePT point cloud encoder to match the PointNetEncoder interface.
+    """
+    def __init__(
+        self,
+        in_channels: int = 16,
+        out_channels: int = 512,
+        pretrained_weights_path: Optional[str] = None,
+        drop_path: float = 0.2,
+        stride: tuple = (2, 2, 2),
+        enc_depths: tuple = (2, 2, 6, 2),
+        enc_channels: tuple = (48, 96, 192, 384),
+        enc_num_head: tuple = (2, 4, 8, 16),
+        enc_patch_size: tuple = (1024, 1024, 1024, 1024),
+        enc_conv: tuple = (True, True, True, False),
+        enc_attn: tuple = (False, False, False, True),
+        enc_rope_freq: tuple = (100.0, 100.0, 100.0, 100.0),
+        use_local_patches: bool = False
+    ):
+        super().__init__()
+        self.use_local_patches = use_local_patches
+        
+        try:
+            from LitePT.litept.model import LitePT
+        except ImportError:
+            raise ImportError("Could not import LitePT. Ensure LitePT/litept exists in the project root.")
+
+        self.backbone = LitePT(
+            in_channels=in_channels,
+            stride=stride,
+            enc_depths=enc_depths,
+            enc_channels=enc_channels,
+            enc_num_head=enc_num_head,
+            enc_patch_size=enc_patch_size,
+            enc_conv=enc_conv,
+            enc_attn=enc_attn,
+            enc_rope_freq=enc_rope_freq,
+            drop_path=drop_path,
+            enc_mode=True
+        )
+
+        if pretrained_weights_path:
+            import os
+            if os.path.exists(pretrained_weights_path):
+                ckpt = torch.load(pretrained_weights_path, map_location='cpu')
+                # Load backbone weights. If it's a full model, we might need to map keys.
+                # Assuming standard state_dict loading for now.
+                state_dict = ckpt['state_dict'] if 'state_dict' in ckpt else ckpt
+                # Filter out decoder keys if present
+                enc_state_dict = {k: v for k, v in state_dict.items() if not k.startswith('dec.')}
+                self.backbone.load_state_dict(enc_state_dict, strict=False)
+            else:
+                print(f"Warning: Pretrained weights {pretrained_weights_path} not found.")
+
+        # Project LitePT output dimension to out_channels
+        litept_out_dim = enc_channels[-1]
+        if litept_out_dim != out_channels:
+            self.proj = nn.Linear(litept_out_dim, out_channels)
+        else:
+            self.proj = nn.Identity()
+
+    def forward(
+        self,
+        surface_pos: torch.Tensor,
+        properties: torch.Tensor,
+        normals: Optional[torch.Tensor] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Encode point cloud features using LitePT.
+
+        Args:
+            surface_pos: (B, N, 3)
+            properties: (B, N, 10) per-point material properties
+            normals: Optional (B, N, 3)
+
+        Returns:
+            Tuple of:
+            - global_token [Batch, output_dim]
+            - global_pos [Batch, 3]
+        """
+        if self.use_local_patches:
+            raise NotImplementedError("use_local_patches=True is not yet implemented for LitePTEncoderAdapter.")
+
+        B, N, _ = surface_pos.shape
+
+        # Concatenate features: coords(3), properties(10), normals(3) -> 16
+        features_list = [surface_pos, properties]
+        if normals is not None:
+            features_list.append(normals)
+        
+        # (B, N, in_channels) -> (B*N, in_channels)
+        feat = torch.cat(features_list, dim=-1).view(B * N, -1)
+        coord = surface_pos.view(B * N, 3)
+        
+        # Offset array for LitePT (cumulative point counts)
+        # Assuming fixed N points per object for now
+        device = surface_pos.device
+        offset = torch.arange(1, B + 1, device=device, dtype=torch.int32) * N
+
+        # spconv does not support bf16/fp16 — disable autocast for the LitePT backbone
+        # and ensure all inputs are fp32.
+        with torch.autocast(device_type='cuda', enabled=False):
+            data_dict = {
+                "feat": feat.float(),
+                "coord": coord.float(),
+                "grid_size": 0.01,  # Typical voxel size for LitePT
+                "offset": offset
+            }
+
+            # Forward pass
+            out_point = self.backbone(data_dict)
+        # out_point.feat is (M, litept_out_dim) where M <= B*N due to GridPooling
+        out_feat = self.proj(out_point.feat)  # (M, out_channels)
+
+        # Global Pooling — use batch indices from the output Point to aggregate per-batch
+        # GridPooling reduces point count, so we can't reshape to (B, N, ...).
+        # Instead, scatter-max over the batch dimension.
+        # TODO: Implement attention pooling as an alternative to global max pooling
+        batch_idx = out_point.batch  # (M,) with values in [0, B-1]
+        D = out_feat.shape[-1]
+        global_token = torch.zeros(B, D, device=out_feat.device, dtype=out_feat.dtype)
+        global_token.scatter_reduce_(
+            0,
+            batch_idx.unsqueeze(-1).expand(-1, D).long(),
+            out_feat,
+            reduce='amax',
+            include_self=False,
+        )  # (B, out_channels)
+
+        # Mean position for centroid
+        global_pos = surface_pos.mean(dim=1)  # (B, 3)
+
+        # PointNetEncoder outputs (B, output_dim). So we do the same.
+        return global_token, global_pos
