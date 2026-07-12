@@ -165,7 +165,6 @@ def render_worker_task(scene_file, output_dir, gpu_id, spp):
         scene_file,
         "--output_dir", output_dir,
         "--spp", str(spp),
-        "--save_img",
         "--no_dump_blend"
     ]
     
@@ -173,11 +172,20 @@ def render_worker_task(scene_file, output_dir, gpu_id, spp):
     if gpu_id is not None:
         env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
         
+    def set_pdeathsig():
+        import ctypes
+        import signal
+        try:
+            libc = ctypes.CDLL("libc.so.6")
+            libc.prctl(1, signal.SIGTERM)
+        except Exception:
+            pass
+
     try:
-        proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True, preexec_fn=set_pdeathsig)
         return scene_file
     except subprocess.CalledProcessError as e:
-        print(f"\n[GPU Worker] Render failed for {scene_file}: {e.stderr}")
+        print(f"\n[GPU Worker] Render failed for {scene_file}:\nSTDOUT:\n{e.stdout}\nSTDERR:\n{e.stderr}")
         return None
 
 def process_worker_task(scene_file, exr_dir, points, formats):
