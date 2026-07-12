@@ -100,7 +100,7 @@ class GlobalIlluminationModel(torch.nn.Module):
         # 1. Object Encoder
         if getattr(config, 'encoder_type', 'pointnet') == 'pointnet':
             enc = config.pointnet_encoder
-            self.pointnet_encoder = PointNetEncoder(
+            self.obj_encoder = PointNetEncoder(
                 input_dim=enc.input_dim,
                 hidden_dims=enc.hidden_dims,
                 output_dim=enc.output_dim,
@@ -112,7 +112,7 @@ class GlobalIlluminationModel(torch.nn.Module):
             )
         elif config.encoder_type == 'litept':
             enc = config.litept_encoder
-            self.pointnet_encoder = LitePTEncoderAdapter(
+            self.obj_encoder = LitePTEncoderAdapter(
                 in_channels=enc.in_channels,
                 out_channels=enc.out_channels,
                 pretrained_weights_path=enc.pretrained_weights_path,
@@ -223,14 +223,14 @@ class GlobalIlluminationModel(torch.nn.Module):
             
         flat_props = obj_properties.reshape(B * N_obj, N_v, -1)
         
-        obj_features_flat, obj_positions_local = self.pointnet_encoder(
+        obj_features_flat, obj_positions_local = self.obj_encoder(
             surface_pos=flat_positions,
             properties=flat_props,
             normals=flat_normals
         )
         
-        if self.pointnet_encoder.use_local_patches:
-            n_centroids = self.pointnet_encoder.num_centroids
+        if self.obj_encoder.use_local_patches:
+            n_centroids = self.obj_encoder.num_centroids
             
             # obj_features_flat: (B*N_obj, n_centroids, D) -> (B, N_obj*n_centroids, D)
             object_tokens = obj_features_flat.view(B, N_obj * n_centroids, -1)

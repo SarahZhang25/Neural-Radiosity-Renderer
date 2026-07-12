@@ -304,7 +304,7 @@ class LitePTEncoderAdapter(nn.Module):
 
         Args:
             surface_pos: (B, N, 3)
-            properties: (B, 10) # we expand this per point to concatenate
+            properties: (B, N, 10) per-point material properties
             normals: Optional (B, N, 3)
 
         Returns:
@@ -317,11 +317,8 @@ class LitePTEncoderAdapter(nn.Module):
 
         B, N, _ = surface_pos.shape
 
-        # Expand properties to per-point (B, N, 10)
-        props_expanded = properties.unsqueeze(1).expand(B, N, -1)
-        
-        # Concatenate features: coords(3), normals(3), props(10) -> 16
-        features_list = [surface_pos, props_expanded]
+        # Concatenate features: coords(3), properties(10), normals(3) -> 16
+        features_list = [surface_pos, properties]
         if normals is not None:
             features_list.append(normals)
         
@@ -334,15 +331,18 @@ class LitePTEncoderAdapter(nn.Module):
         device = surface_pos.device
         offset = torch.arange(1, B + 1, device=device, dtype=torch.int32) * N
 
-        data_dict = {
-            "feat": feat,
-            "coord": coord,
-            "grid_size": 0.01, # Typical voxel size for LitePT
-            "offset": offset
-        }
+        # spconv does not support bf16/fp16 — disable autocast for the LitePT backbone
+        # and ensure all inputs are fp32.
+        with torch.autocast(device_type='cuda', enabled=False):
+            data_dict = {
+                "feat": feat.float(),
+                "coord": coord.float(),
+                "grid_size": 0.01,  # Typical voxel size for LitePT
+                "offset": offset
+            }
 
-        # Forward pass
-        out_point = self.backbone(data_dict)
+            # Forward pass
+            out_point = self.backbone(data_dict)
         # out_point.feat is (M, litept_out_dim) where M <= B*N due to GridPooling
         out_feat = self.proj(out_point.feat)  # (M, out_channels)
 

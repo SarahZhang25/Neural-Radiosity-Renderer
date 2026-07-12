@@ -1,0 +1,90 @@
+# Training Configuration
+# about 46M param
+# Total Parameters: 45,939,278
+# Trainable Parameters: 45,939,270
+#   pointnet_encoder: 10,834,944 params (23.59% of total)
+#   scene_transformer: 15,772,164 params (34.33% of total)
+#   ray_encoder: 395,264 params (0.86% of total)
+#   predictor: 18,935,882 params (41.22% of total)
+#     dpt_head: 6,314,051 params (13.74% of total)
+
+# Training: 
+# Model: 
+# --  using LitePT Encoder Variant instad of PointNet
+# --  camray ray encoder -- frees up 6M params, increased pointnet capacity
+# --  unified encoder -- frees up enough  params for another hidden dim in pointnet
+# --  uses OBB-based RoPE
+# --  use 2 register tokens
+# Data: attempt6_table_chair_540-- 5k epochs 
+# -- compare with last run full_ds_params46M_camray
+
+encoder_type: 'litept'
+
+litept_encoder:
+  in_channels: 16  # Position (3) + Normal (3) + Material (10)
+  out_channels: 512  # Must match decoder.hidden_dim for the object token projection
+  pretrained_weights_path: null  # Set to path of LitePT-S.pth to load pretrained weights
+  drop_path: 0.2
+
+decoder:
+  hidden_dim: 512
+  ffn_hidden_dim: 2048 # 512 * 4???
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.0
+  activation: 'gelu'
+  return_all_layers: true
+  use_self_attention: true # Whether to double the max frequency for RoPE.
+  norm_type: 'layer_norm'
+  qk_norm: true
+  bias: true
+  rope_double_max_freq: false
+  num_register_tokens: 2
+
+ray_encoder:
+  pe_type: 'rope_obb' # RoPE handles spatial position encoding. Options: 'rope_centroid' (3D centroid), 'rope_obb' (12D OBB)
+  vertex_pe_num_freqs: 8 # this controls how many frequencies are applied for the pe
+  vdir_pe_type: 'camray'
+  vdir_num_freqs: 4
+  patch_size: 16
+  norm_type: 'layer_norm'
+  view_transformer_latent_dim: 512 # Must match predictor hidden_dim
+  view_transformer_n_heads: 4
+
+predictor:
+  # TODO: add a obj num_freq term?
+  hidden_dim: 512
+  ffn_hidden_dim: 1024
+  num_layers: 4
+  num_heads: 4
+  dropout: 0
+  activation: 'gelu'
+  norm_type: 'layer_norm'
+  pe_type: 'rope_obb' # Options: 'rope_centroid' (3D centroid), 'rope_obb' (12D OBB), 'nerf'
+  pe_num_freqs: 8 # is this redunant to vertex_pe_num_freqs? TODO: figure this out 
+  use_dpt_decoder: true
+  dpt_features: 128
+  dpt_out_channels: [64, 128, 256, 512]
+  include_alpha: false
+
+training:
+  batch_size: 64
+  learning_rate: 1.0e-4
+  num_epochs: 5000
+  warmup_epochs: 500
+  save_interval: 500  # for visualization
+  checkpoint_interval: 1000  # for saving model checkpoint 
+  image_res: 128
+  data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
+  log_dir: "training/logs/attempt6_table_chair_540"
+  run_name: "full_ds_params46M_litept_encoder" # Optional string tag for log dir name
+  # max_dataset_size: 10   # Optional max samples for dataset
+  # shuffle_data: true
+  # shuffle_data_seed: 42
+  primary_loss: 'mae' # 'mse'
+  lpips_backbone: 'alex' # 'vgg'
+  lpips_loss_weighting: 0.05
+  use_amp: True
+  use_compile: False
+  package_model: True
+  num_workers: 16
