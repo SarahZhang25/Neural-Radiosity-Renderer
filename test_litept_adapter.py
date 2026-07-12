@@ -2,6 +2,9 @@ import sys
 import os
 import torch
 
+import warnings
+warnings.filterwarnings("ignore", message="is_fx_tracing")
+
 # Add current directory to path so we can import model
 # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
