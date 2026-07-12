@@ -205,12 +205,27 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
     processed_count = 0
     next_chunk_id = 0
     
-    # Check for existing chunks to resume numbering properly
     existing_chunks = glob.glob(os.path.join(output_dir, "*_dataset_chunk_*.h5"))
     if existing_chunks:
         chunk_ids = [int(os.path.basename(c).split('_')[3].split('.')[0]) for c in existing_chunks if len(os.path.basename(c).split('_')) >= 4]
         if chunk_ids:
-            next_chunk_id = max(chunk_ids) + 1
+            max_id = max(chunk_ids)
+            is_corrupted = False
+            for fmt in formats:
+                h5_path = os.path.join(output_dir, f"{fmt}_dataset_chunk_{max_id:04d}.h5")
+                if os.path.exists(h5_path):
+                    try:
+                        with h5py.File(h5_path, 'r') as f:
+                            _ = list(f.keys())
+                    except Exception:
+                        is_corrupted = True
+                        break
+            
+            if is_corrupted:
+                print(f"[*] Warning: Chunk {max_id} appears corrupted from a previous crash. Overwriting it.", flush=True)
+                next_chunk_id = max_id
+            else:
+                next_chunk_id = max_id + 1
 
     current_h5_files = {}
     scenes_in_current_chunk = 0
