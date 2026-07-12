@@ -1,7 +1,0 @@
-kernels.cu
-pointrope.cpp
-setup.py
-pointrope.egg-info/PKG-INFO
-pointrope.egg-info/SOURCES.txt
-pointrope.egg-info/dependency_links.txt
-pointrope.egg-info/top_level.txt
