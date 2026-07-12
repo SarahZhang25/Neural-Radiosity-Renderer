@@ -247,6 +247,14 @@ class LitePTEncoderAdapter(nn.Module):
         out_channels: int = 512,
         pretrained_weights_path: Optional[str] = None,
         drop_path: float = 0.2,
+        stride: tuple = (2, 2, 2),
+        enc_depths: tuple = (2, 2, 6, 2),
+        enc_channels: tuple = (48, 96, 192, 384),
+        enc_num_head: tuple = (2, 4, 8, 16),
+        enc_patch_size: tuple = (1024, 1024, 1024, 1024),
+        enc_conv: tuple = (True, True, True, False),
+        enc_attn: tuple = (False, False, False, True),
+        enc_rope_freq: tuple = (100.0, 100.0, 100.0, 100.0),
         use_local_patches: bool = False
     ):
         super().__init__()
@@ -257,18 +265,16 @@ class LitePTEncoderAdapter(nn.Module):
         except ImportError:
             raise ImportError("Could not import LitePT. Ensure LitePT/litept exists in the project root.")
 
-        # Instantiate LitePT-S configuration by default
-        # TODO: allow for passing in custom arch instead of hard-coded defaults? 
         self.backbone = LitePT(
             in_channels=in_channels,
-            stride=(2, 2, 2),
-            enc_depths=(2, 2, 6, 2),
-            enc_channels=(96, 192, 384, 768),
-            enc_num_head=(4, 8, 16, 32),
-            enc_patch_size=(1024, 1024, 1024, 1024),
-            enc_conv=(True, True, True, False),
-            enc_attn=(False, False, False, True),
-            enc_rope_freq=(100.0, 100.0, 100.0, 100.0),
+            stride=stride,
+            enc_depths=enc_depths,
+            enc_channels=enc_channels,
+            enc_num_head=enc_num_head,
+            enc_patch_size=enc_patch_size,
+            enc_conv=enc_conv,
+            enc_attn=enc_attn,
+            enc_rope_freq=enc_rope_freq,
             drop_path=drop_path,
             enc_mode=True
         )
@@ -287,7 +293,7 @@ class LitePTEncoderAdapter(nn.Module):
                 print(f"Warning: Pretrained weights {pretrained_weights_path} not found.")
 
         # Project LitePT output dimension to out_channels
-        litept_out_dim = 768
+        litept_out_dim = enc_channels[-1]
         if litept_out_dim != out_channels:
             self.proj = nn.Linear(litept_out_dim, out_channels)
         else:

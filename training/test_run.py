@@ -22,9 +22,9 @@ def main():
             save_interval=9999,
             checkpoint_interval=9999,
             package_model=False,
-            data_dir="renderformer/datasets/processed_datasets/ds_sinusoidal_tex",
+            data_dir="renderformer/datasets/processed_datasets/dataset_single_obj",
             log_dir="tmp/test_run",
-            run_name="test_new_config_class",
+            run_name="test_LitePT",
         ),
     )
 

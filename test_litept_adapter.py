@@ -4,11 +4,9 @@ and run a forward pass with dummy data.
 """
 import sys
 import os
-import warnings
 import logging
 
 # Suppress harmless FX tracing warning from spconv
-warnings.filterwarnings("ignore", message="is_fx_tracing")
 logging.getLogger("torch.fx._symbolic_trace").setLevel(logging.ERROR)
 
 

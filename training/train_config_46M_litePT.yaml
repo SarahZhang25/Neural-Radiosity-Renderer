@@ -1,30 +1,37 @@
 # Training Configuration
 # about 46M param
-# Total Parameters: 45,939,278
-# Trainable Parameters: 45,939,270
-#   pointnet_encoder: 10,834,944 params (23.59% of total)
-#   scene_transformer: 15,772,164 params (34.33% of total)
-#   ray_encoder: 395,264 params (0.86% of total)
-#   predictor: 18,935,882 params (41.22% of total)
-#     dpt_head: 6,314,051 params (13.74% of total)
+# Total Parameters: 44,827,458
+# Trainable Parameters: 44,827,450
+#   obj_encoder: 12,877,556 params (28.73% of total)
+#   scene_transformer: 12,617,732 params (28.15% of total)
+#   ray_encoder: 395,264 params (0.88% of total)
+#   predictor: 18,935,882 params (42.24% of total)
+#     dpt_head: 6,314,051 params (14.09% of total)
 
 # Training: 
 # Model: 
-# --  using LitePT Encoder Variant instad of PointNet
-# --  camray ray encoder -- frees up 6M params, increased pointnet capacity
-# --  unified encoder -- frees up enough  params for another hidden dim in pointnet
+# --  using LitePT-S instad of PointNet. RE # params: a bit undersized ATM because using default LitePT-S arch. 
+# --  camray ray encoder 
+# --  unified encoder
 # --  uses OBB-based RoPE
 # --  use 2 register tokens
 # Data: attempt6_table_chair_540-- 5k epochs 
 # -- compare with last run full_ds_params46M_camray
 
 encoder_type: 'litept'
-
 litept_encoder:
   in_channels: 16  # Position (3) + Normal (3) + Material (10)
   out_channels: 512  # Must match decoder.hidden_dim for the object token projection
   pretrained_weights_path: null  # Set to path of LitePT-S.pth to load pretrained weights
   drop_path: 0.2
+  stride: [2, 2, 2, 2]
+  enc_depths: [2, 2, 2, 6, 2]
+  enc_channels: [36, 72, 144, 252, 504]
+  enc_num_head: [2, 4, 8, 14, 28]
+  enc_patch_size: [1024, 1024, 1024, 1024, 1024]
+  enc_conv: [True, True, True, False, False]
+  enc_attn: [False, False, False, True, True]
+  enc_rope_freq: [100.0, 100.0, 100.0, 100.0, 100.0]
 
 decoder:
   hidden_dim: 512

@@ -73,6 +73,16 @@ class LitePTConfig(_ConfigMixin):
     drop_path: float = 0.2
     """Stochastic depth / drop path rate for LitePT."""
 
+    """LitePT-S (Small) architecture"""
+    stride: List[int] = field(default_factory=lambda: [2, 2, 2])
+    enc_depths: List[int] = field(default_factory=lambda: [2, 2, 6, 2])
+    enc_channels: List[int] = field(default_factory=lambda: [48, 96, 192, 384])
+    enc_num_head: List[int] = field(default_factory=lambda: [2, 4, 8, 16])
+    enc_patch_size: List[int] = field(default_factory=lambda: [1024, 1024, 1024, 1024])
+    enc_conv: List[bool] = field(default_factory=lambda: [True, True, True, False])
+    enc_attn: List[bool] = field(default_factory=lambda: [False, False, False, True])
+    enc_rope_freq: List[float] = field(default_factory=lambda: [100.0, 100.0, 100.0, 100.0])
+
 
 @dataclass(frozen=True)
 class SceneTransformerConfig(_ConfigMixin):

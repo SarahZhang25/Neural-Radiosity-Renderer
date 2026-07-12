@@ -1,15 +1,17 @@
 import os
 import argparse
 import yaml
+from datetime import datetime
+import logging
+from tqdm import tqdm
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
 import torchvision
-from datetime import datetime
 from lpips import LPIPS
 
 from torchmetrics.image import StructuralSimilarityIndexMeasure
@@ -23,6 +25,9 @@ from training.ray_generator import RayGenerator
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32       = True
 torch.backends.cudnn.benchmark        = True
+
+# Suppress harmless FX tracing warning from spconv
+logging.getLogger("torch.fx._symbolic_trace").setLevel(logging.ERROR)
 
 def log_transform(x):
     """
