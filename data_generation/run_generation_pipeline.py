@@ -39,43 +39,56 @@ Example Usage:
 
 
     python data_generation/run_generation_pipeline.py \
-        --num_scenes 10 --num_views 2 --transform_scenes  --texture_mode per-shading-group \
+        --num_scenes 1 --num_views 4 --transform_scenes  --texture_mode per-shading-group \
         --output_dir ./tmp/dataset_test \
         --tmp_dir /dev/shm/dataset_test \
-        --formats nmr --gpus 0,1 \
+        --formats nmr --gpus 5 \
         --chunk_size 1000  \
         --spp 512 \
-        --workers_per_gpu 5 \
-        --monitor_gpu
+        --workers_per_gpu 10 \
+        --monitor_gpu --json_only
 
     
     python data_generation/run_generation_pipeline.py \
         --num_scenes 5000 --num_views 4 --transform_scenes  --texture_mode per-triangle \
         --output_dir ./datasets/dataset_pertriangle \
         --tmp_dir /dev/shm/dataset_pertriangle \
-        --formats nmr --gpus 2 \
+        --formats nmr rf --gpus 2,3 \
         --chunk_size 1000  \
         --spp 512 \
         --workers_per_gpu 5 \
 
-    python data_generation/run_generation_pipeline.py \
+    nohup python data_generation/run_generation_pipeline.py \
         --num_scenes 5000 --num_views 4 --transform_scenes  --texture_mode procedural \
         --output_dir ./datasets/dataset_procedural \
         --tmp_dir /dev/shm/dataset_procedural \
-        --formats nmr --gpus 2 \
+        --formats nmr rf --gpus 2,3 \
         --chunk_size 1000  \
         --spp 512 \
-        --workers_per_gpu 5 \
+        --workers_per_gpu 5 --json_only > generate_dataset_procedural0-5k_max12_obj.log  2>&1 &
 
 
-    python data_generation/run_generation_pipeline.py \
-        --num_scenes 15000 --num_views 4 --transform_scenes  --texture_mode per-shading-group \
+    nohup python data_generation/run_generation_pipeline.py \
+        --num_scenes 5000 --num_views 4 --transform_scenes  --texture_mode per-shading-group \
         --output_dir ./datasets/dataset_uniform \
         --tmp_dir /dev/shm/dataset_uniform \
-        --formats nmr --gpus 3 \
+        --formats nmr rf --gpus 2,3 \
         --chunk_size 1000  \
         --spp 512 \
-        --workers_per_gpu 5 \
+        --workers_per_gpu 50 > generate_dataset_uniform0-5k_max6_obj.log  2>&1 &
+
+    python data_generation/run_generation_pipeline.py \
+        --num_scenes 10000 --num_views 4 --start_idx 5000 --transform_scenes  --texture_mode per-shading-group \
+        --output_dir ./datasets/dataset_uniform \
+        --tmp_dir /dev/shm/dataset_uniform \
+        --formats nmr rf --gpus 2,3 \
+        --chunk_size 1000  \
+        --spp 512 \
+        --workers_per_gpu 50 \
+
+    nohup COMMAND > generate_dataset_uniform0-5k.log  2>&1 &
+
+
 """
 
 import os
@@ -191,6 +204,22 @@ def process_worker_task(scene_file, exr_dir, points, formats):
         traceback.print_exc()
         return scene_file, None
 
+def generate_json_worker_task(loop_idx, start_idx, template_json, objaverse_objects, tmp_dir, num_views, transform_scenes, texture_mode):
+    """Generates one scene JSON and returns its index for stable output ordering."""
+    scene_idx = start_idx + loop_idx
+    json_file = os.path.join(tmp_dir, f"scene_{scene_idx:06d}.json")
+    if not os.path.exists(json_file):
+        generate_scene(
+            template_json,
+            objaverse_objects,
+            scene_idx,
+            tmp_dir,
+            num_views=num_views,
+            transform_scene=transform_scenes,
+            random_diffuse_type=texture_mode,
+        )
+    return loop_idx, json_file
+
 def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, total_scenes, num_views):
     """Dedicated thread to receive completed dictionaries, stream directly to H5, and cleanup."""
     import tqdm
@@ -221,7 +250,7 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
     # Open first chunk files
     open_chunk(next_chunk_id)
 
-    with tqdm.tqdm(total=total_scenes, desc="Pipeline Progress", unit="scene") as pbar: #, mininterval=1.0, maxinterval=120.0) as pbar:
+    with tqdm.tqdm(total=total_scenes, desc="Pipeline Progress", unit="scene", mininterval=0.5, maxinterval=45.0) as pbar:
         while processed_count < total_scenes:
             try:
                 # Block until a processed scene arrives
@@ -318,10 +347,11 @@ def main():
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
     parser.add_argument("--monitor_gpu", action="store_true", help="Monitor GPU memory usage")
     parser.add_argument("--start_idx", type=int, default=0, help="Starting index for scene naming (useful for resuming generation)")
+    parser.add_argument("--json_only", action="store_true", help="Only generate JSONs, skip rendering and H5 processing")
     args = parser.parse_args()
 
-    random.seed(args.seed)
-    
+    # Offset the seed by start_idx so resumed generation runs produce new, unique scenes
+    random.seed(args.seed + args.start_idx)    
     os.makedirs(args.output_dir, exist_ok=True)
     
     tmp_dir = args.tmp_dir if args.tmp_dir else args.output_dir
@@ -397,33 +427,57 @@ def main():
 
     # 3. Stage 1: Generate JSONs
     print("[*] Stage 1: Generating JSON templates...")
-    template_json = "renderformer/datasets/templates/cbox-3-walls_f13.json"
+    template_json = "renderformer/datasets/templates/cbox-3-walls_abspaths.json"
     objaverse_objects = find_objaverse_objects()
     
     if len(objaverse_objects) == 0:
         print("Fatal: No objaverse objects found. Aborting.")
         return
         
-    json_files = []
-    # have first half use uniform texture, and 3rd qtr procedural/sinusoidal, 4th qtr per-triangle
+    texture_mode = args.texture_mode if args.texture_mode is not None else "per-shading-group"
+    json_workers = max(1, min(64, os.cpu_count() or 1))
+    print(f"[*] Using {json_workers} concurrent JSON generation workers.")
+    json_files = [None] * args.num_scenes
+    json_loop_indices_to_generate = []
     for loop_idx in range(args.num_scenes):
         scene_idx = args.start_idx + loop_idx
-
-        # if loop_idx <= args.num_scenes // 2:
-        #     texture_mode = "per-shading-group"
-        # elif loop_idx <= args.num_scenes * 3 // 4:
-        #     texture_mode = "procedural"
-        # else:
-        #     texture_mode = "per-triangle"
-
-        texture_mode = args.texture_mode if args.texture_mode is not None else "per-shading-group"
-        
         json_file = os.path.join(tmp_dir, f"scene_{scene_idx:06d}.json")
-        if not os.path.exists(json_file):
-            generate_scene(template_json, objaverse_objects, scene_idx, tmp_dir, num_views=args.num_views, transform_scene=args.transform_scenes, random_diffuse_type=texture_mode)            
-        json_files.append(json_file)
+        if os.path.exists(json_file):
+            json_files[loop_idx] = json_file
+        else:
+            json_loop_indices_to_generate.append(loop_idx)
+    print(f"[*] Found {args.num_scenes - len(json_loop_indices_to_generate)} existing JSONs, generating {len(json_loop_indices_to_generate)} new ones...")
+
+    with tqdm.tqdm(total=args.num_scenes, desc="Generating scenes", unit="scene", mininterval=0.25) as pbar:
+        existing_count = args.num_scenes - len(json_loop_indices_to_generate)
+        if existing_count > 0:
+            pbar.update(existing_count)
+
+        if json_loop_indices_to_generate:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=json_workers) as json_executor:
+                json_futures = [
+                    json_executor.submit(
+                        generate_json_worker_task,
+                        loop_idx,
+                        args.start_idx,
+                        template_json,
+                        objaverse_objects,
+                        tmp_dir,
+                        args.num_views,
+                        args.transform_scenes,
+                        texture_mode,
+                    )
+                    for loop_idx in json_loop_indices_to_generate
+                ]
+
+                for future in concurrent.futures.as_completed(json_futures):
+                    loop_idx, json_file = future.result()
+                    json_files[loop_idx] = json_file
+                    pbar.update(1)
         
     print(f"[*] Generated {len(json_files)} JSONs.")
+    if args.json_only:
+        return
     
     # 4. Stage 2: Submit to Pipeline
     print("[*] Stage 2 & 3: Streaming renders and preprocessing...")
