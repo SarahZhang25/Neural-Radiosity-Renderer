@@ -305,7 +305,8 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
                     scenes_in_current_chunk += 1
                     
                     # Safe to cleanup intermediate files immediately now that it's in the H5
-                    cleanup_files(scene_file, tmp_dir, num_views, remove_json=False, remove_renders=True)
+                    # don't clean up for now so that I can come back and rerun for rf format...
+                    cleanup_files(scene_file, tmp_dir, num_views, remove_json=False, remove_renders=False)
 
                     # If chunk is full, rotate to next
                     if scenes_in_current_chunk >= chunk_size:
@@ -419,7 +420,8 @@ def main():
     write_queue = queue.Queue()
     
     # ProcessPool for geometry extraction (CPU bound)
-    process_executor = concurrent.futures.ProcessPoolExecutor(max_workers=max(1, os.cpu_count() - 2))
+    CPU_WORKERS = 200
+    process_executor = concurrent.futures.ProcessPoolExecutor(max_workers=max(1, min(CPU_WORKERS, os.cpu_count() - 32)))
     
     # ThreadPool for subprocess launching (GPU bound)
     render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_render_workers)
@@ -458,7 +460,7 @@ def main():
         return
         
     texture_mode = args.texture_mode if args.texture_mode is not None else "per-shading-group"
-    json_workers = max(1, min(64, os.cpu_count() or 1))
+    json_workers = max(1, min(32, os.cpu_count() or 1))
     print(f"[*] Using {json_workers} concurrent JSON generation workers.")
     json_files = [None] * args.num_scenes
     json_loop_indices_to_generate = []
