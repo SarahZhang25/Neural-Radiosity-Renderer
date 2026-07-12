@@ -6,14 +6,30 @@ import sys
 import os
 import logging
 
-# Suppress harmless FX tracing warning from spconv
-logging.getLogger("torch.fx._symbolic_trace").setLevel(logging.ERROR)
-
-
 import torch
 from model.config import NeuralRadiosityConfig
 from model.encoder import LitePTEncoderAdapter
 from model.global_illumination_model import GlobalIlluminationModel
+
+import spconv.algo as _spconv_algo
+# Silence "Can't find algo ... compile with nvrtc" messages
+_orig_cached_get = _spconv_algo.GemmTunerSimple.cached_get_nvrtc_params
+def _quiet_get(self, desp, arch, stream_int):
+    import io, contextlib
+    with contextlib.redirect_stdout(io.StringIO()):
+        return _orig_cached_get(self, desp, arch, stream_int)
+_spconv_algo.GemmTunerSimple.cached_get_nvrtc_params = _quiet_get
+
+_orig_conv_get = _spconv_algo.ConvTunerSimple.cached_get_nvrtc_params
+def _quiet_conv_get(self, desp, arch, stream_int):
+    import io, contextlib
+    with contextlib.redirect_stdout(io.StringIO()):
+        return _orig_conv_get(self, desp, arch, stream_int)
+_spconv_algo.ConvTunerSimple.cached_get_nvrtc_params = _quiet_conv_get
+
+
+# Suppress harmless FX tracing warning from spconv
+logging.getLogger("torch.fx._symbolic_trace").setLevel(logging.ERROR)
 
 def test_encoder_adapter_only():
     print("Instantiating LitePTEncoderAdapter...")
