@@ -171,7 +171,7 @@ def cleanup_files(scene_file, exr_dir, num_views, remove_json=False, remove_rend
             except Exception:
                 pass
 
-def render_worker_task(scene_file, output_dir, gpu_id, spp):
+def render_worker_task(scene_file, output_dir, gpu_id, spp, timeout_seconds, timeout_retries):
     """Submits a rendering task to blender via subprocess on a specific GPU."""
     cmd = [
         "python3", "renderformer/scene_processor/to_blend.py",
@@ -194,12 +194,44 @@ def render_worker_task(scene_file, output_dir, gpu_id, spp):
         except Exception:
             pass
 
-    try:
-        proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True, preexec_fn=set_pdeathsig)
-        return scene_file
-    except subprocess.CalledProcessError as e:
-        print(f"\n[GPU Worker] Render failed for {scene_file}:\nSTDOUT:\n{e.stdout}\nSTDERR:\n{e.stderr}")
-        return None
+    scene_stem = os.path.splitext(os.path.basename(scene_file))[0]
+
+    def remove_partial_outputs():
+        for path in glob.glob(os.path.join(output_dir, f"{scene_stem}_*.exr")) + glob.glob(os.path.join(output_dir, f"{scene_stem}_*.png")) + glob.glob(os.path.join(output_dir, f"{scene_stem}.blend")):
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except Exception:
+                pass
+
+    for attempt in range(timeout_retries + 1):
+        try:
+            subprocess.run(
+                cmd,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True,
+                preexec_fn=set_pdeathsig,
+                timeout=timeout_seconds,
+            )
+            return scene_file
+        except subprocess.TimeoutExpired as e:
+            print(f"\n[GPU Worker] Render timed out for {scene_file} after {timeout_seconds}s (attempt {attempt + 1}/{timeout_retries + 1}).", flush=True)
+            if e.stdout:
+                print(f"STDOUT:\n{e.stdout}", flush=True)
+            if e.stderr:
+                print(f"STDERR:\n{e.stderr}", flush=True)
+            remove_partial_outputs()
+            if attempt >= timeout_retries:
+                return None
+        except subprocess.CalledProcessError as e:
+            print(f"\n[GPU Worker] Render failed for {scene_file}:\nSTDOUT:\n{e.stdout}\nSTDERR:\n{e.stderr}")
+            return None
+        except Exception as e:
+            print(f"\n[GPU Worker] Unexpected render error for {scene_file}: {e}")
+            return None
 
 def process_worker_task(scene_file, exr_dir, points, formats):
     """Runs CPU heavy geometry extraction using the existing unified pipeline function."""
@@ -366,6 +398,8 @@ def main():
     parser.add_argument("--spp", type=int, default=512, help="Blender samples per pixel")
     parser.add_argument("--gpus", type=str, default=None, help="Comma separated list of GPUs to use (e.g. 0,1)")
     parser.add_argument("--workers_per_gpu", type=int, default=1, help="Concurrent Blender processes per GPU")
+    parser.add_argument("--render_timeout_seconds", type=int, default=1800, help="Per-scene render timeout in seconds before retrying")
+    parser.add_argument("--render_timeout_retries", type=int, default=3, help="Number of retries after a render timeout")
     parser.add_argument("--transform_scenes", action="store_true", help="Apply random global transformation")
     parser.add_argument("--texture_mode", type=str, default=None, help="Texture mode to use (per-shading-group, procedural, or per-triangle)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
@@ -434,11 +468,19 @@ def main():
     # Callback chain logic
     def on_process_done(future):
         # Forward result to writer queue
-        scene_file, result = future.result()
+        try:
+            scene_file, result = future.result()
+        except Exception as e:
+            print(f"[CPU Worker] Unexpected processing callback failure: {e}")
+            scene_file, result = ("failed_scene.json", None)
         write_queue.put((scene_file, result))
 
     def on_render_done(future):
-        scene_file = future.result()
+        try:
+            scene_file = future.result()
+        except Exception as e:
+            print(f"[GPU Worker] Unexpected render callback failure: {e}")
+            scene_file = None
         if scene_file is not None:
             # Submit to CPU processing pool
             proc_future = process_executor.submit(process_worker_task, scene_file, tmp_dir, args.points, args.formats)
@@ -460,7 +502,7 @@ def main():
         return
         
     texture_mode = args.texture_mode if args.texture_mode is not None else "per-shading-group"
-    json_workers = max(1, min(32, os.cpu_count() or 1))
+    json_workers = max(1, min(64, os.cpu_count() or 1))
     print(f"[*] Using {json_workers} concurrent JSON generation workers.")
     json_files = [None] * args.num_scenes
     json_loop_indices_to_generate = []
@@ -512,7 +554,15 @@ def main():
         gpu_counter += 1
         
         # Submit to rendering threadpool
-        rend_future = render_executor.submit(render_worker_task, scene_file, tmp_dir, gpu_id, args.spp)
+        rend_future = render_executor.submit(
+            render_worker_task,
+            scene_file,
+            tmp_dir,
+            gpu_id,
+            args.spp,
+            args.render_timeout_seconds,
+            args.render_timeout_retries,
+        )
         rend_future.add_done_callback(on_render_done)
 
     # 5. Wait for completion
