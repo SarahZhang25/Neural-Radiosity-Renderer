@@ -266,18 +266,38 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
     processed_count = 0
     next_chunk_id = 0
     
-    existing_chunks = glob.glob(os.path.join(output_dir, "*_dataset_chunk_*.h5"))
+    existing_chunks = glob.glob(os.path.join(output_dir, "*_dataset_chunk_*.h5")) + glob.glob(os.path.join(output_dir, "*_dataset_chunk_*.h5.INCOMPLETE"))
+    
+    scenes_in_current_chunk = 0
+    resume_incomplete = False
+    
     if existing_chunks:
         chunk_ids = [int(os.path.basename(c).split('_')[3].split('.')[0]) for c in existing_chunks if len(os.path.basename(c).split('_')) >= 4]
         if chunk_ids:
             max_id = max(chunk_ids)
             is_corrupted = False
+            is_incomplete = False
+            existing_keys_count = 0
+            
             for fmt in formats:
                 h5_path = os.path.join(output_dir, f"{fmt}_dataset_chunk_{max_id:04d}.h5")
-                if os.path.exists(h5_path):
+                incomplete_path = h5_path + ".INCOMPLETE"
+                
+                if os.path.exists(incomplete_path) and not os.path.exists(h5_path):
+                    is_incomplete = True
+                    path_to_check = incomplete_path
+                else:
+                    path_to_check = h5_path if os.path.exists(h5_path) else incomplete_path
+                
+                if os.path.exists(path_to_check):
                     try:
-                        with h5py.File(h5_path, 'r') as f:
-                            _ = list(f.keys())
+                        with h5py.File(path_to_check, 'r') as f:
+                            valid_keys = []
+                            for k in f.keys():
+                                if 'hdr_target_image' in f[k] and f[k]['hdr_target_image'].shape[0] == num_views:
+                                    valid_keys.append(k)
+                            if len(valid_keys) > existing_keys_count:
+                                existing_keys_count = len(valid_keys)
                     except Exception:
                         is_corrupted = True
                         break
@@ -285,31 +305,45 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
             if is_corrupted:
                 print(f"[*] Warning: Chunk {max_id} appears corrupted from a previous crash. Overwriting it.", flush=True)
                 next_chunk_id = max_id
+            elif is_incomplete:
+                print(f"[*] Resuming incomplete chunk {max_id} with {existing_keys_count} existing scenes.", flush=True)
+                next_chunk_id = max_id
+                resume_incomplete = True
+                scenes_in_current_chunk = existing_keys_count
             else:
                 next_chunk_id = max_id + 1
 
     current_h5_files = {}
-    scenes_in_current_chunk = 0
 
-    def open_chunk(chunk_id):
+    def open_chunk(chunk_id, append=False):
         base_chunk_name = f"dataset_chunk_{chunk_id:04d}"
         for fmt in formats:
-            h5_path = os.path.join(output_dir, f"{fmt}_{base_chunk_name}.h5")
-            current_h5_files[fmt] = h5py.File(h5_path, 'w')
+            h5_path = os.path.join(output_dir, f"{fmt}_{base_chunk_name}.h5.INCOMPLETE")
+            mode = 'a' if append else 'w'
+            current_h5_files[fmt] = h5py.File(h5_path, mode)
             
-    def close_chunk():
+    def close_chunk(abort=False):
         for fmt, h5f in current_h5_files.items():
+            incomplete_path = h5f.filename
             h5f.close()
+            if not abort and os.path.exists(incomplete_path):
+                final_path = incomplete_path.replace('.h5.INCOMPLETE', '.h5')
+                os.rename(incomplete_path, final_path)
         current_h5_files.clear()
 
     # Open first chunk files
-    open_chunk(next_chunk_id)
+    open_chunk(next_chunk_id, append=resume_incomplete)
 
     with tqdm.tqdm(total=total_scenes, desc="Pipeline Progress", unit="scene", mininterval=0.5, maxinterval=45.0) as pbar:
         while processed_count < total_scenes:
             try:
                 # Block until a processed scene arrives
                 scene_file, result = write_queue.get(timeout=60.0) 
+                if scene_file == "STOP":
+                    pbar.write("[Writer] Received STOP signal. Leaving chunk as INCOMPLETE.")
+                    close_chunk(abort=True)
+                    write_queue.task_done()
+                    break
                 processed_count += 1
                 pbar.update(1)
                 
@@ -319,6 +353,8 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
                         if fmt in result:
                             h5f = current_h5_files[fmt]
                             scene_name = result['scene_name']
+                            if scene_name in h5f:
+                                del h5f[scene_name]
                             grp = h5f.create_group(scene_name)
                             grp.create_dataset("hdr_target_image", data=result[fmt]['hdr_target_image'], compression="lzf")
                             grp.create_dataset("c2w", data=result[fmt]['c2w'], compression="lzf")
@@ -406,6 +442,7 @@ def main():
     parser.add_argument("--monitor_gpu", action="store_true", help="Monitor GPU memory usage")
     parser.add_argument("--start_idx", type=int, default=0, help="Starting index for scene naming (useful for resuming generation)")
     parser.add_argument("--json_only", action="store_true", help="Only generate JSONs, skip rendering and H5 processing")
+    parser.add_argument("--resume", action="store_true", help="Resume from incomplete chunks and skip existing scenes")
     args = parser.parse_args()
 
     # Offset the seed by start_idx so resumed generation runs produce new, unique scenes
@@ -414,6 +451,21 @@ def main():
     
     tmp_dir = args.tmp_dir if args.tmp_dir else args.output_dir
     os.makedirs(tmp_dir, exist_ok=True)
+
+    completed_scenes = set()
+    if args.resume:
+        print("[*] Resume flag set. Scanning output_dir for existing scenes...")
+        existing_chunks = glob.glob(os.path.join(args.output_dir, "*_dataset_chunk_*.h5")) + glob.glob(os.path.join(args.output_dir, "*_dataset_chunk_*.h5.INCOMPLETE"))
+        for chunk in existing_chunks:
+            try:
+                with h5py.File(chunk, 'r') as f:
+                    for scene_name in f.keys():
+                        if 'hdr_target_image' in f[scene_name]:
+                            if f[scene_name]['hdr_target_image'].shape[0] == args.num_views:
+                                completed_scenes.add(scene_name)
+            except Exception as e:
+                print(f"[*] Warning: Could not read {chunk} during resume scan: {e}")
+        print(f"[*] Found {len(completed_scenes)} scenes already processed in H5 chunks.")
     
     # Start timer
     pipeline_start_time = time.time()
@@ -461,7 +513,7 @@ def main():
     render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_render_workers)
     
     # Thread for writing H5s sequentially (Disk bound)
-    writer = threading.Thread(target=h5_writer_thread, args=(write_queue, args.output_dir, tmp_dir, args.formats, args.chunk_size, args.num_scenes, args.num_views))
+    writer = threading.Thread(target=h5_writer_thread, args=(write_queue, args.output_dir, tmp_dir, args.formats, args.chunk_size, args.num_scenes - len(completed_scenes) if args.resume else args.num_scenes, args.num_views))
     writer.daemon = True
     writer.start()
 
@@ -504,19 +556,26 @@ def main():
     texture_mode = args.texture_mode if args.texture_mode is not None else "per-shading-group"
     json_workers = max(1, min(64, os.cpu_count() or 1))
     print(f"[*] Using {json_workers} concurrent JSON generation workers.")
-    json_files = [None] * args.num_scenes
+    json_files = []
     json_loop_indices_to_generate = []
+    skipped_count = 0
     for loop_idx in range(args.num_scenes):
         scene_idx = args.start_idx + loop_idx
-        json_file = os.path.join(tmp_dir, f"scene_{scene_idx:06d}.json")
-        if os.path.exists(json_file):
-            json_files[loop_idx] = json_file
-        else:
+        scene_name = f"scene_{scene_idx:06d}"
+        if args.resume and scene_name in completed_scenes:
+            skipped_count += 1
+            continue
+            
+        json_file = os.path.join(tmp_dir, f"{scene_name}.json")
+        json_files.append(json_file)
+        if not os.path.exists(json_file):
             json_loop_indices_to_generate.append(loop_idx)
-    print(f"[*] Found {args.num_scenes - len(json_loop_indices_to_generate)} existing JSONs, generating {len(json_loop_indices_to_generate)} new ones...")
+            
+    print(f"[*] Found {len(json_files) - len(json_loop_indices_to_generate)} existing JSONs, generating {len(json_loop_indices_to_generate)} new ones (skipped {skipped_count} from resume)...")
 
-    with tqdm.tqdm(total=args.num_scenes, desc="Generating scenes", unit="scene", mininterval=0.25) as pbar:
-        existing_count = args.num_scenes - len(json_loop_indices_to_generate)
+    target_json_count = len(json_files)
+    with tqdm.tqdm(total=target_json_count, desc="Generating scenes", unit="scene", mininterval=0.25) as pbar:
+        existing_count = target_json_count - len(json_loop_indices_to_generate)
         if existing_count > 0:
             pbar.update(existing_count)
 
@@ -539,7 +598,7 @@ def main():
 
                 for future in concurrent.futures.as_completed(json_futures):
                     loop_idx, json_file = future.result()
-                    json_files[loop_idx] = json_file
+                    # json_files is already fully populated with paths, we just needed them to generate
                     pbar.update(1)
         
     print(f"[*] Generated {len(json_files)} JSONs.")
@@ -549,29 +608,46 @@ def main():
     # 4. Stage 2: Submit to Pipeline
     print("[*] Stage 2 & 3: Streaming renders and preprocessing...")
     gpu_counter = 0
-    for scene_file in json_files:
-        gpu_id = gpu_list[gpu_counter % len(gpu_list)] if gpu_list else None
-        gpu_counter += 1
-        
-        # Submit to rendering threadpool
-        rend_future = render_executor.submit(
-            render_worker_task,
-            scene_file,
-            tmp_dir,
-            gpu_id,
-            args.spp,
-            args.render_timeout_seconds,
-            args.render_timeout_retries,
-        )
-        rend_future.add_done_callback(on_render_done)
-
-    # 5. Wait for completion
-    render_executor.shutdown(wait=True)
-    process_executor.shutdown(wait=True)
     
-    # Wait for the writer thread to drain the queue and flush final chunks
-    write_queue.join()
-    writer.join()
+    try:
+        for scene_file in json_files:
+            gpu_id = gpu_list[gpu_counter % len(gpu_list)] if gpu_list else None
+            gpu_counter += 1
+            
+            # Submit to rendering threadpool
+            rend_future = render_executor.submit(
+                render_worker_task,
+                scene_file,
+                tmp_dir,
+                gpu_id,
+                args.spp,
+                args.render_timeout_seconds,
+                args.render_timeout_retries,
+            )
+            rend_future.add_done_callback(on_render_done)
+
+        # 5. Wait for completion
+        render_executor.shutdown(wait=True)
+        process_executor.shutdown(wait=True)
+        
+        # Wait for the writer thread to drain the queue and flush final chunks
+        write_queue.join()
+    except KeyboardInterrupt:
+        print("\n[*] Caught KeyboardInterrupt! Gracefully aborting...")
+        print("[*] Terminating render and process executors (this may take a moment)...")
+        # In Python 3.9+, shutdown(wait=False, cancel_futures=True) is supported
+        try:
+            render_executor.shutdown(wait=False, cancel_futures=True)
+            process_executor.shutdown(wait=False, cancel_futures=True)
+        except TypeError:
+            render_executor.shutdown(wait=False)
+            process_executor.shutdown(wait=False)
+            
+        print("[*] Sending STOP signal to H5 writer thread to preserve INCOMPLETE chunks...")
+        write_queue.put(("STOP", None))
+        write_queue.join()  # wait for writer to process STOP
+    finally:
+        writer.join()
 
     # Stop GPU monitor
     if args.monitor_gpu:
