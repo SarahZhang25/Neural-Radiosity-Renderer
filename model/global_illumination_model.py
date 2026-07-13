@@ -125,7 +125,9 @@ class GlobalIlluminationModel(torch.nn.Module):
                 enc_conv=enc.enc_conv,
                 enc_attn=enc.enc_attn,
                 enc_rope_freq=enc.enc_rope_freq,
-                use_local_patches=getattr(config.pointnet_encoder, 'use_local_patches', False)
+                use_local_patches=getattr(config.pointnet_encoder, 'use_local_patches', False),
+                pooling_type=enc.pooling_type,
+                num_hierarchical_levels=enc.num_hierarchical_levels
             )
         else:
             raise ValueError(f"Unknown encoder type: {config.encoder_type}")

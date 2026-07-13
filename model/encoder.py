@@ -255,11 +255,14 @@ class LitePTEncoderAdapter(nn.Module):
         enc_conv: tuple = (True, True, True, False),
         enc_attn: tuple = (False, False, False, True),
         enc_rope_freq: tuple = (100.0, 100.0, 100.0, 100.0),
-        use_local_patches: bool = False
+        use_local_patches: bool = False,
+        pooling_type: str = 'max',
+        num_hierarchical_levels: int = 3
     ):
         super().__init__()
         self.use_local_patches = use_local_patches
-        
+        self.pooling_type = pooling_type
+        self.num_hierarchical_levels = num_hierarchical_levels
         try:
             from LitePT.litept.model import LitePT
         except ImportError:
@@ -293,11 +296,19 @@ class LitePTEncoderAdapter(nn.Module):
                 print(f"Warning: Pretrained weights {pretrained_weights_path} not found.")
 
         # Project LitePT output dimension to out_channels
-        litept_out_dim = enc_channels[-1]
-        if litept_out_dim != out_channels:
-            self.proj = nn.Linear(litept_out_dim, out_channels)
+        if self.pooling_type == 'hierarchical':
+            # Collect from the last `num_hierarchical_levels` stages
+            total_dim = sum(2 * enc_channels[-i] for i in range(1, self.num_hierarchical_levels + 1))
+            self.hierarchical_proj = nn.Linear(total_dim, out_channels)
+            self.proj = None
+        elif self.pooling_type == 'max':
+            litept_out_dim = enc_channels[-1]
+            if litept_out_dim != out_channels:
+                self.proj = nn.Linear(litept_out_dim, out_channels)
+            else:
+                self.proj = nn.Identity()
         else:
-            self.proj = nn.Identity()
+            raise NotImplementedError(f"pooling_type {self.pooling_type} is not implemented.")
 
     def forward(
         self,
@@ -347,25 +358,64 @@ class LitePTEncoderAdapter(nn.Module):
                 "offset": offset
             }
 
-            # Forward pass
-            out_point = self.backbone(data_dict)
-        # out_point.feat is (M, litept_out_dim) where M <= B*N due to GridPooling
-        out_feat = self.proj(out_point.feat)  # (M, out_channels)
+            # Forward pass using manual stage execution for multiscale extraction
+            from LitePT.litept.model import Point
+            point = Point(data_dict)
+            point.sparsify()
+            point = self.backbone.embedding(point)
 
-        # Global Pooling — use batch indices from the output Point to aggregate per-batch
-        # GridPooling reduces point count, so we can't reshape to (B, N, ...).
-        # Instead, scatter-max over the batch dimension.
-        # TODO: Implement attention pooling as an alternative to global max pooling
-        batch_idx = out_point.batch  # (M,) with values in [0, B-1]
-        D = out_feat.shape[-1]
-        global_token = torch.zeros(B, D, device=out_feat.device, dtype=out_feat.dtype)
-        global_token.scatter_reduce_(
-            0,
-            batch_idx.unsqueeze(-1).expand(-1, D).long(),
-            out_feat,
-            reduce='amax',
-            include_self=False,
-        )  # (B, out_channels)
+            if self.pooling_type == 'hierarchical':
+                multiscale_features = []
+                stages = list(self.backbone.enc._modules.items())
+                
+                # Execute stages and collect features
+                stage_outputs = []
+                for name, stage_module in stages:
+                    point = stage_module(point)
+                    stage_outputs.append(point)
+                
+                # Extract features from the last num_hierarchical_levels stages
+                for i in range(1, self.num_hierarchical_levels + 1):
+                    p = stage_outputs[-i]
+                    batch_idx = p.batch
+                    D_scale = p.feat.shape[-1]
+                    
+                    # Global max pool
+                    global_max = torch.zeros(B, D_scale, device=p.feat.device, dtype=p.feat.dtype)
+                    global_max.scatter_reduce_(
+                        0, batch_idx.unsqueeze(-1).expand(-1, D_scale).long(),
+                        p.feat, reduce='amax', include_self=False
+                    )
+                    
+                    # Global mean pool
+                    global_mean = torch.zeros(B, D_scale, device=p.feat.device, dtype=p.feat.dtype)
+                    global_mean.scatter_reduce_(
+                        0, batch_idx.unsqueeze(-1).expand(-1, D_scale).long(),
+                        p.feat, reduce='mean', include_self=False
+                    )
+                    
+                    multiscale_features.extend([global_max, global_mean])
+                    
+                all_features = torch.cat(multiscale_features, dim=-1)
+                global_token = self.hierarchical_proj(all_features)
+            else:
+                out_point = self.backbone.enc(point)
+                out_feat = self.proj(out_point.feat)  # (M, out_channels)
+
+                # Global Pooling — use batch indices from the output Point to aggregate per-batch
+                # GridPooling reduces point count, so we can't reshape to (B, N, ...).
+                # Instead, scatter-max over the batch dimension.
+                # TODO: Implement attention pooling as an alternative to global max pooling
+                batch_idx = out_point.batch  # (M,) with values in [0, B-1]
+                D = out_feat.shape[-1]
+                global_token = torch.zeros(B, D, device=out_feat.device, dtype=out_feat.dtype)
+                global_token.scatter_reduce_(
+                    0,
+                    batch_idx.unsqueeze(-1).expand(-1, D).long(),
+                    out_feat,
+                    reduce='amax',
+                    include_self=False,
+                )  # (B, out_channels)
 
         # Mean position for centroid
         global_pos = surface_pos.mean(dim=1)  # (B, 3)
