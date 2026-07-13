@@ -3,6 +3,7 @@ import argparse
 import yaml
 from datetime import datetime
 import logging
+import shutil
 from tqdm import tqdm
 
 import torch
@@ -237,9 +238,7 @@ class Trainer:
             os.makedirs(self.log_dir, exist_ok=True)
             os.makedirs(self.checkpoint_dir, exist_ok=True)
             print("Logging to new directory:", self.log_dir)
-            # Save resolved config as YAML for reproducibility
-            with open(os.path.join(self.log_dir, 'config.yaml'), 'w') as f:
-                yaml.dump(self.config.to_dict(), f, default_flow_style=False)
+            shutil.copy(config_path, os.path.join(self.log_dir, 'config.yaml'))
 
         self.writer = SummaryWriter(log_dir=self.log_dir)
 

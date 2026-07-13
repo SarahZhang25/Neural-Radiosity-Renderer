@@ -22,9 +22,9 @@ def main():
             save_interval=9999,
             checkpoint_interval=9999,
             package_model=False,
-            data_dir="renderformer/datasets/processed_datasets/dataset_single_obj",
-            log_dir="tmp/test_run",
-            run_name="test_LitePT_hierarchical",
+            # data_dir="renderformer/datasets/processed_datasets/dataset_single_obj",
+            # log_dir="tmp/test_run",
+            run_name="test_LitePT_hierarchical_TEST",
         ),
     )
 
