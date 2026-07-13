@@ -22,6 +22,8 @@ encoder_type: 'litept'
 litept_encoder:
   in_channels: 16  # Position (3) + Normal (3) + Material (10)
   out_channels: 512  # Must match decoder.hidden_dim for the object token projection
+  pooling_type: 'hierarchical'
+  num_hierarchical_levels: 3
   pretrained_weights_path: null  # Set to path of LitePT-S.pth to load pretrained weights
   drop_path: 0.2
   stride: [2, 2, 2, 2]

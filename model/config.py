@@ -67,6 +67,12 @@ class LitePTConfig(_ConfigMixin):
     out_channels: int = 512
     """Final global output dimension (matches pointnet's output_dim)."""
     
+    pooling_type: Literal['hierarchical', 'max'] = 'max'
+    """Pooling strategy: 'hierarchical' multi-scale or 'max' global."""
+
+    num_hierarchical_levels: int = 3
+    """Number of hierarchical pooling levels (ignored when pooling_type != 'hierarchical')."""
+    
     pretrained_weights_path: Optional[str] = "LitePT-S.pth"
     """Path to the pretrained weights for the LitePT backbone."""
 
