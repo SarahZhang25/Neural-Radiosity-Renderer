@@ -10,6 +10,7 @@
 
 # Training: 
 # Model: 
+# --> using pretrained instance segmentation model weights
 # --  using LitePT-S instad of PointNet. RE # params: a bit undersized ATM because using default LitePT-S arch. 
 # --  camray ray encoder 
 # --  unified encoder
@@ -24,7 +25,7 @@ litept_encoder:
   out_channels: 512  # Must match decoder.hidden_dim for the object token projection
   pooling_type: 'hierarchical'
   num_hierarchical_levels: 3
-  pretrained_weights_path: null  # Set to path of LitePT-S.pth to load pretrained weights
+  pretrained_weights_path: /home/sazhang/.cache/huggingface/hub/models--prs-eth--LitePT/snapshots/a8e76e92efbb2061639f5c683968bc5d248ee002/scannet-semseg-litept-small-v1m1/model/model_best.pth
   drop_path: 0.2
   stride: [2, 2, 2, 2]
   enc_depths: [2, 2, 2, 6, 2]
