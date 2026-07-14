@@ -1,0 +1,11 @@
+name: neural_radiosity_renderer
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - ipykernel
+  - pytest
+  - tensorboard
+  - imageio
+prefix: /home/sazhang/miniconda3/envs/neural_radiosity_renderer
