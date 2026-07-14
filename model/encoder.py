@@ -240,6 +240,10 @@ class PointNetEncoder(nn.Module):
 class LitePTEncoderAdapter(nn.Module):
     """
     Adapter for the LitePT point cloud encoder to match the PointNetEncoder interface.
+
+    Pretrained weights saved to /home/sazhang/.cache/huggingface/hub/
+    - /home/sazhang/.cache/huggingface/hub/models--prs-eth--LitePT/snapshots/a8e76e92efbb2061639f5c683968bc5d248ee002/scannet-insseg-litept-small-v1m2/model/model_best.pth
+    - /home/sazhang/.cache/huggingface/hub/models--prs-eth--LitePT/snapshots/a8e76e92efbb2061639f5c683968bc5d248ee002/scannet-semseg-litept-small-v1m1/model/model_best.pth
     """
     def __init__(
         self,
@@ -285,12 +289,30 @@ class LitePTEncoderAdapter(nn.Module):
         if pretrained_weights_path:
             import os
             if os.path.exists(pretrained_weights_path):
-                ckpt = torch.load(pretrained_weights_path, map_location='cpu')
+                ckpt = torch.load(pretrained_weights_path, map_location='cpu', weights_only=False)
                 # Load backbone weights. If it's a full model, we might need to map keys.
                 # Assuming standard state_dict loading for now.
                 state_dict = ckpt['state_dict'] if 'state_dict' in ckpt else ckpt
                 # Filter out decoder keys if present
                 enc_state_dict = {k: v for k, v in state_dict.items() if not k.startswith('dec.')}
+                
+                # Check for input channel mismatch in the stem embedding
+                stem_weight_key = 'embedding.stem.conv.weight'
+                if stem_weight_key in enc_state_dict:
+                    pretrained_stem_w = enc_state_dict[stem_weight_key]
+                    current_stem_w = self.backbone.state_dict()[stem_weight_key]
+                    
+                    if pretrained_stem_w.shape != current_stem_w.shape:
+                        print(f"Adapting pretrained stem weights from {pretrained_stem_w.shape} to {current_stem_w.shape}")
+                        # Shape is [out_channels, k0, k1, k2, in_channels]
+                        # Copy the matching input channels (e.g. first 3 or 6)
+                        min_in_channels = min(pretrained_stem_w.shape[-1], current_stem_w.shape[-1])
+                        # Initialize the current weights properly (they are already random init, but just in case)
+                        adapted_w = current_stem_w.clone()
+                        # Copy over the pretrained channels
+                        adapted_w[..., :min_in_channels] = pretrained_stem_w[..., :min_in_channels]
+                        enc_state_dict[stem_weight_key] = adapted_w
+
                 self.backbone.load_state_dict(enc_state_dict, strict=False)
             else:
                 print(f"Warning: Pretrained weights {pretrained_weights_path} not found.")
