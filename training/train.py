@@ -1,6 +1,5 @@
 import os
 import argparse
-import shutil
 import yaml
 import torch
 import torch.nn as nn
@@ -16,6 +15,7 @@ from lpips import LPIPS
 from torchmetrics.image import StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
+from model.config import NeuralRadiosityConfig
 from model.global_illumination_model import GlobalIlluminationModel
 # from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
 from training.dataset import H5SceneDataset as SceneDataset, scene_collate_fn
@@ -122,38 +122,36 @@ class Trainer:
         Sets up datasets, model, optimizer, scheduler, and logging directories.
         """
         print(f"CUDA Available: {torch.cuda.is_available()}")
-        with open(config_path, 'r') as f:
-            self.config = yaml.safe_load(f)
-            
-        self.tc = self.config['training']
-        self.device = torch.device(self.tc.get('device', 'cuda' if torch.cuda.is_available() else 'cpu'))
+        self.config = NeuralRadiosityConfig.from_yaml(config_path)
+        tc = self.config.training
+        self.device = torch.device(tc.device if torch.cuda.is_available() or tc.device != 'cuda' else 'cpu')
         print(f"Using device: {self.device}")
 
-        self.use_amp = self.tc.get('use_amp', True)
-        self.use_compile = self.tc.get('use_compile', False)
-        self.package_model = self.tc.get('package_model', False)
+        self.use_amp = tc.use_amp
+        self.use_compile = tc.use_compile
+        self.package_model = tc.package_model
 
         # Datasets
         self.train_dataset = SceneDataset(
-            data_dir=self.tc['data_dir'],
-            image_res=self.tc['image_res'],
+            data_dir=tc.data_dir,
+            image_res=tc.image_res,
             split='train',
-            max_dataset_size=self.tc.get('max_dataset_size', None),
-            shuffle=self.tc.get('shuffle_dataset', True),
-            shuffle_seed=self.tc.get('shuffle_data_seed', 42)
+            max_dataset_size=tc.max_dataset_size,
+            shuffle=tc.shuffle_dataset,
+            shuffle_seed=tc.shuffle_data_seed
         )
         self.val_dataset = SceneDataset(
-            data_dir=self.tc['data_dir'],
-            image_res=self.tc['image_res'],
+            data_dir=tc.data_dir,
+            image_res=tc.image_res,
             split='val',
-            max_dataset_size=self.tc.get('max_dataset_size', None),
-            shuffle=self.tc.get('shuffle_dataset', True),
-            shuffle_seed=self.tc.get('shuffle_data_seed', 42)
+            max_dataset_size=tc.max_dataset_size,
+            shuffle=tc.shuffle_dataset,
+            shuffle_seed=tc.shuffle_data_seed
         )
         
-        batch_size = self.tc['batch_size']
+        batch_size = tc.batch_size
         val_batch_size = min(4, batch_size)
-        num_workers = self.tc.get('num_workers', 4)
+        num_workers = tc.num_workers
         
         self.train_loader = DataLoader(
             self.train_dataset, 
@@ -181,16 +179,16 @@ class Trainer:
         # Model
         self.model = GlobalIlluminationModel(self.config).to(self.device)
         self.ray_generator = RayGenerator().to(self.device)
-        self.image_res = self.tc['image_res']
+        self.image_res = tc.image_res
         
         if self.use_compile:
             print("Compiling model with torch.compile (mode='reduce-overhead')...")
             self.model = torch.compile(self.model, mode='reduce-overhead')
 
         # Optimizer & Losses
-        self.optimizer = AdamW(self.model.parameters(), lr=float(self.tc['learning_rate']))
+        self.optimizer = AdamW(self.model.parameters(), lr=tc.learning_rate)
         
-        self.primary_loss_type = self.tc.get('primary_loss', 'mse')
+        self.primary_loss_type = tc.primary_loss
         if self.primary_loss_type == 'mse':
             self.core_loss_fn = nn.MSELoss()
         elif self.primary_loss_type == 'mae':
@@ -198,19 +196,19 @@ class Trainer:
         else:
             raise ValueError(f"Unsupported primary loss type: {self.primary_loss_type}")
             
-        self.lpips_weight = self.tc.get('lpips_loss_weighting', 0)
+        self.lpips_weight = tc.lpips_loss_weighting
         if self.lpips_weight > 0:
-            self.lpips_loss_fn = LPIPS(net=self.tc.get('lpips_backbone', 'alex')).to(self.device)
+            self.lpips_loss_fn = LPIPS(net=tc.lpips_backbone).to(self.device)
             
         # Metrics
         self.ssim_metric = StructuralSimilarityIndexMeasure(data_range=1.0).to(self.device)
         self.lpips_val_metric = LearnedPerceptualImagePatchSimilarity(net_type='alex', normalize=True).to(self.device)
 
         # Training params
-        self.num_epochs = self.tc['num_epochs']
-        self.warmup_epochs = self.tc.get('warmup_epochs', self.num_epochs // 20)
-        self.log_viz_interval = self.tc.get('save_interval', 100)
-        self.checkpoint_interval = self.tc.get('checkpoint_interval', 500)
+        self.num_epochs = tc.num_epochs
+        self.warmup_epochs = tc.warmup_epochs
+        self.log_viz_interval = tc.save_interval
+        self.checkpoint_interval = tc.checkpoint_interval
 
         # Scheduler
         warmup_scheduler = LinearLR(self.optimizer, start_factor=0.01, total_iters=self.warmup_epochs)
@@ -218,6 +216,7 @@ class Trainer:
         self.scheduler = SequentialLR(self.optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[self.warmup_epochs])
 
         # Logging setup
+        log_dir_root = tc.log_dir
         self.start_epoch = 0
         base_log_dir = self.tc.get('log_dir', 'training/logs')
 
@@ -231,14 +230,16 @@ class Trainer:
             dataset_name = first_data_dir.split('/')[-1]
             
             run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
-            if 'run_name' in self.tc:
-                run_id += f"_{self.tc['run_name']}"
-            self.log_dir = os.path.join(base_log_dir, dataset_name, run_id)
+            if tc.run_name:
+                run_id += f"_{tc.run_name}"
+            self.log_dir = os.path.join(log_dir_root, run_id)
             self.checkpoint_dir = os.path.join(self.log_dir, 'checkpoints')
             os.makedirs(self.log_dir, exist_ok=True)
             os.makedirs(self.checkpoint_dir, exist_ok=True)
             print("Logging to new directory:", self.log_dir)
-            shutil.copy(config_path, os.path.join(self.log_dir, 'config.yaml'))
+            # Save resolved config as YAML for reproducibility
+            with open(os.path.join(self.log_dir, 'config.yaml'), 'w') as f:
+                yaml.dump(self.config.to_dict(), f, default_flow_style=False)
 
         self.writer = SummaryWriter(log_dir=self.log_dir)
 
