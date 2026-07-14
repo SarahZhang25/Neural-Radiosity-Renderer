@@ -1,3 +1,4 @@
+"""Count lines of code in directory"""
 from pathlib import Path
 
 def count_py_lines(directory_path="."):
