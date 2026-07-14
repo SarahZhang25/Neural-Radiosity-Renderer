@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 import glob
-
+import h5py
 def scene_collate_fn(batch):
     max_objs = max(item['obj_positions'].shape[0] for item in batch)
     
@@ -42,6 +42,7 @@ def scene_collate_fn(batch):
         
     return {k: torch.stack(v, dim=0) for k, v in batched_data.items()}
 
+# NOTE: is this a duplicate function now? It also exists in data_generation/to_npz_from_json_scenes.py
 def load_exr(path):
     try:
         import cv2
@@ -80,7 +81,7 @@ def load_exr(path):
 
     raise RuntimeError(f"Failed to load EXR file: {path}. Ensure cv2, imageio, or OpenEXR is installed.")
 
-class SceneDataset(Dataset):
+class NPZSceneDataset(Dataset):
     def __init__(
         self, 
         data_dir: str, 
@@ -122,6 +123,7 @@ class SceneDataset(Dataset):
         self.files = [item for item in self.files if item not in corrupted_paths]
         print(f"Removed {len(corrupted_paths)} corrupted images")
 
+        # Shuffle with a fixed seed
         if shuffle:
             rng = np.random.RandomState(shuffle_seed)
             rng.shuffle(self.files)
@@ -129,7 +131,6 @@ class SceneDataset(Dataset):
         if max_dataset_size is not None and len(self.files) > max_dataset_size:
             self.files = self.files[:max_dataset_size]
             
-        # Shuffle with a fixed seed
         if split == "all":
             print(f"[{split}] Using all {len(self.files)} samples in {data_dir}")
         else:
@@ -222,3 +223,142 @@ class SceneDataset(Dataset):
             'obj_mask': mask,                       # (N_obj)
             'target_image': image_tensor            # (3, H, W)
         }
+
+class H5SceneDataset(Dataset):
+    def __init__(
+        self, 
+        data_dir, # can be a string or a list of strings
+        image_res: int = 128,
+        num_points_per_object: int = 2048,
+        split: str = 'train',
+        max_dataset_size: int = None,
+        shuffle: bool = True,
+        shuffle_seed: int = 42
+    ):
+        if isinstance(data_dir, str):
+            self.data_dirs = [data_dir]
+        else:
+            self.data_dirs = data_dir
+            
+        self.image_res = image_res
+        self.num_points = num_points_per_object
+        
+        self.chunk_files = []
+        for d in self.data_dirs:
+            self.chunk_files.extend(glob.glob(os.path.join(d, "nmr_dataset_chunk*.h5")))
+        self.chunk_files = sorted(self.chunk_files)
+        
+        self.scene_index = []
+        
+        # Build index mapping global_idx -> (chunk_file, scene_name)
+        for chunk_file in self.chunk_files:
+            with h5py.File(chunk_file, 'r') as f:
+                for scene_name in f.keys():
+                    self.scene_index.append((chunk_file, scene_name))
+        
+        # Handle shuffling and dataset limits BEFORE splitting
+        if shuffle:
+            rng = np.random.RandomState(shuffle_seed)
+            # Convert to list for shuffling
+            idx_list = list(range(len(self.scene_index)))
+            rng.shuffle(idx_list)
+            self.scene_index = [self.scene_index[i] for i in idx_list]
+            
+        if max_dataset_size is not None and len(self.scene_index) > max_dataset_size:
+            self.scene_index = self.scene_index[:max_dataset_size]
+            
+        # Handle splitting
+        if split == "all":
+            print(f"[{split}] Using all {len(self.scene_index)} samples in {data_dir}")
+        else:
+            assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
+            split_idx = int(len(self.scene_index) * 0.9)
+            if split == 'train':
+                self.scene_index = self.scene_index[:split_idx]
+            else:
+                self.scene_index = self.scene_index[split_idx:]
+                
+        print(f"[{split}] Found {len(self.scene_index)} samples across {len(self.chunk_files)} chunks in {data_dir}")
+
+        # Lazily store opened H5 handles per worker to avoid multiprocess fork issues
+        self._h5_handles = {}
+
+    def _get_h5_file(self, chunk_path):
+        if chunk_path not in self._h5_handles:
+            # swmr=True enables Single Writer Multiple Reader, safe for multiprocess dataloading
+            self._h5_handles[chunk_path] = h5py.File(chunk_path, 'r', swmr=True)
+        return self._h5_handles[chunk_path]
+
+    def _sample_points(self, points, num_points, normals=None):
+        N = points.shape[0]
+        if N >= num_points:
+            indices = np.random.choice(N, num_points, replace=(N < num_points))
+        else:
+            indices = np.random.choice(N, num_points, replace=True)
+        if normals is not None:
+            return points[indices], normals[indices]
+        return points[indices]
+
+    def __len__(self):
+        return len(self.scene_index)
+
+    def __getitem__(self, idx):
+        chunk_file, scene_name = self.scene_index[idx]
+        f = self._get_h5_file(chunk_file)
+        grp = f[scene_name]
+        
+        # 1. Load Image
+        image_np = grp['hdr_target_image'][:]
+        image_np = image_np[..., :3]
+        image_tensor = torch.from_numpy(image_np).permute(2, 0, 1).float()
+        
+        # We can dynamically scale down based on self.image_res
+        image_tensor = torch.nn.functional.interpolate(
+            image_tensor.unsqueeze(0), 
+            size=(self.image_res, self.image_res), 
+            mode='bilinear', 
+            align_corners=False
+        ).squeeze(0)
+        
+        # 2. Geometry & Materials
+        entity_vertices = grp['entity_vertices'][:]
+        entity_normals = grp['entity_normals'][:]
+        entity_materials = grp['entity_materials'][:]
+        
+        N_obj, V, C = entity_vertices.shape
+        if V != self.num_points:
+            new_verts = []
+            new_norms = []
+            for i in range(N_obj):
+                v, n = self._sample_points(entity_vertices[i], self.num_points, entity_normals[i])
+                new_verts.append(v)
+                new_norms.append(n)
+            entity_vertices = np.stack(new_verts)
+            entity_normals = np.stack(new_norms)
+            
+        positions = torch.from_numpy(entity_vertices).float()
+        normals = torch.from_numpy(entity_normals).float()
+        properties = torch.from_numpy(entity_materials).float()
+        mask = torch.ones(positions.shape[0], dtype=torch.bool)
+        
+        # 3. Camera config
+        cam_fov = grp['camera_fov'][()]
+        c2w = torch.from_numpy(grp['c2w'][:]).float()
+
+        return {
+            'c2w': c2w,                             # (4, 4) camera-to-world
+            'fov_deg': torch.tensor(cam_fov).float(),  # scalar
+            'obj_positions': positions,             # (N_obj, N_p, 3)
+            'obj_normals': normals,                 # (N_obj, N_p, 3)
+            'obj_properties': properties,           # (N_obj, C)
+            'obj_mask': mask,                       # (N_obj)
+            'target_image': image_tensor            # (3, H, W)
+        }
+
+    def __del__(self):
+        # Close all H5 handles on destruction
+        for f in self._h5_handles.values():
+            try:
+                f.close()
+            except Exception:
+                pass

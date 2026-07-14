@@ -17,7 +17,8 @@ from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
 from model.config import NeuralRadiosityConfig
 from model.global_illumination_model import GlobalIlluminationModel
-from training.dataset import SceneDataset, scene_collate_fn
+# from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
+from training.dataset import H5SceneDataset as SceneDataset, scene_collate_fn
 from training.ray_generator import RayGenerator
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -117,7 +118,7 @@ def make_vis_grid(linear_rendered, gt_img, max_images=16, diff_amplify=5.0):
 class Trainer:
     def __init__(self, config_path: str, resume_path: str = None):
         """
-        Initialize the Trainer with the given configuration file.
+        Initialize the trainer with configuration parameters and model setup.
         Sets up datasets, model, optimizer, scheduler, and logging directories.
         """
         print(f"CUDA Available: {torch.cuda.is_available()}")
@@ -217,6 +218,7 @@ class Trainer:
         # Logging setup
         log_dir_root = tc.log_dir
         self.start_epoch = 0
+        base_log_dir = self.tc.get('log_dir', 'training/logs')
 
         if resume_path and os.path.exists(resume_path):
             self.checkpoint_dir = os.path.dirname(resume_path)
@@ -224,6 +226,9 @@ class Trainer:
             print(f"Resuming run. Appending logs to existing directory: {self.log_dir}")
             self._load_checkpoint(resume_path)
         else:
+            first_data_dir = self.tc['data_dir'][0] if isinstance(self.tc['data_dir'], list) else self.tc['data_dir']
+            dataset_name = first_data_dir.split('/')[-1]
+            
             run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
             if tc.run_name:
                 run_id += f"_{tc.run_name}"
