@@ -14,5 +14,5 @@ CONFIG=${2:-"training/train_config_46M.yaml"}
 export CUDA_VISIBLE_DEVICES=0,1,2
 
 echo "Starting multi-GPU training on $NUM_GPUS GPUs (CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES) using config $CONFIG..."
-# python -m torch.distributed.run --nproc_per_node=$NUM_GPUS training/train.py --config $CONFIG
-python -m torch.distributed.run --nproc_per_node=$NUM_GPUS training/test_run.py --config $CONFIG
+python -m torch.distributed.run --nproc_per_node=$NUM_GPUS training/train.py --config $CONFIG
+# python -m torch.distributed.run --nproc_per_node=$NUM_GPUS training/test_run.py --config $CONFIG

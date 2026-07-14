@@ -124,7 +124,7 @@ class Trainer:
         Initialize the trainer with configuration parameters and model setup.
         Sets up datasets, model, optimizer, scheduler, and logging directories.
         """
-        print(f"CUDA Available: {torch.cuda.is_available()}")
+        import sys, io, warnings
         
         self.is_distributed = "LOCAL_RANK" in os.environ
         if self.is_distributed:
@@ -136,6 +136,12 @@ class Trainer:
         else:
             self.local_rank = 0
             self.is_main_process = True
+        
+        # Silence all stdout and Python warnings from non-main ranks for the
+        # entire init. This prevents duplicate LPIPS/model prints from each rank.
+        if not self.is_main_process:
+            sys.stdout = io.StringIO()
+            warnings.filterwarnings('ignore')
             
         self.config = NeuralRadiosityConfig.from_yaml(config_path)
         tc = self.config.training
@@ -144,6 +150,7 @@ class Trainer:
             self.device = torch.device(tc.device if torch.cuda.is_available() or tc.device != 'cuda' else 'cpu')
             
         if self.is_main_process:
+            print(f"CUDA Available: {torch.cuda.is_available()}")
             print(f"Distributed training: {self.is_distributed}")
             print(f"Using device: {self.device}")
 
@@ -151,13 +158,7 @@ class Trainer:
         self.use_compile = tc.use_compile
         self.package_model = tc.package_model
 
-        # Datasets - each rank constructs its own dataset index, but only show prinouts from rank 0
-        # to avoid cluttered output. Data itself is loaded lazily per-sample.
-        import sys, io
-        _stdout = sys.stdout
-        if not self.is_main_process:
-            sys.stdout = io.StringIO()  # suppress prints on non-main ranks
-
+        # Datasets - each rank constructs its own dataset index.
         self.train_dataset = SceneDataset(
             data_dir=tc.data_dir,
             image_res=tc.image_res,
@@ -174,9 +175,6 @@ class Trainer:
             shuffle=tc.shuffle_dataset,
             shuffle_seed=tc.shuffle_data_seed
         )
-        
-        if not self.is_main_process:
-            sys.stdout = _stdout  # restore stdout
         
         batch_size = tc.batch_size
         val_batch_size = min(4, batch_size)
@@ -221,7 +219,12 @@ class Trainer:
             self.model = torch.compile(self.model, mode='reduce-overhead')
             
         if self.is_distributed:
-            self.model = DDP(self.model, device_ids=[self.local_rank], find_unused_parameters=True)
+            # gradient_as_bucket_view=True resolves the "grad strides do not match
+            # bucket view strides" warning by ensuring DDP reuses the gradient
+            # tensor memory directly as the bucket view.
+            self.model = DDP(self.model, device_ids=[self.local_rank],
+                             find_unused_parameters=True,
+                             gradient_as_bucket_view=True)
 
         # Optimizer & Losses
         self.optimizer = AdamW(self.model.parameters(), lr=tc.learning_rate)
