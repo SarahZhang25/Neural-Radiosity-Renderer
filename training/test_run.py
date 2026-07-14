@@ -16,28 +16,33 @@ def main():
     config = NeuralRadiosityConfig.from_yaml(args.config)
     
     # Force settings for a fast, localized test
+    log_dir = "tmp/test_run"
     config = replace(config,
         training=replace(config.training,
             num_epochs=10,
             save_interval=9999,
             checkpoint_interval=9999,
             package_model=False,
-            data_dir="renderformer/datasets/processed_datasets/ds_sinusoidal_tex",
-            log_dir="tmp/test_run",
-            run_name="test_new_config_class",
+            data_dir="renderformer/datasets/processed_datasets/dataset_single_obj",
+            log_dir=log_dir,
+            run_name="test_multigpu_training",
         ),
     )
 
     # Save a temporary config file so Trainer can load it
-    temp_config = "test_config_temp.yaml"
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    temp_config = f"{log_dir}/test_config_temp_rank{local_rank}.yaml"
+    os.makedirs(log_dir, exist_ok=True)
     with open(temp_config, 'w') as f:
         yaml.dump(config.to_dict(), f, default_flow_style=False)
         
     try:
         trainer = Trainer(temp_config)
-        print(f"Starting {config.training.num_epochs}-epoch test run...")
+        if trainer.is_main_process:
+            print(f"Starting {config.training.num_epochs}-epoch test run...")
         trainer.run()
-        print("Test run completed successfully!")
+        if trainer.is_main_process:
+            print("Test run completed successfully!")
     finally:
         # Cleanup
         if os.path.exists(temp_config):
