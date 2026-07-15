@@ -10,6 +10,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
+from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.distributed as dist
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from torch.utils.tensorboard import SummaryWriter
 import torchvision
@@ -20,7 +23,8 @@ from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
 from model.config import NeuralRadiosityConfig
 from model.global_illumination_model import GlobalIlluminationModel
-from training.dataset import SceneDataset, scene_collate_fn
+from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
+# from training.dataset import H5SceneDataset as SceneDataset, scene_collate_fn
 from training.ray_generator import RayGenerator
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -123,20 +127,44 @@ def make_vis_grid(linear_rendered, gt_img, max_images=16, diff_amplify=5.0):
 class Trainer:
     def __init__(self, config_path: str, resume_path: str = None):
         """
-        Initialize the Trainer with the given configuration file.
+        Initialize the trainer with configuration parameters and model setup.
         Sets up datasets, model, optimizer, scheduler, and logging directories.
         """
-        print(f"CUDA Available: {torch.cuda.is_available()}")
+        import sys, io, warnings
+        
+        self.is_distributed = "LOCAL_RANK" in os.environ
+        if self.is_distributed:
+            dist.init_process_group(backend="nccl")
+            self.local_rank = int(os.environ["LOCAL_RANK"])
+            self.is_main_process = self.local_rank == 0
+            self.device = torch.device(f'cuda:{self.local_rank}')
+            torch.cuda.set_device(self.device)
+        else:
+            self.local_rank = 0
+            self.is_main_process = True
+        
+        # Silence all stdout and Python warnings from non-main ranks for the
+        # entire init. This prevents duplicate LPIPS/model prints from each rank.
+        if not self.is_main_process:
+            sys.stdout = io.StringIO()
+            warnings.filterwarnings('ignore')
+            
         self.config = NeuralRadiosityConfig.from_yaml(config_path)
         tc = self.config.training
-        self.device = torch.device(tc.device if torch.cuda.is_available() or tc.device != 'cuda' else 'cpu')
-        print(f"Using device: {self.device}")
+        
+        if not self.is_distributed:
+            self.device = torch.device(tc.device if torch.cuda.is_available() or tc.device != 'cuda' else 'cpu')
+            
+        if self.is_main_process:
+            print(f"CUDA Available: {torch.cuda.is_available()}")
+            print(f"Distributed training: {self.is_distributed}")
+            print(f"Using device: {self.device}")
 
         self.use_amp = tc.use_amp
         self.use_compile = tc.use_compile
         self.package_model = tc.package_model
 
-        # Datasets
+        # Datasets - each rank constructs its own dataset index.
         self.train_dataset = SceneDataset(
             data_dir=tc.data_dir,
             image_res=tc.image_res,
@@ -158,19 +186,24 @@ class Trainer:
         val_batch_size = min(4, batch_size)
         num_workers = tc.num_workers
         
+        self.train_sampler = DistributedSampler(self.train_dataset, shuffle=True) if self.is_distributed else None
         self.train_loader = DataLoader(
             self.train_dataset, 
             batch_size=batch_size, 
-            shuffle=True, 
+            shuffle=(self.train_sampler is None), 
+            sampler=self.train_sampler,
             num_workers=num_workers,
             pin_memory=True,
             collate_fn=scene_collate_fn,
             persistent_workers=True # Prevents tearing down CPU threads between epochs
         )
+        
+        self.val_sampler = DistributedSampler(self.val_dataset, shuffle=False) if self.is_distributed else None
         self.val_loader = DataLoader(
             self.val_dataset, 
             batch_size=val_batch_size, 
             shuffle=False, 
+            sampler=self.val_sampler,
             num_workers=num_workers,
             pin_memory=True,
             collate_fn=scene_collate_fn,
@@ -187,8 +220,17 @@ class Trainer:
         self.image_res = tc.image_res
         
         if self.use_compile:
-            print("Compiling model with torch.compile (mode='reduce-overhead')...")
+            if self.is_main_process:
+                print("Compiling model with torch.compile (mode='reduce-overhead')...")
             self.model = torch.compile(self.model, mode='reduce-overhead')
+            
+        if self.is_distributed:
+            # gradient_as_bucket_view=True resolves the "grad strides do not match
+            # bucket view strides" warning by ensuring DDP reuses the gradient
+            # tensor memory directly as the bucket view.
+            self.model = DDP(self.model, device_ids=[self.local_rank],
+                             find_unused_parameters=True,
+                             gradient_as_bucket_view=True)
 
         # Optimizer & Losses
         self.optimizer = AdamW(self.model.parameters(), lr=tc.learning_rate)
@@ -220,14 +262,14 @@ class Trainer:
         cosine_scheduler = CosineAnnealingLR(self.optimizer, T_max=self.num_epochs - self.warmup_epochs)
         self.scheduler = SequentialLR(self.optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[self.warmup_epochs])
 
-        # Logging setup
         log_dir_root = tc.log_dir
         self.start_epoch = 0
 
         if resume_path and os.path.exists(resume_path):
             self.checkpoint_dir = os.path.dirname(resume_path)
             self.log_dir = os.path.dirname(self.checkpoint_dir)
-            print(f"Resuming run. Appending logs to existing directory: {self.log_dir}")
+            if self.is_main_process:
+                print(f"Resuming run. Appending logs to existing directory: {self.log_dir}")
             self._load_checkpoint(resume_path)
         else:
             run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -235,12 +277,18 @@ class Trainer:
                 run_id += f"_{tc.run_name}"
             self.log_dir = os.path.join(log_dir_root, run_id)
             self.checkpoint_dir = os.path.join(self.log_dir, 'checkpoints')
-            os.makedirs(self.log_dir, exist_ok=True)
-            os.makedirs(self.checkpoint_dir, exist_ok=True)
-            print("Logging to new directory:", self.log_dir)
-            shutil.copy(config_path, os.path.join(self.log_dir, 'config.yaml'))
+            
+            if self.is_main_process:
+                os.makedirs(self.log_dir, exist_ok=True)
+                os.makedirs(self.checkpoint_dir, exist_ok=True)
+                print("Logging to new directory:", self.log_dir)
+                shutil.copy(config_path, os.path.join(self.log_dir, 'config.yaml'))
 
-        self.writer = SummaryWriter(log_dir=self.log_dir)
+
+        if self.is_main_process:
+            self.writer = SummaryWriter(log_dir=self.log_dir)
+        else:
+            self.writer = None
 
     def _get_seeded_batch(self, dataset, batch_size: int, seed: int = 42) -> dict:
         """
@@ -264,16 +312,26 @@ class Trainer:
         """
         Load model, optimizer, scheduler state, and epoch count from a checkpoint file.
         """
-        print(f"Resuming training from checkpoint: {path}")
+        if self.is_main_process:
+            print(f"Resuming training from checkpoint: {path}")
+        # When mapping location, we want to map to the local rank's device
         checkpoint = torch.load(path, map_location=self.device)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
+        
+        if self.is_distributed:
+            # Checkpoint contains un-wrapped DDP state dict if saved properly, or wrapped if saved directly
+            # We'll let torch handle it, but if it fails we might need to adjust keys
+            self.model.module.load_state_dict(checkpoint['model_state_dict'])
+        else:
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.start_epoch = checkpoint['epoch'] + 1 
         
         if 'scheduler_state_dict' in checkpoint:
             self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
         else:
-            print("No scheduler state found in checkpoint. Fast-forwarding...")
+            if self.is_main_process:
+                print("No scheduler state found in checkpoint. Fast-forwarding...")
             for _ in range(self.start_epoch):
                 self.scheduler.step()
 
@@ -361,10 +419,21 @@ class Trainer:
                 train_lpips += self.lpips_val_metric(pred_ldr, target_ldr).item()
 
         n = len(self.train_loader)
+        avg_loss = train_loss / n
+        avg_psnr = train_psnr / n
+        avg_ssim = train_ssim / n
+        avg_lpips = train_lpips / n
+        
+        if self.is_distributed:
+            metrics = torch.tensor([avg_loss, avg_psnr, avg_ssim, avg_lpips], device=self.device)
+            dist.all_reduce(metrics, op=dist.ReduceOp.SUM)
+            metrics /= dist.get_world_size()
+            avg_loss, avg_psnr, avg_ssim, avg_lpips = metrics.tolist()
+
         # Reset metric states to prevent memory leaks across epochs
         self.ssim_metric.reset()
         self.lpips_val_metric.reset()
-        return train_loss / n, train_psnr / n, train_ssim / n, train_lpips / n
+        return avg_loss, avg_psnr, avg_ssim, avg_lpips
 
     def _validate(self, epoch: int):
         """
@@ -398,22 +467,29 @@ class Trainer:
             avg_val_psnr = val_psnr / n
             avg_val_ssim = val_ssim / n
             avg_val_lpips = val_lpips / n
+            
+            if self.is_distributed:
+                metrics = torch.tensor([avg_val_loss, avg_val_psnr, avg_val_ssim, avg_val_lpips], device=self.device)
+                dist.all_reduce(metrics, op=dist.ReduceOp.SUM)
+                metrics /= dist.get_world_size()
+                avg_val_loss, avg_val_psnr, avg_val_ssim, avg_val_lpips = metrics.tolist()
 
-            self.writer.add_scalar('Loss/val', avg_val_loss, epoch)
-            self.writer.add_scalar('PSNR/val', avg_val_psnr, epoch)
-            self.writer.add_scalar('SSIM/val', avg_val_ssim, epoch)
-            self.writer.add_scalar('LPIPS/val', avg_val_lpips, epoch)
-
-            print(f"Epoch {epoch+1}: Val Loss {avg_val_loss:.6f}, Val PSNR: {avg_val_psnr:.2f} dB")
-
-            # Visualizations
-            pred_fixed = self._forward(self.fixed_val_batch)
-            grid_val = make_vis_grid(pred_fixed.float(), self.fixed_val_batch['target_image'].float(), max_images=16)
-            self.writer.add_image('Visual/Validation', grid_val, epoch)
-
-            pred_train_fixed = self._forward(self.fixed_train_batch)
-            grid_train = make_vis_grid(pred_train_fixed.float(), self.fixed_train_batch['target_image'].float(), max_images=16)
-            self.writer.add_image('Visual/Training', grid_train, epoch)
+            if self.is_main_process:
+                self.writer.add_scalar('Loss/val', avg_val_loss, epoch)
+                self.writer.add_scalar('PSNR/val', avg_val_psnr, epoch)
+                self.writer.add_scalar('SSIM/val', avg_val_ssim, epoch)
+                self.writer.add_scalar('LPIPS/val', avg_val_lpips, epoch)
+    
+                print(f"Epoch {epoch+1}: Val Loss {avg_val_loss:.6f}, Val PSNR: {avg_val_psnr:.2f} dB")
+    
+                # Visualizations
+                pred_fixed = self._forward(self.fixed_val_batch)
+                grid_val = make_vis_grid(pred_fixed.float(), self.fixed_val_batch['target_image'].float(), max_images=16)
+                self.writer.add_image('Visual/Validation', grid_val, epoch)
+    
+                pred_train_fixed = self._forward(self.fixed_train_batch)
+                grid_train = make_vis_grid(pred_train_fixed.float(), self.fixed_train_batch['target_image'].float(), max_images=16)
+                self.writer.add_image('Visual/Training', grid_train, epoch)
 
             # # Debug stats at epoch 500
             # if (epoch + 1) == 500:
@@ -437,30 +513,38 @@ class Trainer:
         Execute the main training loop across all epochs.
         Handles training steps, metric logging, validation intervals, and checkpoint saving.
         """
-        for epoch in tqdm(range(self.start_epoch, self.num_epochs), desc="Epochs"):
+        for epoch in tqdm(range(self.start_epoch, self.num_epochs), desc="Epochs", disable=not self.is_main_process):
+            if self.is_distributed:
+                self.train_sampler.set_epoch(epoch)
+
             avg_train_loss, avg_train_psnr, avg_train_ssim, avg_train_lpips = self._train_epoch()
 
             self.scheduler.step()
             
-            self.writer.add_scalar('Train/LR', self.optimizer.param_groups[0]['lr'], epoch)
-            self.writer.add_scalar('Loss/train', avg_train_loss, epoch)
-            self.writer.add_scalar('PSNR/train', avg_train_psnr, epoch)
-            self.writer.add_scalar('SSIM/train', avg_train_ssim, epoch)
-            self.writer.add_scalar('LPIPS/train', avg_train_lpips, epoch)
+            if self.is_main_process:
+                self.writer.add_scalar('Train/LR', self.optimizer.param_groups[0]['lr'], epoch)
+                self.writer.add_scalar('Loss/train', avg_train_loss, epoch)
+                self.writer.add_scalar('PSNR/train', avg_train_psnr, epoch)
+                self.writer.add_scalar('SSIM/train', avg_train_ssim, epoch)
+                self.writer.add_scalar('LPIPS/train', avg_train_lpips, epoch)
             # TODO: add FLIP metric
 
             if (epoch + 1) % self.log_viz_interval == 0:
                 self._validate(epoch)
 
             # Save checkpoint
-            if (epoch + 1) == self.num_epochs or (epoch + 1) % self.checkpoint_interval == 0:
+            if self.is_main_process and ((epoch + 1) == self.num_epochs or (epoch + 1) % self.checkpoint_interval == 0):
                 print("saving model...")
                 ckpt_path = os.path.join(self.checkpoint_dir, f"checkpoint_epoch_{epoch+1}.pt")
                 tmp_path = ckpt_path + ".tmp"
+                
+                # Unpack DDP model state dict for saving
+                model_state_dict = self.model.module.state_dict() if self.is_distributed else self.model.state_dict()
+                
                 try:
                     torch.save({
                         'epoch': epoch,
-                        'model_state_dict': self.model.state_dict(),
+                        'model_state_dict': model_state_dict,
                         'optimizer_state_dict': self.optimizer.state_dict(),
                         'scheduler_state_dict': self.scheduler.state_dict(),
                         'loss': avg_train_loss,  # Using train loss since we might not run val every epoch
@@ -490,13 +574,19 @@ class Trainer:
                             exp.intern("utils.**")
                             exp.intern("pos_encodings.**")
                             exp.extern("**")
-                            exp.save_pickle("model", "model.pkl", self.model)
+                            # Save the un-wrapped model
+                            unwrapped_model = self.model.module if self.is_distributed else self.model
+                            exp.save_pickle("model", "model.pkl", unwrapped_model)
                         print(f"Saved packaged model to {pkg_path}")
                     except Exception as e:
                         print(f"WARNING: Failed to package model: {e}")
 
-        self.writer.close()
-        print("Training Complete.")
+        if self.is_main_process:
+            self.writer.close()
+            print("Training Complete.")
+            
+        if self.is_distributed:
+            dist.destroy_process_group()
 
 
 if __name__ == "__main__":

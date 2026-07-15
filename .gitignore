@@ -5,6 +5,7 @@ outputs/
 *.log*
 tmp*
 
+datasets*
 point-cloud-dynamics-model/
 renderformer
 renderformer_tex_src
