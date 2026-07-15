@@ -1,6 +1,11 @@
 import os
 import argparse
 import yaml
+from datetime import datetime
+import logging
+import shutil
+from tqdm import tqdm
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -10,9 +15,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
 import torchvision
-from datetime import datetime
 from lpips import LPIPS
 
 from torchmetrics.image import StructuralSimilarityIndexMeasure
@@ -27,6 +30,9 @@ from training.ray_generator import RayGenerator
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32       = True
 torch.backends.cudnn.benchmark        = True
+
+# Suppress harmless FX tracing warning from spconv
+logging.getLogger("torch.fx._symbolic_trace").setLevel(logging.ERROR)
 
 def log_transform(x):
     """
@@ -276,9 +282,8 @@ class Trainer:
                 os.makedirs(self.log_dir, exist_ok=True)
                 os.makedirs(self.checkpoint_dir, exist_ok=True)
                 print("Logging to new directory:", self.log_dir)
-                # Save resolved config as YAML for reproducibility
-                with open(os.path.join(self.log_dir, 'config.yaml'), 'w') as f:
-                    yaml.dump(self.config.to_dict(), f, default_flow_style=False)
+                shutil.copy(config_path, os.path.join(self.log_dir, 'config.yaml'))
+
 
         if self.is_main_process:
             self.writer = SummaryWriter(log_dir=self.log_dir)

@@ -8,7 +8,7 @@ from training.train import Trainer
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default='training/train_config_46M.yaml', help='Path to config file')
+    parser.add_argument('--config', type=str, default='training/train_config_46M_litePT.yaml', help='Path to config file')
     args = parser.parse_args()
 
     # We patch the trainer directly to run for just 2 epochs and avoid writing checkpoints or logs.

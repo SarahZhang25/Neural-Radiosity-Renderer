@@ -8,7 +8,7 @@ from typing import Optional
 
 from model.config import NeuralRadiosityConfig
 
-from model.encoder import PointNetEncoder
+from model.encoder import PointNetEncoder, LitePTEncoderAdapter
 from model.layers.attention import TransformerEncoder
 from model.predictor_rope import RadiancePredictor
 # from model.state_manager import StateManager
@@ -98,17 +98,39 @@ class GlobalIlluminationModel(torch.nn.Module):
 
         # Scene Representation Stage
         # 1. Object Encoder
-        enc = config.encoder
-        self.pointnet_encoder = PointNetEncoder(
-            input_dim=enc.input_dim,
-            hidden_dims=enc.hidden_dims,
-            output_dim=enc.output_dim,
-            backbone_dim=enc.backbone_dim,
-            pooling_type=enc.pooling_type,
-            num_hierarchical_levels=enc.num_hierarchical_levels,
-            use_local_patches=enc.use_local_patches,
-            num_centroids=enc.num_centroids,
-        )
+        if getattr(config, 'encoder_type', 'pointnet') == 'pointnet':
+            enc = config.pointnet_encoder
+            self.obj_encoder = PointNetEncoder(
+                input_dim=enc.input_dim,
+                hidden_dims=enc.hidden_dims,
+                output_dim=enc.output_dim,
+                backbone_dim=enc.backbone_dim,
+                pooling_type=enc.pooling_type,
+                num_hierarchical_levels=enc.num_hierarchical_levels,
+                use_local_patches=enc.use_local_patches,
+                num_centroids=enc.num_centroids,
+            )
+        elif config.encoder_type == 'litept':
+            enc = config.litept_encoder
+            self.obj_encoder = LitePTEncoderAdapter(
+                in_channels=enc.in_channels,
+                out_channels=enc.out_channels,
+                pretrained_weights_path=enc.pretrained_weights_path,
+                drop_path=enc.drop_path,
+                stride=enc.stride,
+                enc_depths=enc.enc_depths,
+                enc_channels=enc.enc_channels,
+                enc_num_head=enc.enc_num_head,
+                enc_patch_size=enc.enc_patch_size,
+                enc_conv=enc.enc_conv,
+                enc_attn=enc.enc_attn,
+                enc_rope_freq=enc.enc_rope_freq,
+                use_local_patches=getattr(config.pointnet_encoder, 'use_local_patches', False),
+                pooling_type=enc.pooling_type,
+                num_hierarchical_levels=enc.num_hierarchical_levels
+            )
+        else:
+            raise ValueError(f"Unknown encoder type: {config.encoder_type}")
         
         # 2. Register Tokens
         dec = config.decoder
@@ -211,14 +233,14 @@ class GlobalIlluminationModel(torch.nn.Module):
             
         flat_props = obj_properties.reshape(B * N_obj, N_v, -1)
         
-        obj_features_flat, obj_positions_local = self.pointnet_encoder(
+        obj_features_flat, obj_positions_local = self.obj_encoder(
             surface_pos=flat_positions,
             properties=flat_props,
             normals=flat_normals
         )
         
-        if self.pointnet_encoder.use_local_patches:
-            n_centroids = self.pointnet_encoder.num_centroids
+        if self.obj_encoder.use_local_patches:
+            n_centroids = self.obj_encoder.num_centroids
             
             # obj_features_flat: (B*N_obj, n_centroids, D) -> (B, N_obj*n_centroids, D)
             object_tokens = obj_features_flat.view(B, N_obj * n_centroids, -1)

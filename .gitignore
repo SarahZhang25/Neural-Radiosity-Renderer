@@ -5,8 +5,9 @@ outputs/
 *.log*
 tmp*
 
-datasets
+datasets*
 point-cloud-dynamics-model/
 renderformer
 renderformer_tex_src
 rigidformer
+datasets
