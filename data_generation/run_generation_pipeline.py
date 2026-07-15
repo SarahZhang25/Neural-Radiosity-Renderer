@@ -466,6 +466,13 @@ def main():
             except Exception as e:
                 print(f"[*] Warning: Could not read {chunk} during resume scan: {e}")
         print(f"[*] Found {len(completed_scenes)} scenes already processed in H5 chunks.")
+        for loop_idx in range(args.num_scenes):
+            scene_name = f"scene_{args.start_idx + loop_idx:06d}"
+            if scene_name not in completed_scenes:
+                print(f"[*] Resuming from first unprocessed scene: {scene_name}")
+                break
+        else:
+            print("[*] Resume scan found no remaining scenes to process.")
     
     # Start timer
     pipeline_start_time = time.time()

@@ -53,9 +53,9 @@ def load_exr(path):
     try:
         import imageio
         if hasattr(imageio, 'v3'):
-            return imageio.v3.imread(path).astype(np.float32)
+            return imageio.v3.imread(path, plugin="EXR-FI").astype(np.float32)
         else:
-            return imageio.imread(path).astype(np.float32)
+            return imageio.imread(path, plugin="EXR-FI").astype(np.float32)
     except Exception:
         pass
 
