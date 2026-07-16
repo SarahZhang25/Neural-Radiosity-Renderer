@@ -454,26 +454,64 @@ def main():
 
     completed_scenes = set()
     if args.resume:
-        print("[*] Resume flag set. Scanning output_dir for existing scenes...")
-        existing_chunks = glob.glob(os.path.join(args.output_dir, "*_dataset_chunk_*.h5")) + glob.glob(os.path.join(args.output_dir, "*_dataset_chunk_*.h5.INCOMPLETE"))
-        for chunk in existing_chunks:
-            try:
-                with h5py.File(chunk, 'r') as f:
-                    for scene_name in f.keys():
-                        if 'hdr_target_image' in f[scene_name]:
-                            if f[scene_name]['hdr_target_image'].shape[0] == args.num_views:
-                                completed_scenes.add(scene_name)
-            except Exception as e:
-                print(f"[*] Warning: Could not read {chunk} during resume scan: {e}")
-        print(f"[*] Found {len(completed_scenes)} scenes already processed in H5 chunks.")
-        for loop_idx in range(args.num_scenes):
-            scene_name = f"scene_{args.start_idx + loop_idx:06d}"
-            if scene_name not in completed_scenes:
-                print(f"[*] Resuming from first unprocessed scene: {scene_name}")
-                break
+        import re
+        from pathlib import Path
+        print(f"[*] Resume flag set. Scanning output_dir for existing scenes for formats {args.formats}...")
+        
+        scene_formats_count = {}
+        for fmt in args.formats:
+            chunk_glob = f"{fmt}_dataset_chunk_*.h5"
+            parent_dir = Path(args.output_dir)
+            chunk_paths = sorted(parent_dir.glob(chunk_glob)) + sorted(parent_dir.glob(chunk_glob + ".INCOMPLETE"))
+            
+            for chunk_path in chunk_paths:
+                try:
+                    with h5py.File(chunk_path, "r") as handle:
+                        for scene_name in handle.keys():
+                            if 'hdr_target_image' in handle[scene_name] and handle[scene_name]['hdr_target_image'].shape[0] == args.num_views:
+                                match = re.search(r"scene_(\d+)$", scene_name)
+                                if match:
+                                    scene_idx = int(match.group(1))
+                                    if scene_idx not in scene_formats_count:
+                                        scene_formats_count[scene_idx] = set()
+                                    scene_formats_count[scene_idx].add(fmt)
+                except Exception as e:
+                    print(f"[*] Warning: Could not read {chunk_path} during resume scan: {e}")
+                    
+        scene_indices = [idx for idx, fmts in scene_formats_count.items() if len(fmts) == len(set(args.formats))]
+        
+        if scene_indices:
+            scene_indices = sorted(set(scene_indices))
+            min_scene = scene_indices[0]
+            max_scene = scene_indices[-1]
+            missing = [scene_idx for scene_idx in range(min_scene, max_scene + 1) if scene_idx not in scene_indices]
+            
+            print(f"[*] Scene index range: {min_scene} to {max_scene}")
+            if missing:
+                print(f"[*] Missing scenes ({len(missing)}): {missing}")
+            else:
+                print("[*] Missing scenes: none")
+                
+            for idx in scene_indices:
+                completed_scenes.add(f"scene_{idx:06d}")
         else:
-            print("[*] Resume scan found no remaining scenes to process.")
-    
+            print("[*] No existing scenes found.")
+
+    json_files = []
+    json_loop_indices_to_generate = []
+    skipped_count = 0
+    for loop_idx in range(args.num_scenes):
+        scene_idx = args.start_idx + loop_idx
+        scene_name = f"scene_{scene_idx:06d}"
+        if args.resume and scene_name in completed_scenes:
+            skipped_count += 1
+            continue
+            
+        json_file = os.path.join(tmp_dir, f"{scene_name}.json")
+        json_files.append(json_file)
+        if not os.path.exists(json_file):
+            json_loop_indices_to_generate.append(loop_idx)
+
     # Start timer
     pipeline_start_time = time.time()
 
@@ -520,7 +558,7 @@ def main():
     render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_render_workers)
     
     # Thread for writing H5s sequentially (Disk bound)
-    writer = threading.Thread(target=h5_writer_thread, args=(write_queue, args.output_dir, tmp_dir, args.formats, args.chunk_size, args.num_scenes - len(completed_scenes) if args.resume else args.num_scenes, args.num_views))
+    writer = threading.Thread(target=h5_writer_thread, args=(write_queue, args.output_dir, tmp_dir, args.formats, args.chunk_size, len(json_files), args.num_views))
     writer.daemon = True
     writer.start()
 
@@ -563,21 +601,6 @@ def main():
     texture_mode = args.texture_mode if args.texture_mode is not None else "per-shading-group"
     json_workers = max(1, min(64, os.cpu_count() or 1))
     print(f"[*] Using {json_workers} concurrent JSON generation workers.")
-    json_files = []
-    json_loop_indices_to_generate = []
-    skipped_count = 0
-    for loop_idx in range(args.num_scenes):
-        scene_idx = args.start_idx + loop_idx
-        scene_name = f"scene_{scene_idx:06d}"
-        if args.resume and scene_name in completed_scenes:
-            skipped_count += 1
-            continue
-            
-        json_file = os.path.join(tmp_dir, f"{scene_name}.json")
-        json_files.append(json_file)
-        if not os.path.exists(json_file):
-            json_loop_indices_to_generate.append(loop_idx)
-            
     print(f"[*] Found {len(json_files) - len(json_loop_indices_to_generate)} existing JSONs, generating {len(json_loop_indices_to_generate)} new ones (skipped {skipped_count} from resume)...")
 
     target_json_count = len(json_files)
