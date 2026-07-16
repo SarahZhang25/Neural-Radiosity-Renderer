@@ -5,7 +5,7 @@ Evaluates whether caching the training dataset in GPU VRAM or CPU RAM
 provides a meaningful speedup over the current H5-from-disk loading.
 
 Usage (single GPU, from project root):
-    python training/benchmark_dataset_cache.py --config training/train_config_46M.yaml --measure_compute
+    CUDA_VISIBLE_DEVICES=5,6 python scripts/benchmark_dataset_cache.py --config training/train_config_46M.yaml --measure_compute
 
 What this script does:
   1. Instantiates the model + runs a few forward/backward passes to measure
