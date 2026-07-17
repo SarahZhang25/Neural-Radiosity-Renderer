@@ -26,12 +26,12 @@ Usage (from project root):
     # Only sweep batch sizes (fast, skips everything else)
     CUDA_VISIBLE_DEVICES=0 python scripts/benchmark_dataset_cache.py \
         --config training/train_config_46M_litePT.yaml \
-        --no-vram-probe --no-dataset-estimate --no-cache-benchmark
+        --no-vram_probe --no-dataset_estimate --no-cache_benchmark
 
     # Only run caching strategies benchmark (skip batch sweep)
     CUDA_VISIBLE_DEVICES=0 python scripts/benchmark_dataset_cache.py \
         --config training/train_config_46M_litePT.yaml \
-        --no-batch-sweep
+        --no-batch_sweep
 
     # Measure compute vs data loading bottleneck
     CUDA_VISIBLE_DEVICES=0 python scripts/benchmark_dataset_cache.py \
@@ -102,7 +102,7 @@ def get_free_ram_gib():
     return bytes_to_gib(vm.available), bytes_to_gib(vm.total)
 
 
-def run_forward_backward(model, ray_generator, dataset, batch_size, image_res, device,
+def run_forward_backward(model, ray_generator, dataset, batch_size, image_res, num_workers, device,
                           n_iters=3, measure_compute=False):
     """
     Run n_iters forward+backward passes at a given batch size.
@@ -112,7 +112,7 @@ def run_forward_backward(model, ray_generator, dataset, batch_size, image_res, d
     torch.cuda.empty_cache()
     model.train()
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True,
-                        collate_fn=scene_collate_fn, num_workers=4)
+                        collate_fn=scene_collate_fn, num_workers=num_workers)
     opt = torch.optim.AdamW(model.parameters(), lr=1e-4)
     loss_fn = nn.L1Loss()
 
@@ -161,7 +161,7 @@ def run_forward_backward(model, ray_generator, dataset, batch_size, image_res, d
     return bytes_to_gib(peak_bytes), avg_compute_ms, sps
 
 
-def sweep_batch_sizes(model_config, ray_gen_class, dataset, image_res, device,
+def sweep_batch_sizes(model_config, ray_gen_class, dataset, image_res, num_workers, device,
                        candidate_batch_sizes, n_iters=3):
     """
     Sweep over candidate batch sizes, measuring peak VRAM and throughput.
@@ -177,7 +177,7 @@ def sweep_batch_sizes(model_config, ray_gen_class, dataset, image_res, device,
         ray_gen = ray_gen_class().to(device)
         try:
             peak_gib, avg_ms, sps = run_forward_backward(
-                model, ray_gen, dataset, bs, image_res, device,
+                model, ray_gen, dataset, bs, image_res, num_workers, device,
                 n_iters=n_iters, measure_compute=True
             )
             utilization_pct = (peak_gib / total_vram_gib) * 100
@@ -329,7 +329,7 @@ def main():
         print(f"\n[batch_sweep] Sweeping batch sizes {candidate_batch_sizes} ({args.model_iters} iters each)...")
         print(f"      GPU: {torch.cuda.get_device_name(device)}  |  Total VRAM: {total_vram_gib:.1f} GiB\n")
         sweep_results = sweep_batch_sizes(
-            config, RayGenerator, dataset, tc.image_res, device,
+            config, RayGenerator, dataset, tc.image_res, tc.num_workers, device,
             candidate_batch_sizes, n_iters=args.model_iters
         )
 
@@ -373,7 +373,7 @@ def main():
             ray_gen = RayGenerator().to(device)
             try:
                 peak_model_gib, avg_compute_ms, _ = run_forward_backward(
-                    model, ray_gen, dataset, batch_size, tc.image_res, device,
+                    model, ray_gen, dataset, batch_size, tc.image_res, tc.num_workers, device,
                     n_iters=args.model_iters, measure_compute=True
                 )
             except torch.cuda.OutOfMemoryError:
