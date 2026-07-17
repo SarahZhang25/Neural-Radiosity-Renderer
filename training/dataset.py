@@ -242,43 +242,54 @@ class H5SceneDataset(Dataset):
             
         self.image_res = image_res
         self.num_points = num_points_per_object
+        self.num_views_per_scene = 4
         
         self.chunk_files = []
         for d in self.data_dirs:
             self.chunk_files.extend(glob.glob(os.path.join(d, "nmr_dataset_chunk*.h5")))
         self.chunk_files = sorted(self.chunk_files)
         
-        self.scene_index = []
-        
-        # Build index mapping global_idx -> (chunk_file, scene_name)
+        # Build compact per-chunk metadata: one entry per chunk, not per sample.
+        # Stores only (chunk_path, [scene_names]) so memory is O(num_chunks).
+        self.chunk_meta = []  # list of (chunk_path, scene_names_list)
         for chunk_file in self.chunk_files:
             with h5py.File(chunk_file, 'r') as f:
-                for scene_name in f.keys():
-                    self.scene_index.append((chunk_file, scene_name))
+                scene_names = list(f.keys())
+            self.chunk_meta.append((chunk_file, scene_names))
         
-        # Handle shuffling and dataset limits BEFORE splitting
+        # chunk_offsets[i] = first global scene index in chunk i (in scenes, not samples).
+        # Used for O(log n) binary search from a global scene index -> chunk.
+        scene_counts = np.array([len(names) for _, names in self.chunk_meta], dtype=np.int64)
+        self.chunk_offsets = np.concatenate([[0], np.cumsum(scene_counts)]).astype(np.int64)
+        total_scenes = int(self.chunk_offsets[-1])
+        total_samples = total_scenes * self.num_views_per_scene
+        
+        # sample_order is a compact int32 array of global sample indices [0, total_samples).
+        # Each value encodes both the scene and the view:
+        #   scene_idx = sample_idx // num_views_per_scene
+        #   view_idx  = sample_idx %  num_views_per_scene
+        # This replaces a list of N string tuples with a single numpy array (~100x less memory).
+        sample_order = np.arange(total_samples, dtype=np.int32)
+        
         if shuffle:
             rng = np.random.RandomState(shuffle_seed)
-            # Convert to list for shuffling
-            idx_list = list(range(len(self.scene_index)))
-            rng.shuffle(idx_list)
-            self.scene_index = [self.scene_index[i] for i in idx_list]
-            
-        if max_dataset_size is not None and len(self.scene_index) > max_dataset_size:
-            self.scene_index = self.scene_index[:max_dataset_size]
-            
-        # Handle splitting
+            rng.shuffle(sample_order)
+        
+        if max_dataset_size is not None and len(sample_order) > max_dataset_size:
+            sample_order = sample_order[:max_dataset_size]
+        
         if split == "all":
-            print(f"[{split}] Using all {len(self.scene_index)} samples in {data_dir}")
+            print(f"[{split}] Using all {len(sample_order)} samples across {len(self.chunk_files)} chunks")
         else:
             assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
-            split_idx = int(len(self.scene_index) * 0.9)
+            split_idx = int(len(sample_order) * 0.9)
             if split == 'train':
-                self.scene_index = self.scene_index[:split_idx]
+                sample_order = sample_order[:split_idx]
             else:
-                self.scene_index = self.scene_index[split_idx:]
-                
-        print(f"[{split}] Found {len(self.scene_index)} samples across {len(self.chunk_files)} chunks in {data_dir}")
+                sample_order = sample_order[split_idx:]
+        
+        self.sample_order = sample_order
+        print(f"[{split}] Found {len(self.sample_order)} samples ({total_scenes} scenes x {self.num_views_per_scene} views) across {len(self.chunk_files)} chunks")
 
         # Lazily store opened H5 handles per worker to avoid multiprocess fork issues
         self._h5_handles = {}
@@ -300,15 +311,42 @@ class H5SceneDataset(Dataset):
         return points[indices]
 
     def __len__(self):
-        return len(self.scene_index)
+        return len(self.sample_order)
+
+    def _decode_idx(self, idx):
+        """Convert a position in sample_order to (chunk_path, scene_name, view_idx)."""
+        global_sample = int(self.sample_order[idx])
+        scene_idx = global_sample // self.num_views_per_scene
+        view_idx = global_sample % self.num_views_per_scene
+        # Binary search to find which chunk this scene belongs to
+        chunk_idx = int(np.searchsorted(self.chunk_offsets, scene_idx, side='right')) - 1
+        local_scene_idx = scene_idx - int(self.chunk_offsets[chunk_idx])
+        chunk_path, scene_names = self.chunk_meta[chunk_idx]
+        return chunk_path, scene_names[local_scene_idx], view_idx
 
     def __getitem__(self, idx):
-        chunk_file, scene_name = self.scene_index[idx]
+        chunk_file, scene_name, view_idx = self._decode_idx(idx)
         f = self._get_h5_file(chunk_file)
         grp = f[scene_name]
         
-        # 1. Load Image
+        # 1. Load Image and Camera (handling multi-view datasets)
         image_np = grp['hdr_target_image'][:]
+        cam_fov = grp['camera_fov'][()]
+        c2w_np = grp['c2w'][:]
+        
+        if image_np.ndim == 4:
+            # Shape is [V, H, W, C]. Use the assigned view_idx.
+            V = image_np.shape[0]
+            # Safely clamp in case some scenes have fewer views than expected
+            v_idx = min(view_idx, V - 1) 
+            image_np = image_np[v_idx]
+            c2w_np = c2w_np[v_idx]
+            # Handle FOV which might be an array of shape [V] or a scalar
+            if isinstance(cam_fov, np.ndarray) and cam_fov.shape[0] == V:
+                cam_fov = cam_fov[v_idx]
+
+        c2w = torch.from_numpy(c2w_np).float()
+        
         image_np = image_np[..., :3]
         image_tensor = torch.from_numpy(image_np).permute(2, 0, 1).float()
         
@@ -325,8 +363,8 @@ class H5SceneDataset(Dataset):
         entity_normals = grp['entity_normals'][:]
         entity_materials = grp['entity_materials'][:]
         
-        N_obj, V, C = entity_vertices.shape
-        if V != self.num_points:
+        N_obj, V_pts, C_pts = entity_vertices.shape
+        if V_pts != self.num_points:
             new_verts = []
             new_norms = []
             for i in range(N_obj):
@@ -340,10 +378,6 @@ class H5SceneDataset(Dataset):
         normals = torch.from_numpy(entity_normals).float()
         properties = torch.from_numpy(entity_materials).float()
         mask = torch.ones(positions.shape[0], dtype=torch.bool)
-        
-        # 3. Camera config
-        cam_fov = grp['camera_fov'][()]
-        c2w = torch.from_numpy(grp['c2w'][:]).float()
 
         return {
             'c2w': c2w,                             # (4, 4) camera-to-world
