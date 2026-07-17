@@ -23,8 +23,8 @@ from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
 from model.config import NeuralRadiosityConfig
 from model.global_illumination_model import GlobalIlluminationModel
-from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
-# from training.dataset import H5SceneDataset as SceneDataset, scene_collate_fn
+# from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
+from training.dataset import H5SceneDataset as SceneDataset, scene_collate_fn
 from training.ray_generator import RayGenerator
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -416,7 +416,9 @@ class Trainer:
                 train_loss += loss.item()
                 train_psnr += psnr_item
                 train_ssim += self.ssim_metric(pred_ldr, target_ldr).item()
+                self.ssim_metric.reset()
                 train_lpips += self.lpips_val_metric(pred_ldr, target_ldr).item()
+                self.lpips_val_metric.reset()
 
         n = len(self.train_loader)
         avg_loss = train_loss / n
@@ -430,7 +432,7 @@ class Trainer:
             metrics /= dist.get_world_size()
             avg_loss, avg_psnr, avg_ssim, avg_lpips = metrics.tolist()
 
-        # Reset metric states to prevent memory leaks across epochs
+        # Clean up metric states just in case
         self.ssim_metric.reset()
         self.lpips_val_metric.reset()
         return avg_loss, avg_psnr, avg_ssim, avg_lpips

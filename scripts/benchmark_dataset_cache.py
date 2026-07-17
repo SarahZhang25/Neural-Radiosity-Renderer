@@ -3,8 +3,20 @@ Dataset Caching & Batch Size Benchmark
 =======================================
 Evaluates whether caching the training dataset in GPU VRAM or CPU RAM
 provides a meaningful speedup over the current H5-from-disk loading.
-Also sweeps over candidate batch sizes to find the largest batch size
+Also 
+
+
+What this script does:
+    - Instantiates the model + runs a few forward/backward passes to measure
+     peak GPU memory consumed by the model.
+    - Sweeps over candidate batch sizes to find the largest batch size
 that fits in GPU memory without OOM.
+    - Scans the training dataset to estimate total tensor size.
+    - Measures wall-clock throughput (samples/sec) for three strategies:
+       A. Current:  H5 on-disk with DataLoader workers (your existing setup)
+       B. CPU-RAM:  Preload all tensors into pinned CPU RAM, no disk I/O during training
+       C. GPU-VRAM: Preload all tensors into GPU memory (if enough free VRAM exists)
+    - Prints a summary table and a recommendation.
 
 Usage (from project root):
     # Run all experiments (default)
@@ -67,7 +79,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from model.config import NeuralRadiosityConfig
 from model.global_illumination_model import GlobalIlluminationModel
-from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
+# from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
+from training.dataset import H5SceneDataset as SceneDataset, scene_collate_fn
 from training.ray_generator import RayGenerator
 
 # ─── Helpers ────────────────────────────────────────────────────────────────

@@ -10,12 +10,12 @@
 
 # Training: 
 # Model: 
-# -- >> camray ray encoder -- frees up 6M params, increased pointnet capacity
-# --  unified encoder -- frees up enough  params for another hidden dim in pointnet
+# --  camray ray encoder
+# --  unified encoder -- frees up enough params for another hidden dim in pointnet
 # --  uses OBB-based RoPE
 # --  use 2 register tokens
-# Data: attempt6_table_chair_540-- 5k epochs 
-# -- compare with last run full_ds_params46M_unified_encoder_regtokens2
+# Data: dataset_uniform_chunk_0000-0004-- 5000 scene * 2.5k epochs / 128 batch size => ~100k steps
+
 
 encoder:
   input_dim: 16  # Position (x,y,z) + Normal (nx,ny,nz) + Material (10)
@@ -68,16 +68,21 @@ predictor:
   include_alpha: false
 
 training:
-  batch_size: 64
+  batch_size: 128
   learning_rate: 1.0e-4
-  num_epochs: 5000
-  warmup_epochs: 500
-  save_interval: 500  # for visualization
-  checkpoint_interval: 1000  # for saving model checkpoint 
+  num_epochs: 2500
+  warmup_epochs: 250
+  save_interval: 100  # for visualization
+  checkpoint_interval: 500  # for saving model checkpoint 
   image_res: 128
-  data_dir: "data_generation/output_auto/datasets/attempt6_table_chair_540"
-  log_dir: "training/logs/attempt6_table_chair_540"
-  run_name: "full_ds_params46M_camray" # Optional string tag for log dir name
+  data_dir: 
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0000.h5"
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0001.h5"
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0002.h5"
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0003.h5"
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0004.h5"
+  log_dir: "training/logs/dataset_uniform_chunk_0000-0004"
+  run_name: "params46M_camray" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42
