@@ -230,7 +230,7 @@ class TrainingConfig(_ConfigMixin):
     save_interval_steps: Optional[int] = None
     """Step interval for logging validation visualizations (overrides save_interval)."""
     
-    log_interval_steps: int = 10000
+    log_interval_steps: int = 100
     """Step interval for logging training scalars to terminal and TensorBoard."""
 
     checkpoint_interval_steps: Optional[int] = None

@@ -68,22 +68,24 @@ predictor:
   include_alpha: false
 
 training:
-  batch_size: 32
-  learning_rate: 1.0e-4
-  num_epochs: 8 #900
-  warmup_epochs: 1 #900
-  save_interval: 9999999  # for visualization
-  checkpoint_interval: 9999999  # for saving model checkpoint 
+  global_batch_size: 128 # 32 * 4
+  learning_rate: 4.0e-4 # increased to take advantage of large batch size
+  num_steps: 1000
+  warmup_steps: 10
+  log_interval_steps: 29 # 29 steps per epoch...
+  save_interval_steps: 5000  # for visualization
+  checkpoint_interval_steps: 25000  # for saving model checkpoint 
   image_res: 128
-  data_dir: "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0000.h5"
-  log_dir: "training/logs/dataset_uniform_chunk_0000" #"training/logs/dataset_uniform_chunk_0000-0004"
-  run_name: "params46M_camray_TESTRUN" # Optional string tag for log dir name
+  data_dir: 
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0000.h5"
+  log_dir: "training/logs/dataset_uniform_chunk_0000"
+  run_name: "params46M_camray_step_based_TESTRUN_AGAIN..." # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42
   primary_loss: 'mae' # 'mse'
   lpips_backbone: 'alex' # 'vgg'
-  lpips_loss_weighting: 0.0
+  lpips_loss_weighting: 0.05
   use_amp: True
   use_compile: False
   package_model: True

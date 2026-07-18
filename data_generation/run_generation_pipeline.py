@@ -216,7 +216,7 @@ def render_worker_task(scene_file, output_dir, gpu_id, spp, timeout_seconds, tim
                 preexec_fn=set_pdeathsig,
                 timeout=timeout_seconds,
             )
-            return scene_file
+            return scene_file, True
         except subprocess.TimeoutExpired as e:
             print(f"\n[GPU Worker] Render timed out for {scene_file} after {timeout_seconds}s (attempt {attempt + 1}/{timeout_retries + 1}).", flush=True)
             if e.stdout:
@@ -225,13 +225,13 @@ def render_worker_task(scene_file, output_dir, gpu_id, spp, timeout_seconds, tim
                 print(f"STDERR:\n{e.stderr}", flush=True)
             remove_partial_outputs()
             if attempt >= timeout_retries:
-                return None
+                return scene_file, False
         except subprocess.CalledProcessError as e:
             print(f"\n[GPU Worker] Render failed for {scene_file}:\nSTDOUT:\n{e.stdout}\nSTDERR:\n{e.stderr}")
-            return None
+            return scene_file, False
         except Exception as e:
             print(f"\n[GPU Worker] Unexpected render error for {scene_file}: {e}")
-            return None
+            return scene_file, False
 
 def process_worker_task(scene_file, exr_dir, points, formats):
     """Runs CPU heavy geometry extraction using the existing unified pipeline function."""
@@ -434,7 +434,7 @@ def main():
     parser.add_argument("--spp", type=int, default=512, help="Blender samples per pixel")
     parser.add_argument("--gpus", type=str, default=None, help="Comma separated list of GPUs to use (e.g. 0,1)")
     parser.add_argument("--workers_per_gpu", type=int, default=1, help="Concurrent Blender processes per GPU")
-    parser.add_argument("--render_timeout_seconds", type=int, default=1800, help="Per-scene render timeout in seconds before retrying")
+    parser.add_argument("--render_timeout_seconds", type=int, default=120, help="Per-scene render timeout in seconds before retrying")
     parser.add_argument("--render_timeout_retries", type=int, default=3, help="Number of retries after a render timeout")
     parser.add_argument("--transform_scenes", action="store_true", help="Apply random global transformation")
     parser.add_argument("--texture_mode", type=str, default=None, help="Texture mode to use (per-shading-group, procedural, or per-triangle)")
@@ -572,22 +572,6 @@ def main():
             scene_file, result = ("failed_scene.json", None)
         write_queue.put((scene_file, result))
 
-    def on_render_done(future):
-        try:
-            scene_file = future.result()
-        except Exception as e:
-            print(f"[GPU Worker] Unexpected render callback failure: {e}")
-            scene_file = None
-        if scene_file is not None:
-            # Submit to CPU processing pool
-            proc_future = process_executor.submit(process_worker_task, scene_file, tmp_dir, args.points, args.formats)
-            proc_future.add_done_callback(on_process_done)
-        else:
-            # Render failed, send None to writer to skip it but advance count
-            # We don't have the scene_file cleanly accessible here unless we bind it, but 
-            # future.result() is None on failure based on render_worker_task.
-            # Actually, let's just use a dummy string to advance the counter
-            write_queue.put(("failed_scene.json", None))
 
     # 3. Stage 1: Generate JSONs
     print("[*] Stage 1: Generating JSON templates...")
@@ -640,6 +624,7 @@ def main():
     gpu_counter = 0
     
     try:
+        active_futures = set()
         for scene_file in json_files:
             gpu_id = gpu_list[gpu_counter % len(gpu_list)] if gpu_list else None
             gpu_counter += 1
@@ -654,9 +639,60 @@ def main():
                 args.render_timeout_seconds,
                 args.render_timeout_retries,
             )
-            rend_future.add_done_callback(on_render_done)
+            active_futures.add(rend_future)
 
-        # 5. Wait for completion
+        # 5. Wait for completion, handling dynamic resubmission for failed scenes
+        while active_futures:
+            done, active_futures = concurrent.futures.wait(active_futures, return_when=concurrent.futures.FIRST_COMPLETED)
+            
+            for future in done:
+                try:
+                    scene_file, success = future.result()
+                except Exception as e:
+                    print(f"[GPU Worker] Unexpected render callback failure: {e}")
+                    scene_file, success = ("failed_scene.json", False)
+                    
+                if success:
+                    # Submit to CPU processing pool
+                    proc_future = process_executor.submit(process_worker_task, scene_file, tmp_dir, args.points, args.formats)
+                    proc_future.add_done_callback(on_process_done)
+                else:
+                    if scene_file != "failed_scene.json":
+                        print(f"\n[*] Render completely failed for {scene_file}. Force-generating a new scene to retry...", flush=True)
+                        import re
+                        match = re.search(r'scene_(\d+)\.json', os.path.basename(scene_file))
+                        if match:
+                            scene_idx = int(match.group(1))
+                            try:
+                                # Regenerate the JSON with new random objects to avoid the timeout
+                                generate_scene(
+                                    template_json,
+                                    objaverse_objects,
+                                    scene_idx,
+                                    tmp_dir,
+                                    num_views=args.num_views,
+                                    transform_scene=args.transform_scenes,
+                                    random_diffuse_type=texture_mode,
+                                )
+                                # Pick a random GPU from the available pool
+                                gpu_id = random.choice(gpu_list) if gpu_list else None
+                                rend_future = render_executor.submit(
+                                    render_worker_task,
+                                    scene_file,
+                                    tmp_dir,
+                                    gpu_id,
+                                    args.spp,
+                                    args.render_timeout_seconds,
+                                    args.render_timeout_retries,
+                                )
+                                active_futures.add(rend_future)
+                                continue # Successfully requeued
+                            except Exception as e:
+                                print(f"[*] Failed to force regenerate scene {scene_idx}: {e}", flush=True)
+                    
+                    # If we reach here, we couldn't regenerate or it's a completely unrecoverable failure
+                    write_queue.put((scene_file, None))
+
         render_executor.shutdown(wait=True)
         process_executor.shutdown(wait=True)
         
