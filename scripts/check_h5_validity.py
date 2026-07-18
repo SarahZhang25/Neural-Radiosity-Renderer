@@ -122,6 +122,20 @@ def check_h5_validity(output_dir, formats, num_views, exhaustive):
             print(f"[*] No valid scenes found for format {fmt}.")
             continue
             
+        from collections import Counter
+        counts = Counter(scene_indices)
+        duplicates = {idx: count for idx, count in counts.items() if count > 1}
+        
+        if duplicates:
+            print(f"\n[!] Found {len(duplicates)} duplicated scene indices! (They appear in multiple chunks)")
+            dup_list = list(duplicates.items())
+            if len(dup_list) > 20:
+                print(f"[*] Showing first 20 duplicates: {dup_list[:20]}")
+            else:
+                print(f"[*] Duplicates (index, count): {dup_list}")
+        else:
+            print("\n[*] No duplicate scene indices found.")
+            
         scene_indices = sorted(set(scene_indices))
         min_scene = scene_indices[0]
         max_scene = scene_indices[-1]
