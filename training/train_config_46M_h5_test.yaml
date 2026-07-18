@@ -70,8 +70,8 @@ predictor:
 training:
   batch_size: 32
   learning_rate: 1.0e-4
-  num_epochs: 25 #900
-  warmup_epochs: 2 #900
+  num_epochs: 8 #900
+  warmup_epochs: 1 #900
   save_interval: 9999999  # for visualization
   checkpoint_interval: 9999999  # for saving model checkpoint 
   image_res: 128
