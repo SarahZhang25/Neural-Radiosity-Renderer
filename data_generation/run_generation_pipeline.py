@@ -572,53 +572,6 @@ def main():
             scene_file, result = ("failed_scene.json", None)
         write_queue.put((scene_file, result))
 
-    def on_render_done(future):
-        try:
-            scene_file, success = future.result()
-        except Exception as e:
-            print(f"[GPU Worker] Unexpected render callback failure: {e}")
-            scene_file, success = ("failed_scene.json", False)
-            
-        if success:
-            # Submit to CPU processing pool
-            proc_future = process_executor.submit(process_worker_task, scene_file, tmp_dir, args.points, args.formats)
-            proc_future.add_done_callback(on_process_done)
-        else:
-            if scene_file != "failed_scene.json":
-                print(f"\n[*] Render completely failed for {scene_file}. Force-generating a new scene to retry...", flush=True)
-                import re
-                match = re.search(r'scene_(\d+)\.json', os.path.basename(scene_file))
-                if match:
-                    scene_idx = int(match.group(1))
-                    try:
-                        # Regenerate the JSON with new random objects to avoid the timeout
-                        generate_scene(
-                            template_json,
-                            objaverse_objects,
-                            scene_idx,
-                            tmp_dir,
-                            num_views=args.num_views,
-                            transform_scene=args.transform_scenes,
-                            random_diffuse_type=texture_mode,
-                        )
-                        # Pick a random GPU from the available pool
-                        gpu_id = random.choice(gpu_list) if gpu_list else None
-                        rend_future = render_executor.submit(
-                            render_worker_task,
-                            scene_file,
-                            tmp_dir,
-                            gpu_id,
-                            args.spp,
-                            args.render_timeout_seconds,
-                            args.render_timeout_retries,
-                        )
-                        rend_future.add_done_callback(on_render_done)
-                        return # Successfully requeued, do not send to write_queue yet
-                    except Exception as e:
-                        print(f"[*] Failed to force regenerate scene {scene_idx}: {e}", flush=True)
-            
-            # If we reach here, we couldn't regenerate or it's a completely unrecoverable failure
-            write_queue.put((scene_file, None))
 
     # 3. Stage 1: Generate JSONs
     print("[*] Stage 1: Generating JSON templates...")
@@ -671,6 +624,7 @@ def main():
     gpu_counter = 0
     
     try:
+        active_futures = set()
         for scene_file in json_files:
             gpu_id = gpu_list[gpu_counter % len(gpu_list)] if gpu_list else None
             gpu_counter += 1
@@ -685,9 +639,60 @@ def main():
                 args.render_timeout_seconds,
                 args.render_timeout_retries,
             )
-            rend_future.add_done_callback(on_render_done)
+            active_futures.add(rend_future)
 
-        # 5. Wait for completion
+        # 5. Wait for completion, handling dynamic resubmission for failed scenes
+        while active_futures:
+            done, active_futures = concurrent.futures.wait(active_futures, return_when=concurrent.futures.FIRST_COMPLETED)
+            
+            for future in done:
+                try:
+                    scene_file, success = future.result()
+                except Exception as e:
+                    print(f"[GPU Worker] Unexpected render callback failure: {e}")
+                    scene_file, success = ("failed_scene.json", False)
+                    
+                if success:
+                    # Submit to CPU processing pool
+                    proc_future = process_executor.submit(process_worker_task, scene_file, tmp_dir, args.points, args.formats)
+                    proc_future.add_done_callback(on_process_done)
+                else:
+                    if scene_file != "failed_scene.json":
+                        print(f"\n[*] Render completely failed for {scene_file}. Force-generating a new scene to retry...", flush=True)
+                        import re
+                        match = re.search(r'scene_(\d+)\.json', os.path.basename(scene_file))
+                        if match:
+                            scene_idx = int(match.group(1))
+                            try:
+                                # Regenerate the JSON with new random objects to avoid the timeout
+                                generate_scene(
+                                    template_json,
+                                    objaverse_objects,
+                                    scene_idx,
+                                    tmp_dir,
+                                    num_views=args.num_views,
+                                    transform_scene=args.transform_scenes,
+                                    random_diffuse_type=texture_mode,
+                                )
+                                # Pick a random GPU from the available pool
+                                gpu_id = random.choice(gpu_list) if gpu_list else None
+                                rend_future = render_executor.submit(
+                                    render_worker_task,
+                                    scene_file,
+                                    tmp_dir,
+                                    gpu_id,
+                                    args.spp,
+                                    args.render_timeout_seconds,
+                                    args.render_timeout_retries,
+                                )
+                                active_futures.add(rend_future)
+                                continue # Successfully requeued
+                            except Exception as e:
+                                print(f"[*] Failed to force regenerate scene {scene_idx}: {e}", flush=True)
+                    
+                    # If we reach here, we couldn't regenerate or it's a completely unrecoverable failure
+                    write_queue.put((scene_file, None))
+
         render_executor.shutdown(wait=True)
         process_executor.shutdown(wait=True)
         
