@@ -84,7 +84,7 @@ from training.dataset import (
     H5SceneDataset as SceneDataset, 
     scene_collate_fn, 
     preload_to_ram, 
-    CachedDataset, 
+    CpuCachedDataset, 
     GpuCachedDataset
 )
 from training.ray_generator import RayGenerator
@@ -408,7 +408,7 @@ def main():
                 ram_cache = preload_to_ram(dataset, label="CPU-RAM")
                 print(f"    Preload time: {time.perf_counter() - t_load:.1f}s")
                 loader_ram = DataLoader(
-                    CachedDataset(ram_cache), batch_size=batch_size, shuffle=True,
+                    CpuCachedDataset(ram_cache), batch_size=batch_size, shuffle=True,
                     num_workers=0, pin_memory=True, collate_fn=scene_collate_fn,
                 )
                 sps_ram, ms_ram = benchmark_loader(loader_ram, device, args.n_batches, label="CPU-RAM")
