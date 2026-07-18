@@ -402,17 +402,29 @@ class H5SceneDataset(Dataset):
 
 # ─── Caching Wrappers ────────────────────────────────────────────────────────
 
-def preload_to_ram(dataset, label="CPU-RAM"):
+def preload_to_ram(dataset, label="CPU-RAM", num_workers=16):
     """
-    Eagerly loads the full dataset into a list of tensors in CPU memory.
+    Eagerly loads the full dataset into a list of tensors in CPU memory using multiprocessing.
     """
-    print(f"[{label}] Preloading {len(dataset)} samples...")
+    from torch.utils.data import DataLoader
+    
+    print(f"[{label}] Preloading {len(dataset)} samples using {num_workers} workers...")
+    
+    # Use DataLoader to fetch samples in parallel
+    loader = DataLoader(
+        dataset, 
+        batch_size=None, # Returns individual samples, not batched
+        num_workers=num_workers,
+        shuffle=False
+    )
+    
     cache = []
-    # Use simple loop
-    for i in range(len(dataset)):
-        cache.append(dataset[i])
-        if (i+1) % 1000 == 0:
+    for i, sample in enumerate(loader):
+        cache.append(sample)
+        if (i+1) % 5000 == 0:
             print(f"[{label}] Loaded {i+1}/{len(dataset)}...")
+            
+    print(f"[{label}] Finished loading {len(dataset)} samples.")
     return cache
 
 class CpuCachedDataset(Dataset):
