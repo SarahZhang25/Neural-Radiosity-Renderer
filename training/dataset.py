@@ -399,3 +399,38 @@ class H5SceneDataset(Dataset):
                 f.close()
             except Exception:
                 pass
+
+# ─── Caching Wrappers ────────────────────────────────────────────────────────
+
+def preload_to_ram(dataset, label="CPU-RAM"):
+    """
+    Eagerly loads the full dataset into a list of tensors in CPU memory.
+    """
+    print(f"[{label}] Preloading {len(dataset)} samples...")
+    cache = []
+    # Use simple loop
+    for i in range(len(dataset)):
+        cache.append(dataset[i])
+        if (i+1) % 1000 == 0:
+            print(f"[{label}] Loaded {i+1}/{len(dataset)}...")
+    return cache
+
+class CpuCachedDataset(Dataset):
+    """Wraps a preloaded list of sample dicts for use with DataLoader."""
+    def __init__(self, cache):
+        self.cache = cache
+    def __len__(self):
+        return len(self.cache)
+    def __getitem__(self, idx):
+        return self.cache[idx]
+
+class GpuCachedDataset(Dataset):
+    """Preloads a fixed-shape tensor cache onto the GPU for zero-copy batching."""
+    def __init__(self, cache, device):
+        print(f"[GPU-VRAM] Moving {len(cache)} samples to GPU {device}...")
+        self.cache = [{k: (v.to(device) if isinstance(v, torch.Tensor) else v) 
+                       for k, v in item.items()} for item in cache]
+    def __len__(self):
+        return len(self.cache)
+    def __getitem__(self, idx):
+        return self.cache[idx]

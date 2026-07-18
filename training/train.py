@@ -23,8 +23,13 @@ from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
 from model.config import NeuralRadiosityConfig
 from model.global_illumination_model import GlobalIlluminationModel
-# from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
-from training.dataset import H5SceneDataset as SceneDataset, scene_collate_fn
+from training.dataset import (
+    H5SceneDataset as SceneDataset, 
+    scene_collate_fn,
+    preload_to_ram,
+    CpuCachedDataset,
+    GpuCachedDataset
+)
 from training.ray_generator import RayGenerator
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -125,7 +130,7 @@ def make_vis_grid(linear_rendered, gt_img, max_images=16, diff_amplify=5.0):
 
 
 class Trainer:
-    def __init__(self, config_path: str, resume_path: str = None):
+    def __init__(self, config_path: str, resume_path: str = None, cache_strategy: str = 'disk'):
         """
         Initialize the trainer with configuration parameters and model setup.
         Sets up datasets, model, optimizer, scheduler, and logging directories.
@@ -182,9 +187,20 @@ class Trainer:
             shuffle_seed=tc.shuffle_data_seed
         )
         
+        if cache_strategy == 'ram':
+            self.train_dataset = CpuCachedDataset(preload_to_ram(self.train_dataset, label="CPU-RAM"))
+            self.val_dataset = CpuCachedDataset(preload_to_ram(self.val_dataset, label="CPU-RAM"))
+        elif cache_strategy == 'vram':
+            self.train_dataset = GpuCachedDataset(preload_to_ram(self.train_dataset, label="GPU-VRAM"), self.device)
+            self.val_dataset = GpuCachedDataset(preload_to_ram(self.val_dataset, label="GPU-VRAM"), self.device)
+        
         batch_size = tc.batch_size
         val_batch_size = min(4, batch_size)
-        num_workers = tc.num_workers
+        
+        # When caching in RAM/VRAM, we don't need workers or pinned memory logic
+        num_workers = tc.num_workers if cache_strategy == 'disk' else 0
+        pin_mem = (cache_strategy != 'vram')
+        persistent = (cache_strategy == 'disk')
         
         self.train_sampler = DistributedSampler(self.train_dataset, shuffle=True) if self.is_distributed else None
         self.train_loader = DataLoader(
@@ -193,9 +209,9 @@ class Trainer:
             shuffle=(self.train_sampler is None), 
             sampler=self.train_sampler,
             num_workers=num_workers,
-            pin_memory=True,
+            pin_memory=pin_mem,
             collate_fn=scene_collate_fn,
-            persistent_workers=True # Prevents tearing down CPU threads between epochs
+            persistent_workers=persistent
         )
         
         self.val_sampler = DistributedSampler(self.val_dataset, shuffle=False) if self.is_distributed else None
@@ -205,9 +221,9 @@ class Trainer:
             shuffle=False, 
             sampler=self.val_sampler,
             num_workers=num_workers,
-            pin_memory=True,
+            pin_memory=pin_mem,
             collate_fn=scene_collate_fn,
-            persistent_workers=True # Prevents tearing down CPU threads between epochs
+            persistent_workers=persistent
         )
 
         # Fixed batches for visualization
@@ -595,6 +611,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='training/train_config.yaml', help='Path to config file')
     parser.add_argument('--resume', type=str, default=None, help='Path to checkpoint to resume from')
+    parser.add_argument('--cache_strategy', type=str, choices=['disk', 'ram', 'vram'], \
+        default='disk', help='How to cache dataset: "disk" reads directly from h5, "ram" loads the whole dataset into CPU RAM, and "vram" loads the whole dataset into GPU memory')
     args = parser.parse_args()
     
-    Trainer(args.config, args.resume).run()
+    Trainer(args.config, args.resume, args.cache_strategy).run()

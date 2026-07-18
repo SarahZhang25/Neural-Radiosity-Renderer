@@ -80,7 +80,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from model.config import NeuralRadiosityConfig
 from model.global_illumination_model import GlobalIlluminationModel
 # from training.dataset import NPZSceneDataset as SceneDataset, scene_collate_fn
-from training.dataset import H5SceneDataset as SceneDataset, scene_collate_fn
+from training.dataset import (
+    H5SceneDataset as SceneDataset, 
+    scene_collate_fn, 
+    preload_to_ram, 
+    CachedDataset, 
+    GpuCachedDataset
+)
 from training.ray_generator import RayGenerator
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -244,39 +250,6 @@ def benchmark_loader(loader, device, n_batches=20, label=""):
     return sps, avg_ms
 
 
-def preload_to_ram(dataset, label="CPU-RAM"):
-    """
-    Eagerly loads the full dataset into a list of tensors in CPU pinned memory.
-    Returns a list of sample dicts.
-    """
-    print(f"  Preloading {len(dataset)} samples into {label}...")
-    cache = []
-    for i in range(len(dataset)):
-        cache.append(dataset[i])
-    return cache
-
-
-class CachedDataset(torch.utils.data.Dataset):
-    """Wraps a preloaded list of sample dicts for use with DataLoader."""
-    def __init__(self, cache):
-        self.cache = cache
-    def __len__(self):
-        return len(self.cache)
-    def __getitem__(self, idx):
-        return self.cache[idx]
-
-
-class GpuCachedDataset(torch.utils.data.Dataset):
-    """Preloads a fixed-shape tensor cache onto the GPU for zero-copy batching."""
-    def __init__(self, cache, device):
-        print(f"  Moving {len(cache)} samples to GPU {device}...")
-        self.cache = [{k: v.to(device) for k, v in item.items()} for item in cache]
-    def __len__(self):
-        return len(self.cache)
-    def __getitem__(self, idx):
-        return self.cache[idx]
-
-
 # ─── Main ───────────────────────────────────────────────────────────────────
 
 def main():
@@ -382,10 +355,11 @@ def main():
                 del model, ray_gen
                 torch.cuda.empty_cache()
 
-        free_vram_gib, total_vram_gib = get_free_gpu_gib(device)
+        # Get baseline empty VRAM (after model is deleted from the probe)
+        free_empty_vram_gib, total_vram_gib = get_free_gpu_gib(device)
         free_ram_gib, total_ram_gib = get_free_ram_gib()
         print(f"      Peak model VRAM:       {peak_model_gib:.2f} GiB")
-        print(f"      GPU free after model:  {free_vram_gib:.2f} / {total_vram_gib:.2f} GiB")
+        print(f"      Base CUDA overhead:    {total_vram_gib - free_empty_vram_gib:.2f} GiB")
         print(f"      System RAM free:       {free_ram_gib:.2f} / {total_ram_gib:.2f} GiB")
 
     # ── Dataset size estimate ─────────────────────────────────────────────
@@ -398,9 +372,14 @@ def main():
         total_ds_gib, per_sample_gib = estimate_dataset_gib(dataset, n_probe=20)
         print(f"      Per-sample:            {per_sample_gib * 1024:.1f} MiB")
         print(f"      Total dataset (~{len(dataset)} samples): {total_ds_gib:.2f} GiB")
-        can_gpu_cache = total_ds_gib < free_vram_gib * 0.8
+        
+        # To cache in GPU, we need room for the dataset AND the model's peak training spike
+        # plus the base CUDA context overhead.
+        projected_peak_vram = total_ds_gib + peak_model_gib + (total_vram_gib - free_empty_vram_gib)
+        can_gpu_cache = projected_peak_vram < (total_vram_gib * 0.95)
         can_ram_cache = total_ds_gib < free_ram_gib * 0.8
-        print(f"\n      GPU-VRAM cache feasible: {'YES' if can_gpu_cache else 'NO  (not enough free VRAM after model)'}")
+        
+        print(f"\n      GPU-VRAM cache feasible: {'YES' if can_gpu_cache else 'NO  (Dataset + Peak Model would exceed VRAM)'}")
         print(f"      CPU-RAM  cache feasible: {'YES' if can_ram_cache else 'NO  (not enough system RAM)'}")
 
     # ── Caching strategy benchmark ────────────────────────────────────────
@@ -449,7 +428,7 @@ def main():
                 )
                 sps_gpu, ms_gpu = benchmark_loader(loader_gpu, device, args.n_batches, label="GPU-VRAM")
             else:
-                print(f"\n  Strategy C -- GPU-VRAM cache: SKIPPED (dataset {total_ds_gib:.2f} GiB > {free_vram_gib * 0.8:.2f} GiB available after model)")
+                print(f"\n  Strategy C -- GPU-VRAM cache: SKIPPED (Dataset {total_ds_gib:.2f}G + Model Peak {peak_model_gib:.2f}G > Total VRAM)")
 
     # ── Summary ────────────────────────────────────────────────────────────
     print("\n" + "="*70)
@@ -486,7 +465,10 @@ def main():
 
     print(f"\n  Model peak VRAM:       {peak_model_gib:.2f} GiB / {total_vram_gib:.2f} GiB total")
     print(f"  Dataset total size:    {total_ds_gib:.2f} GiB")
-    print(f"  GPU free post-model:   {free_vram_gib:.2f} GiB")
+    
+    if args.dataset_estimate and args.vram_probe:
+        projected = total_ds_gib + peak_model_gib + (total_vram_gib - free_empty_vram_gib)
+        print(f"  Projected Peak VRAM:   {projected:.2f} GiB (if GPU-cached)")
 
     if args.measure_compute and avg_compute_ms > 0:
         print("\n  COMPUTE VS DATA LOADING:")
