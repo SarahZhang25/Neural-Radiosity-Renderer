@@ -14,7 +14,7 @@
 # --  unified encoder -- frees up enough params for another hidden dim in pointnet
 # --  uses OBB-based RoPE
 # --  use 2 register tokens
-# Data: dataset_uniform_chunk_0000 -- 1000 scene * 13k epochs / 128 batch size => ~100k steps
+# Data: dataset_uniform_chunk_0000 -- 900 training scenes * 4 viewpoints each * 900 epochs / 32 batch size => ~100k steps
 
 
 encoder:
@@ -70,16 +70,12 @@ predictor:
 training:
   batch_size: 32
   learning_rate: 1.0e-4
-  num_epochs: 13000
-  warmup_epochs: 1300
+  num_epochs: 900
+  warmup_epochs: 900
   save_interval: 9999999  # for visualization
   checkpoint_interval: 9999999  # for saving model checkpoint 
   image_res: 64
   data_dir: "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0000.h5"
-    # - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0001.h5"
-    # - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0002.h5"
-    # - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0003.h5"
-    # - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0004.h5"
   log_dir: "training/logs/dataset_uniform_chunk_0000" #"training/logs/dataset_uniform_chunk_0000-0004"
   run_name: "params46M_camray_TESTRUN" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
