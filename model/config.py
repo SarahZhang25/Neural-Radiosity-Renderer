@@ -18,7 +18,7 @@ Usage:
 """
 
 from dataclasses import dataclass, field, asdict, fields
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 import yaml
 
 class _ConfigMixin:
@@ -236,7 +236,7 @@ class TrainingConfig(_ConfigMixin):
     image_res: int = 128
     """Rendering resolution (square, in pixels)."""
 
-    data_dir: str = "data_generation/output_auto/datasets/attempt6_table_chair_540"
+    data_dir: Union[str, List[str]] = "data_generation/output_auto/datasets/attempt6_table_chair_540"
     """Path to the training dataset directory."""
 
     log_dir: str = "training/logs/attempt6_table_chair_540"

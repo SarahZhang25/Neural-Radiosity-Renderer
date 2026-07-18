@@ -246,11 +246,11 @@ class H5SceneDataset(Dataset):
         
         self.chunk_files = []
         for d in self.data_dirs:
-            self.chunk_files.extend(glob.glob(os.path.join(d, "nmr_dataset_chunk*.h5")))
-        self.chunk_files = sorted(self.chunk_files)
-
-        # TODO: DELETE THIS....bandaid for using single h5 file for dataset
-        self.chunk_files = [data_dir]
+            if d.endswith('.h5'):
+                self.chunk_files.append(d)
+            else:
+                self.chunk_files.extend(glob.glob(os.path.join(d, "nmr_dataset_chunk*.h5")))
+        self.chunk_files = sorted(list(set(self.chunk_files)))
         
         # Build compact per-chunk metadata: one entry per chunk, not per sample.
         # Stores only (chunk_path, [scene_names]) so memory is O(num_chunks).
