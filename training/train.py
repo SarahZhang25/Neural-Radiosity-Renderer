@@ -196,8 +196,20 @@ class Trainer:
             self.train_dataset = GpuCachedDataset(preload_to_ram(self.train_dataset, label="GPU-VRAM"), self.device)
             self.val_dataset = GpuCachedDataset(preload_to_ram(self.val_dataset, label="GPU-VRAM"), self.device)
         
-        batch_size = tc.batch_size
-        val_batch_size = min(4, batch_size)
+        world_size = dist.get_world_size() if self.is_distributed else 1
+        
+        if hasattr(tc, 'global_batch_size') and tc.global_batch_size is not None:
+            self.global_batch_size = tc.global_batch_size
+            assert self.global_batch_size % world_size == 0, f"Global batch size {self.global_batch_size} must be divisible by world_size {world_size}"
+            per_device_batch_size = self.global_batch_size // world_size
+        else:
+            per_device_batch_size = tc.batch_size
+            self.global_batch_size = per_device_batch_size * world_size
+
+        if self.is_main_process:
+            print(f"Global Batch Size: {self.global_batch_size} (Per GPU: {per_device_batch_size})")
+
+        val_batch_size = min(4, per_device_batch_size)
         
         # When caching in RAM/VRAM, we don't need workers or pinned memory logic
         num_workers = tc.num_workers if tc.cache_strategy == 'disk' else 0
@@ -207,7 +219,7 @@ class Trainer:
         self.train_sampler = DistributedSampler(self.train_dataset, shuffle=True) if self.is_distributed else None
         self.train_loader = DataLoader(
             self.train_dataset, 
-            batch_size=batch_size, 
+            batch_size=per_device_batch_size,  
             shuffle=(self.train_sampler is None), 
             sampler=self.train_sampler,
             num_workers=num_workers,
@@ -239,8 +251,8 @@ class Trainer:
             self.val_loader = []
 
         # Fixed batches for visualization
-        self.fixed_train_batch = self._get_seeded_batch(self.train_dataset, min(16, batch_size), seed=456)
-        self.fixed_val_batch = self._get_seeded_batch(self.val_dataset, min(16, batch_size), seed=123)
+        self.fixed_train_batch = self._get_seeded_batch(self.train_dataset, min(16, per_device_batch_size), seed=456)
+        self.fixed_val_batch = self._get_seeded_batch(self.val_dataset, min(16, per_device_batch_size), seed=123)
 
         # Model
         self.model = GlobalIlluminationModel(self.config).to(self.device)
@@ -281,19 +293,41 @@ class Trainer:
         self.ssim_metric = StructuralSimilarityIndexMeasure(data_range=1.0).to(self.device)
         self.lpips_val_metric = LearnedPerceptualImagePatchSimilarity(net_type='alex', normalize=True).to(self.device)
 
-        # Training params
-        self.num_epochs = tc.num_epochs
-        self.warmup_epochs = tc.warmup_epochs
-        self.log_viz_interval = tc.save_interval
-        self.checkpoint_interval = tc.checkpoint_interval
+        # Compute steps/epochs
+        self.steps_per_epoch = len(self.train_loader)
+        
+        if tc.num_steps is not None:
+            self.num_steps = tc.num_steps
+            self.num_epochs = (self.num_steps + self.steps_per_epoch - 1) // self.steps_per_epoch
+        else:
+            self.num_epochs = tc.num_epochs
+            self.num_steps = self.num_epochs * self.steps_per_epoch
+
+        if tc.warmup_steps is not None:
+            self.warmup_steps = tc.warmup_steps
+        else:
+            self.warmup_steps = tc.warmup_epochs * self.steps_per_epoch
+
+        if tc.save_interval_steps is not None:
+            self.log_viz_interval_steps = tc.save_interval_steps
+        else:
+            self.log_viz_interval_steps = tc.save_interval * self.steps_per_epoch
+
+        self.log_interval_steps = tc.log_interval_steps
+
+        if tc.checkpoint_interval_steps is not None:
+            self.checkpoint_interval_steps = tc.checkpoint_interval_steps
+        else:
+            self.checkpoint_interval_steps = tc.checkpoint_interval * self.steps_per_epoch
 
         # Scheduler
-        warmup_scheduler = LinearLR(self.optimizer, start_factor=0.01, total_iters=self.warmup_epochs)
-        cosine_scheduler = CosineAnnealingLR(self.optimizer, T_max=self.num_epochs - self.warmup_epochs)
-        self.scheduler = SequentialLR(self.optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[self.warmup_epochs])
+        warmup_scheduler = LinearLR(self.optimizer, start_factor=0.01, total_iters=self.warmup_steps)
+        cosine_scheduler = CosineAnnealingLR(self.optimizer, T_max=self.num_steps - self.warmup_steps)
+        self.scheduler = SequentialLR(self.optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[self.warmup_steps])
 
         log_dir_root = tc.log_dir
         self.start_epoch = 0
+        self.global_step = 0
 
         if resume_path and os.path.exists(resume_path):
             self.checkpoint_dir = os.path.dirname(resume_path)
@@ -317,6 +351,24 @@ class Trainer:
 
         if self.is_main_process:
             self.writer = SummaryWriter(log_dir=self.log_dir)
+            
+            # Print configuration summary
+            world_size = dist.get_world_size() if self.is_distributed else 1
+            summary = (
+                f"\n{'='*50}\n"
+                f"Batching Info:\n"
+                f"\tGlobal Batch Size:     {self.global_batch_size}\n"
+                f"\tNumber of GPUs:        {world_size}\n"
+                f"\tPer-GPU Batch Size:    {per_device_batch_size}\n"
+                f"{'='*50}\n"
+            )
+            print(summary)
+            self.writer.add_text("Batching Info", summary.replace('\n', '  \n'), 0)
+            
+            # Log the raw YAML configuration to TensorBoard
+            with open(config_path, 'r') as f:
+                config_yaml_str = f.read()
+            self.writer.add_text("Model Config YAML", f"```yaml\n{config_yaml_str}\n```", 0)
         else:
             self.writer = None
 
@@ -356,13 +408,14 @@ class Trainer:
             
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.start_epoch = checkpoint['epoch'] + 1 
+        self.global_step = checkpoint.get('global_step', self.start_epoch * self.steps_per_epoch)
         
         if 'scheduler_state_dict' in checkpoint:
             self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
         else:
             if self.is_main_process:
                 print("No scheduler state found in checkpoint. Fast-forwarding...")
-            for _ in range(self.start_epoch):
+            for _ in range(self.global_step):
                 self.scheduler.step()
 
     def _forward(self, batch: dict) -> torch.Tensor:
@@ -414,17 +467,20 @@ class Trainer:
             
         return loss
 
-    def _train_epoch(self) -> tuple[float, float, float, float]:
+    def _train_epoch(self, epoch: int):
         """
         Run one full training epoch over the GPU-cached inputs.
         Shuffles the cached list each epoch to preserve stochastic ordering.
-        Returns (avg_loss, avg_psnr, avg_ssim, avg_lpips).
+        Logs metrics and checkpoints based on global_step.
         """
         self.model.train()
-        train_loss = torch.tensor(0.0, device=self.device)
-        train_psnr = torch.tensor(0.0, device=self.device)
         
-        for batch in self.train_loader:
+        pbar = tqdm(self.train_loader, desc=f"Epoch {epoch+1}/{self.num_epochs}", disable=not self.is_main_process)
+        
+        for batch in pbar:
+            if self.global_step >= self.num_steps:
+                break
+                
             target = batch['target_image'].to(self.device, non_blocking=True)
             batch = {k: v.to(self.device, non_blocking=True) if isinstance(v, torch.Tensor) else v for k, v in batch.items()}
             
@@ -435,15 +491,13 @@ class Trainer:
             
             loss.backward()
             self.optimizer.step()
+            self.scheduler.step()
             
             with torch.no_grad():
                 pred_f32 = pred_radiance.float()
                 target_f32 = target.float()
                 
                 psnr_item = calculate_psnr(pred_f32, target_f32)
-                        
-                train_loss += loss.detach()
-                train_psnr += psnr_item
 
                 # Asynchronously accumulate metrics on the GPU without blocking the CPU
                 pred_ldr = hdr_to_ldr(pred_f32, to_uint8_output=False)
@@ -451,29 +505,43 @@ class Trainer:
                 self.ssim_metric.update(pred_ldr, target_ldr)
                 self.lpips_val_metric.update(pred_ldr, target_ldr)
 
-        n = len(self.train_loader)
-        avg_loss = train_loss / n
-        avg_psnr = train_psnr / n
-        
-        if self.is_distributed:
-            metrics = torch.stack([avg_loss, avg_psnr])
-            dist.all_reduce(metrics, op=dist.ReduceOp.SUM)
-            metrics /= dist.get_world_size()
-            avg_loss, avg_psnr = metrics.tolist()
-        else:
-            avg_loss = avg_loss.item()
-            avg_psnr = avg_psnr.item()
+            # Extract metrics for logging
+            # torchmetrics automatically syncs across DDP processes during compute()
+            step_ssim = self.ssim_metric.compute().item()
+            step_lpips = self.lpips_val_metric.compute().item()
+            
+            self.ssim_metric.reset()
+            self.lpips_val_metric.reset()
+            
+            if self.is_distributed:
+                metrics = torch.stack([loss.detach(), psnr_item])
+                dist.all_reduce(metrics, op=dist.ReduceOp.SUM)
+                metrics /= dist.get_world_size()
+                step_loss, step_psnr = metrics.tolist()
+            else:
+                step_loss = loss.item()
+                step_psnr = psnr_item.item()
 
-        # torchmetrics automatically syncs across DDP processes during compute()
-        avg_ssim = self.ssim_metric.compute().item()
-        avg_lpips = self.lpips_val_metric.compute().item()
-        
-        self.ssim_metric.reset()
-        self.lpips_val_metric.reset()
+            if self.is_main_process and (self.global_step % self.log_interval_steps == 0 or self.global_step == self.num_steps - 1):
+                self.writer.add_scalar('Train/LR', self.optimizer.param_groups[0]['lr'], self.global_step)
+                self.writer.add_scalar('Loss/train', step_loss, self.global_step)
+                self.writer.add_scalar('PSNR/train', step_psnr, self.global_step)
+                self.writer.add_scalar('SSIM/train', step_ssim, self.global_step)
+                self.writer.add_scalar('LPIPS/train', step_lpips, self.global_step)
+                
+                pbar.set_postfix({'loss': f"{step_loss:.4f}", 'psnr': f"{step_psnr:.2f}"})
 
-        return avg_loss, avg_psnr, avg_ssim, avg_lpips
+            self.global_step += 1
+            
+            if self.global_step % self.log_viz_interval_steps == 0:
+                self._validate(self.global_step)
+                
+            if self.is_main_process and (self.global_step == self.num_steps or self.global_step % self.checkpoint_interval_steps == 0):
+                self._save_checkpoint(epoch)
+                
+        # Profiler step could go here, but usually it's per batch. Since the user doesn't strictly need it, we'll leave it as is or move it.
 
-    def _validate(self, epoch: int):
+    def _validate(self, step: int):
         """
         Evaluate the model on the validation set and compute metrics (Loss, PSNR, SSIM, LPIPS).
         Logs results and visualizations to TensorBoard.
@@ -519,21 +587,21 @@ class Trainer:
                 avg_val_psnr = avg_val_psnr.item()
 
             if self.is_main_process:
-                self.writer.add_scalar('Loss/val', avg_val_loss, epoch)
-                self.writer.add_scalar('PSNR/val', avg_val_psnr, epoch)
-                self.writer.add_scalar('SSIM/val', avg_val_ssim, epoch)
-                self.writer.add_scalar('LPIPS/val', avg_val_lpips, epoch)
+                self.writer.add_scalar('Loss/val', avg_val_loss, step)
+                self.writer.add_scalar('PSNR/val', avg_val_psnr, step)
+                self.writer.add_scalar('SSIM/val', avg_val_ssim, step)
+                self.writer.add_scalar('LPIPS/val', avg_val_lpips, step)
     
-                print(f"Epoch {epoch+1}: Val Loss {avg_val_loss:.6f}, Val PSNR: {avg_val_psnr:.2f} dB")
+                print(f"Step {step}: Val Loss {avg_val_loss:.6f}, Val PSNR: {avg_val_psnr:.2f} dB")
     
                 # Visualizations
                 pred_fixed = self._forward(self.fixed_val_batch)
                 grid_val = make_vis_grid(pred_fixed.float(), self.fixed_val_batch['target_image'].float(), max_images=16)
-                self.writer.add_image('Visual/Validation', grid_val, epoch)
+                self.writer.add_image('Visual/Validation', grid_val, step)
     
                 pred_train_fixed = self._forward(self.fixed_train_batch)
                 grid_train = make_vis_grid(pred_train_fixed.float(), self.fixed_train_batch['target_image'].float(), max_images=16)
-                self.writer.add_image('Visual/Training', grid_train, epoch)
+                self.writer.add_image('Visual/Training', grid_train, step)
 
             # # Debug stats at epoch 500
             # if (epoch + 1) == 500:
@@ -551,100 +619,66 @@ class Trainer:
             #     print(f"Negative predictions: {num_negative} / {pred_f32.numel()}")
         self.model.train()
 
+    def _save_checkpoint(self, epoch: int):
+        print(f"saving model at step {self.global_step}...")
+        ckpt_path = os.path.join(self.checkpoint_dir, f"checkpoint_step_{self.global_step}.pt")
+        tmp_path = ckpt_path + ".tmp"
+        
+        # Unpack DDP model state dict for saving
+        model_state_dict = self.model.module.state_dict() if self.is_distributed else self.model.state_dict()
+        
+        try:
+            torch.save({
+                'epoch': epoch,
+                'global_step': self.global_step,
+                'model_state_dict': model_state_dict,
+                'optimizer_state_dict': self.optimizer.state_dict(),
+                'scheduler_state_dict': self.scheduler.state_dict(),
+            }, tmp_path)
+            os.replace(tmp_path, ckpt_path)
+            print(f"Saved checkpoint to {ckpt_path}")
+            
+            # Cleanup old checkpoints
+            for old_file in os.listdir(self.checkpoint_dir):
+                old_path = os.path.join(self.checkpoint_dir, old_file)
+                if old_path != ckpt_path and old_file.endswith('.pt') and not old_file.startswith('model_package_'):
+                    os.remove(old_path)
+                    print(f"  Removed old checkpoint: {old_file}")
+                    
+        except (RuntimeError, OSError) as e:
+            print(f"WARNING: Failed to save checkpoint at step {self.global_step}: {e}")
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+        # Save torch.package for inference
+        if self.package_model and self.global_step == self.num_steps:
+            pkg_path = os.path.join(self.checkpoint_dir, f"model_package_step_{self.global_step}.pt")
+            try:
+                print(f"Packaging model to {pkg_path}...")
+                with torch.package.PackageExporter(pkg_path) as exp:
+                    exp.intern("model.**")
+                    exp.intern("utils.**")
+                    exp.intern("pos_encodings.**")
+                    exp.extern("**")
+                    # Save the un-wrapped model
+                    unwrapped_model = self.model.module if self.is_distributed else self.model
+                    exp.save_pickle("model", "model.pkl", unwrapped_model)
+                print(f"Saved packaged model to {pkg_path}")
+            except Exception as e:
+                print(f"WARNING: Failed to package model: {e}")
+
     def run(self):
         """
         Execute the full training loop including recording metrics, validation and checkpointing.
         """
-        # --- PROFILER SETUP ---
-        if self.profile:
-            # Wait for 10 epochs (steady state), warmup 1 epoch, record 3 epochs
-            prof = torch.profiler.profile(
-                schedule=torch.profiler.schedule(wait=10, warmup=1, active=3, repeat=1),
-                on_trace_ready=torch.profiler.tensorboard_trace_handler(self.log_dir),
-                record_shapes=True,
-                profile_memory=False,
-                with_stack=True
-            )
-            prof.start()
-        else:
-            prof = None
-
-        for epoch in tqdm(range(self.start_epoch, self.num_epochs), desc="Epochs", disable=not self.is_main_process):
+        for epoch in range(self.start_epoch, self.num_epochs):
             if self.is_distributed and self.train_sampler is not None:
                 self.train_sampler.set_epoch(epoch)
 
-            avg_train_loss, avg_train_psnr, avg_train_ssim, avg_train_lpips = self._train_epoch()
-
-            self.scheduler.step()
+            self._train_epoch(epoch)
             
-            if self.is_main_process:
-                self.writer.add_scalar('Train/LR', self.optimizer.param_groups[0]['lr'], epoch)
-                self.writer.add_scalar('Loss/train', avg_train_loss, epoch)
-                self.writer.add_scalar('PSNR/train', avg_train_psnr, epoch)
-                self.writer.add_scalar('SSIM/train', avg_train_ssim, epoch)
-                self.writer.add_scalar('LPIPS/train', avg_train_lpips, epoch)
-                # TODO: add FLIP metric
-            
-            # --- PROFILER STEP ---
-            if prof is not None:
-                prof.step()
-                if epoch >= 14: # wait(10) + warmup(1) + active(3)
-                    prof.stop()
-                    prof = None
-                    if self.is_main_process:
-                        print(f"Profiler trace saved to {self.log_dir}")
-            
-            if (epoch + 1) % self.log_viz_interval == 0:
-                self._validate(epoch)
-
-            # Save checkpoint
-            if self.is_main_process and ((epoch + 1) == self.num_epochs or (epoch + 1) % self.checkpoint_interval == 0):
-                print("saving model...")
-                ckpt_path = os.path.join(self.checkpoint_dir, f"checkpoint_epoch_{epoch+1}.pt")
-                tmp_path = ckpt_path + ".tmp"
-                
-                # Unpack DDP model state dict for saving
-                model_state_dict = self.model.module.state_dict() if self.is_distributed else self.model.state_dict()
-                
-                try:
-                    torch.save({
-                        'epoch': epoch,
-                        'model_state_dict': model_state_dict,
-                        'optimizer_state_dict': self.optimizer.state_dict(),
-                        'scheduler_state_dict': self.scheduler.state_dict(),
-                        'loss': avg_train_loss,  # Using train loss since we might not run val every epoch
-                    }, tmp_path)
-                    os.replace(tmp_path, ckpt_path)
-                    print(f"Saved checkpoint to {ckpt_path}")
-                    
-                    # Cleanup old checkpoints
-                    for old_file in os.listdir(self.checkpoint_dir):
-                        old_path = os.path.join(self.checkpoint_dir, old_file)
-                        if old_path != ckpt_path and old_file.endswith('.pt') and not old_file.startswith('model_package_'):
-                            os.remove(old_path)
-                            print(f"  Removed old checkpoint: {old_file}")
-                            
-                except (RuntimeError, OSError) as e:
-                    print(f"WARNING: Failed to save checkpoint at epoch {epoch+1}: {e}")
-                    if os.path.exists(tmp_path):
-                        os.remove(tmp_path)
-
-                # Save torch.package for inference
-                if self.package_model and (epoch + 1) == self.num_epochs:
-                    pkg_path = os.path.join(self.checkpoint_dir, f"model_package_epoch_{epoch+1}.pt")
-                    try:
-                        print(f"Packaging model to {pkg_path}...")
-                        with torch.package.PackageExporter(pkg_path) as exp:
-                            exp.intern("model.**")
-                            exp.intern("utils.**")
-                            exp.intern("pos_encodings.**")
-                            exp.extern("**")
-                            # Save the un-wrapped model
-                            unwrapped_model = self.model.module if self.is_distributed else self.model
-                            exp.save_pickle("model", "model.pkl", unwrapped_model)
-                        print(f"Saved packaged model to {pkg_path}")
-                    except Exception as e:
-                        print(f"WARNING: Failed to package model: {e}")
+            if self.global_step >= self.num_steps:
+                break
 
         if self.is_main_process:
             self.writer.close()

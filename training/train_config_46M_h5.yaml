@@ -68,12 +68,14 @@ predictor:
   include_alpha: false
 
 training:
-  batch_size: 32
-  learning_rate: 1.0e-4
-  num_epochs: 80
-  warmup_epochs: 250
-  save_interval: 5  # for visualization
-  checkpoint_interval: 10  # for saving model checkpoint 
+#  According to the linear scaling rule, 
+#  a 4x increase in batch size usually allows for a 4x increase in learning rate
+  global_batch_size: 128 # 32 * 4
+  learning_rate: 4.0e-4 # increased to take advantage of large batch size
+  num_steps: 500000
+  warmup_steps: 10000
+  save_interval_steps: 5000  # for visualization
+  checkpoint_interval_steps: 25000  # for saving model checkpoint 
   image_res: 128
   data_dir: 
     - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0000.h5"
