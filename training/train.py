@@ -101,9 +101,9 @@ def calculate_psnr(pred, target):
         t = linear_to_srgb(tone_map_reinhard(torch.clamp(target, min=0.0)))
         mse = torch.nn.functional.mse_loss(p, t)
         if mse == 0:
-            return 100.0 # arbitrary high upper bound
+            return torch.tensor(100.0, device=pred.device) # arbitrary high upper bound
         psnr = -10.0 * torch.log10(mse)
-        return psnr.item()
+        return psnr
 
 def make_vis_grid(linear_rendered, gt_img, max_images=16, diff_amplify=5.0):
     """
@@ -407,7 +407,8 @@ class Trainer:
         Returns (avg_loss, avg_psnr, avg_ssim, avg_lpips).
         """
         self.model.train()
-        train_loss, train_psnr, train_ssim, train_lpips = 0.0, 0.0, 0.0, 0.0
+        train_loss = torch.tensor(0.0, device=self.device)
+        train_psnr = torch.tensor(0.0, device=self.device)
         
         for batch in self.train_loader:
             target = batch['target_image'].to(self.device)
@@ -425,32 +426,36 @@ class Trainer:
                 target_f32 = target.float()
                 
                 psnr_item = calculate_psnr(pred_f32, target_f32)
+                        
+                train_loss += loss.detach()
+                train_psnr += psnr_item
 
+                # Asynchronously accumulate metrics on the GPU without blocking the CPU
                 pred_ldr = hdr_to_ldr(pred_f32, to_uint8_output=False)
                 target_ldr = hdr_to_ldr(target_f32, to_uint8_output=False)
-                        
-                train_loss += loss.item()
-                train_psnr += psnr_item
-                train_ssim += self.ssim_metric(pred_ldr, target_ldr).item()
-                self.ssim_metric.reset()
-                train_lpips += self.lpips_val_metric(pred_ldr, target_ldr).item()
-                self.lpips_val_metric.reset()
+                self.ssim_metric.update(pred_ldr, target_ldr)
+                self.lpips_val_metric.update(pred_ldr, target_ldr)
 
         n = len(self.train_loader)
         avg_loss = train_loss / n
         avg_psnr = train_psnr / n
-        avg_ssim = train_ssim / n
-        avg_lpips = train_lpips / n
         
         if self.is_distributed:
-            metrics = torch.tensor([avg_loss, avg_psnr, avg_ssim, avg_lpips], device=self.device)
+            metrics = torch.stack([avg_loss, avg_psnr])
             dist.all_reduce(metrics, op=dist.ReduceOp.SUM)
             metrics /= dist.get_world_size()
-            avg_loss, avg_psnr, avg_ssim, avg_lpips = metrics.tolist()
+            avg_loss, avg_psnr = metrics.tolist()
+        else:
+            avg_loss = avg_loss.item()
+            avg_psnr = avg_psnr.item()
 
-        # Clean up metric states just in case
+        # torchmetrics automatically syncs across DDP processes during compute()
+        avg_ssim = self.ssim_metric.compute().item()
+        avg_lpips = self.lpips_val_metric.compute().item()
+        
         self.ssim_metric.reset()
         self.lpips_val_metric.reset()
+
         return avg_loss, avg_psnr, avg_ssim, avg_lpips
 
     def _validate(self, epoch: int):
@@ -459,7 +464,9 @@ class Trainer:
         Logs results and visualizations to TensorBoard.
         """
         self.model.eval()
-        val_loss, val_psnr, val_ssim, val_lpips = 0.0, 0.0, 0.0, 0.0
+        val_loss = torch.tensor(0.0, device=self.device)
+        val_psnr = torch.tensor(0.0, device=self.device)
+        val_ssim, val_lpips = 0.0, 0.0
         
         with torch.no_grad():
             # Full validation set metrics
@@ -472,7 +479,7 @@ class Trainer:
                 pred_f32 = pred_radiance.float()
                 target_f32 = target.float()
                 
-                val_loss += loss.item()
+                val_loss += loss.detach()
                 val_psnr += calculate_psnr(pred_f32, target_f32)
                 
                 pred_ldr = hdr_to_ldr(pred_f32, to_uint8_output=False)
@@ -487,10 +494,13 @@ class Trainer:
             avg_val_lpips = val_lpips / n
             
             if self.is_distributed:
-                metrics = torch.tensor([avg_val_loss, avg_val_psnr, avg_val_ssim, avg_val_lpips], device=self.device)
+                metrics = torch.stack([avg_val_loss, avg_val_psnr, torch.tensor(avg_val_ssim, device=self.device), torch.tensor(avg_val_lpips, device=self.device)])
                 dist.all_reduce(metrics, op=dist.ReduceOp.SUM)
                 metrics /= dist.get_world_size()
                 avg_val_loss, avg_val_psnr, avg_val_ssim, avg_val_lpips = metrics.tolist()
+            else:
+                avg_val_loss = avg_val_loss.item()
+                avg_val_psnr = avg_val_psnr.item()
 
             if self.is_main_process:
                 self.writer.add_scalar('Loss/val', avg_val_loss, epoch)
