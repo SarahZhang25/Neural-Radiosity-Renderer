@@ -274,6 +274,13 @@ class TrainingConfig(_ConfigMixin):
 
     num_workers: int = 16
     """Number of DataLoader worker processes."""
+    
+    cache_strategy: Literal['disk', 'ram', 'vram'] = 'disk'
+    """How to cache dataset during training.
+    "disk": reads directly from h5
+    "ram": loads the whole dataset into CPU RAM
+    "vram": loads the whole dataset into GPU memory
+    """
 
     device: str = 'cuda'
     """Device to train on ('cuda' or 'cpu')."""

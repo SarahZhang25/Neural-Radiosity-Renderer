@@ -92,3 +92,4 @@ training:
   use_compile: False
   package_model: True
   num_workers: 2
+  cache_strategy: 'vram'
