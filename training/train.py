@@ -130,7 +130,7 @@ def make_vis_grid(linear_rendered, gt_img, max_images=16, diff_amplify=5.0):
 
 
 class Trainer:
-    def __init__(self, config_path: str, resume_path: str = None):
+    def __init__(self, config_path: str, resume_path: str = None, synthetic: bool = False, profile: bool = False):
         """
         Initialize the trainer with configuration parameters and model setup.
         Sets up datasets, model, optimizer, scheduler, and logging directories.
@@ -168,6 +168,8 @@ class Trainer:
         self.use_amp = tc.use_amp
         self.use_compile = tc.use_compile
         self.package_model = tc.package_model
+        self.use_synthetic_data = synthetic
+        self.profile = profile
 
         # Datasets - each rank constructs its own dataset index.
         self.train_dataset = SceneDataset(
@@ -226,6 +228,16 @@ class Trainer:
             persistent_workers=persistent
         )
 
+        if self.use_synthetic_data:
+            if self.is_main_process:
+                print("Running in SYNTHETIC data mode. Bypassing DataLoader and using a single cached GPU batch.")
+            
+            real_batch = next(iter(self.train_loader))
+            self.synthetic_batch = {k: v.to(self.device) for k, v in real_batch.items()}
+            
+            self.train_loader = [self.synthetic_batch] * len(self.train_loader)
+            self.val_loader = []
+
         # Fixed batches for visualization
         self.fixed_train_batch = self._get_seeded_batch(self.train_dataset, min(16, batch_size), seed=456)
         self.fixed_val_batch = self._get_seeded_batch(self.val_dataset, min(16, batch_size), seed=123)
@@ -242,11 +254,13 @@ class Trainer:
             
         if self.is_distributed:
             # gradient_as_bucket_view=True resolves the "grad strides do not match
-            # bucket view strides" warning by ensuring DDP reuses the gradient
-            # tensor memory directly as the bucket view.
+            # bucket view strides" warning by ensuring DDP reuses the gradient memory directly as the bucket view.
+            # bucket_cap_mb=100 increases the gradient synchronization chunk size,
+            # which optimizes throughput on high-bandwidth NVLink topologies.
             self.model = DDP(self.model, device_ids=[self.local_rank],
                              find_unused_parameters=True,
-                             gradient_as_bucket_view=True)
+                             gradient_as_bucket_view=True,
+                             bucket_cap_mb=100)
 
         # Optimizer & Losses
         self.optimizer = AdamW(self.model.parameters(), lr=tc.learning_rate)
@@ -411,7 +425,8 @@ class Trainer:
         train_psnr = torch.tensor(0.0, device=self.device)
         
         for batch in self.train_loader:
-            target = batch['target_image'].to(self.device)
+            target = batch['target_image'].to(self.device, non_blocking=True)
+            batch = {k: v.to(self.device, non_blocking=True) if isinstance(v, torch.Tensor) else v for k, v in batch.items()}
             
             self.optimizer.zero_grad()
             
@@ -471,7 +486,8 @@ class Trainer:
         with torch.no_grad():
             # Full validation set metrics
             for batch in self.val_loader:
-                target = batch['target_image'].to(self.device)
+                target = batch['target_image'].to(self.device, non_blocking=True)
+                batch = {k: v.to(self.device, non_blocking=True) if isinstance(v, torch.Tensor) else v for k, v in batch.items()}
                 pred_radiance = self._forward(batch)
                 
                 loss = self._compute_loss(pred_radiance, target)
@@ -533,16 +549,28 @@ class Trainer:
 
             #     num_negative = (pred_f32 < 0).sum().item()
             #     print(f"Negative predictions: {num_negative} / {pred_f32.numel()}")
-
         self.model.train()
 
     def run(self):
         """
-        Execute the main training loop across all epochs.
-        Handles training steps, metric logging, validation intervals, and checkpoint saving.
+        Execute the full training loop including recording metrics, validation and checkpointing.
         """
+        # --- PROFILER SETUP ---
+        if self.profile:
+            # Wait for 10 epochs (steady state), warmup 1 epoch, record 3 epochs
+            prof = torch.profiler.profile(
+                schedule=torch.profiler.schedule(wait=10, warmup=1, active=3, repeat=1),
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(self.log_dir),
+                record_shapes=True,
+                profile_memory=False,
+                with_stack=True
+            )
+            prof.start()
+        else:
+            prof = None
+
         for epoch in tqdm(range(self.start_epoch, self.num_epochs), desc="Epochs", disable=not self.is_main_process):
-            if self.is_distributed:
+            if self.is_distributed and self.train_sampler is not None:
                 self.train_sampler.set_epoch(epoch)
 
             avg_train_loss, avg_train_psnr, avg_train_ssim, avg_train_lpips = self._train_epoch()
@@ -555,8 +583,17 @@ class Trainer:
                 self.writer.add_scalar('PSNR/train', avg_train_psnr, epoch)
                 self.writer.add_scalar('SSIM/train', avg_train_ssim, epoch)
                 self.writer.add_scalar('LPIPS/train', avg_train_lpips, epoch)
-            # TODO: add FLIP metric
-
+                # TODO: add FLIP metric
+            
+            # --- PROFILER STEP ---
+            if prof is not None:
+                prof.step()
+                if epoch >= 14: # wait(10) + warmup(1) + active(3)
+                    prof.stop()
+                    prof = None
+                    if self.is_main_process:
+                        print(f"Profiler trace saved to {self.log_dir}")
+            
             if (epoch + 1) % self.log_viz_interval == 0:
                 self._validate(epoch)
 
@@ -621,6 +658,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='training/train_config.yaml', help='Path to config file')
     parser.add_argument('--resume', type=str, default=None, help='Path to checkpoint to resume from')
+    parser.add_argument('--synthetic', action='store_true', help='Use a synthetic dataset (single repeated batch on GPU) for benchmarking')
+    parser.add_argument('--profile', action='store_true', help='Enable torch.profiler to dump a trace of the first few epochs')
     args = parser.parse_args()
     
-    Trainer(args.config, args.resume).run()
+    Trainer(args.config, args.resume, args.synthetic, args.profile).run()
