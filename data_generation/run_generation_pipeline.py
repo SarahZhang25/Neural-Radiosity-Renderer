@@ -434,7 +434,7 @@ def main():
     parser.add_argument("--spp", type=int, default=512, help="Blender samples per pixel")
     parser.add_argument("--gpus", type=str, default=None, help="Comma separated list of GPUs to use (e.g. 0,1)")
     parser.add_argument("--workers_per_gpu", type=int, default=1, help="Concurrent Blender processes per GPU")
-    parser.add_argument("--render_timeout_seconds", type=int, default=1800, help="Per-scene render timeout in seconds before retrying")
+    parser.add_argument("--render_timeout_seconds", type=int, default=120, help="Per-scene render timeout in seconds before retrying")
     parser.add_argument("--render_timeout_retries", type=int, default=3, help="Number of retries after a render timeout")
     parser.add_argument("--transform_scenes", action="store_true", help="Apply random global transformation")
     parser.add_argument("--texture_mode", type=str, default=None, help="Texture mode to use (per-shading-group, procedural, or per-triangle)")

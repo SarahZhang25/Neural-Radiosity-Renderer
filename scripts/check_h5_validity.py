@@ -101,7 +101,7 @@ def check_h5_validity(output_dir, formats, num_views, exhaustive):
         
         print(f"[*] Found {len(chunk_paths)} chunk files. Scanning contents...")
         
-        workers = min(16, os.cpu_count() or 4)
+        workers = 1 #min(16, os.cpu_count() or 4)
         with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
             futures = [executor.submit(check_chunk, path, num_views, exhaustive) for path in chunk_paths]
             

@@ -47,9 +47,14 @@ def reorganize_h5(output_dir, fmt):
             
     # 2. Identify and remove duplicates
     duplicates = {idx: paths for idx, paths in scene_to_chunks.items() if len(paths) > 1}
-    
+    print(f"\n[*] Found {len(duplicates)} duplicated scenes. ")
+    print(f"Okay to proceed with deleting duplicated scenes? (y/n)")
+    response = input().strip().lower()
+    if response not in ['y', 'yes']:
+        print("[*] Reorganization cancelled.")
+        return
     if duplicates:
-        print(f"\n[*] Found {len(duplicates)} duplicated scenes. Deleting redundant copies...")
+        print("[*] Deleting redundant copies...")
         for idx, paths in tqdm(duplicates.items(), desc="Removing duplicates"):
             # Keep the first path (earliest chunk), delete from the rest
             keep_path = paths[0]
@@ -71,7 +76,13 @@ def reorganize_h5(output_dir, fmt):
     # 3. Identify holes and backfill from the last chunk
     # Infer target sizes: if a chunk has > 500 scenes (after dup removal), it was meant to be 1000. Else 500.
     # The last chunk is considered the "donor" chunk and doesn't have a target size we need to fill.
-    
+    print(f"Using donor chunk: {chunk_paths[-1].name}")
+    print(f"Okay to proceed with reorganization? (y/n)")
+    response = input().strip().lower()
+    if response not in ['y', 'yes']:
+        print("[*] Reorganization cancelled.")
+        return
+
     donor_chunk = chunk_paths[-1]
     holes = [] # list of tuples: (target_chunk_path, number_of_holes)
     
