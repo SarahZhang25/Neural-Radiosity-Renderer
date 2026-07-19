@@ -467,7 +467,7 @@ class Trainer:
             
         return loss
 
-    def _train_epoch(self, epoch: int):
+    def _train_epoch(self, epoch: int, pbar=None):
         """
         Run one full training epoch over the GPU-cached inputs.
         Shuffles the cached list each epoch to preserve stochastic ordering.
@@ -491,43 +491,32 @@ class Trainer:
             self.optimizer.step()
             self.scheduler.step()
             
-            with torch.no_grad():
-                pred_f32 = pred_radiance.float()
-                target_f32 = target.float()
-                
-                psnr_item = calculate_psnr(pred_f32, target_f32)
+            # Only log at intervals. Use rank-0 local metrics (no all_reduce)
+            # to avoid CUDA syncs and collective communication. The local values
+            # track the same trends as the global mean; full metrics are computed
+            # properly during validation.
+            if self.is_main_process and (self.global_step % self.log_interval_steps == 0
+                                         or self.global_step == self.num_steps - 1):
+                with torch.no_grad():
+                    pred_f32 = pred_radiance.float()
+                    target_f32 = target.float()
 
-                # Asynchronously accumulate metrics on the GPU without blocking the CPU
-                pred_ldr = hdr_to_ldr(pred_f32, to_uint8_output=False)
-                target_ldr = hdr_to_ldr(target_f32, to_uint8_output=False)
-                self.ssim_metric.update(pred_ldr, target_ldr)
-                self.lpips_val_metric.update(pred_ldr, target_ldr)
+                    step_loss = loss.item()
+                    step_psnr = calculate_psnr(pred_f32, target_f32).item()
 
-            # Extract metrics for logging
-            # torchmetrics automatically syncs across DDP processes during compute()
-            step_ssim = self.ssim_metric.compute().item()
-            step_lpips = self.lpips_val_metric.compute().item()
-            
-            self.ssim_metric.reset()
-            self.lpips_val_metric.reset()
-            
-            if self.is_distributed:
-                metrics = torch.stack([loss.detach(), psnr_item])
-                dist.all_reduce(metrics, op=dist.ReduceOp.SUM)
-                metrics /= dist.get_world_size()
-                step_loss, step_psnr = metrics.tolist()
-            else:
-                step_loss = loss.item()
-                step_psnr = psnr_item.item()
+                    pred_ldr = hdr_to_ldr(pred_f32, to_uint8_output=False)
+                    target_ldr = hdr_to_ldr(target_f32, to_uint8_output=False)
+                    step_ssim = self.ssim_metric(pred_ldr, target_ldr).item()
+                    step_lpips = self.lpips_val_metric(pred_ldr, target_ldr).item()
 
-            if self.is_main_process and (self.global_step % self.log_interval_steps == 0 or self.global_step == self.num_steps - 1):
                 self.writer.add_scalar('Train/LR', self.optimizer.param_groups[0]['lr'], self.global_step)
                 self.writer.add_scalar('Loss/train', step_loss, self.global_step)
                 self.writer.add_scalar('PSNR/train', step_psnr, self.global_step)
                 self.writer.add_scalar('SSIM/train', step_ssim, self.global_step)
                 self.writer.add_scalar('LPIPS/train', step_lpips, self.global_step)
-                
-                pbar.set_postfix({'loss': f"{step_loss:.4f}", 'psnr': f"{step_psnr:.2f}"})
+
+                if pbar is not None:
+                    pbar.set_postfix({'loss': f"{step_loss:.4f}", 'psnr': f"{step_psnr:.2f}"})
 
             self.global_step += 1
             
@@ -669,11 +658,12 @@ class Trainer:
         """
         Execute the full training loop including recording metrics, validation and checkpointing.
         """
-        for epoch in tqdm(range(self.start_epoch, self.num_epochs), desc="Epochs", disable=not self.is_main_process):
+        pbar = tqdm(range(self.start_epoch, self.num_epochs), desc="Epochs", disable=not self.is_main_process)
+        for epoch in pbar:
             if self.is_distributed and self.train_sampler is not None:
                 self.train_sampler.set_epoch(epoch)
 
-            self._train_epoch(epoch)
+            self._train_epoch(epoch, pbar)
             
             if self.global_step >= self.num_steps:
                 break
