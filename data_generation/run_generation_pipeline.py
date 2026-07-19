@@ -216,7 +216,7 @@ def render_worker_task(scene_file, output_dir, gpu_id, spp, timeout_seconds, tim
                 preexec_fn=set_pdeathsig,
                 timeout=timeout_seconds,
             )
-            return scene_file
+            return scene_file, True
         except subprocess.TimeoutExpired as e:
             print(f"\n[GPU Worker] Render timed out for {scene_file} after {timeout_seconds}s (attempt {attempt + 1}/{timeout_retries + 1}).", flush=True)
             if e.stdout:
@@ -225,13 +225,13 @@ def render_worker_task(scene_file, output_dir, gpu_id, spp, timeout_seconds, tim
                 print(f"STDERR:\n{e.stderr}", flush=True)
             remove_partial_outputs()
             if attempt >= timeout_retries:
-                return None
+                return scene_file, False
         except subprocess.CalledProcessError as e:
             print(f"\n[GPU Worker] Render failed for {scene_file}:\nSTDOUT:\n{e.stdout}\nSTDERR:\n{e.stderr}")
-            return None
+            return scene_file, False
         except Exception as e:
             print(f"\n[GPU Worker] Unexpected render error for {scene_file}: {e}")
-            return None
+            return scene_file, False
 
 def process_worker_task(scene_file, exr_dir, points, formats):
     """Runs CPU heavy geometry extraction using the existing unified pipeline function."""
@@ -434,7 +434,7 @@ def main():
     parser.add_argument("--spp", type=int, default=512, help="Blender samples per pixel")
     parser.add_argument("--gpus", type=str, default=None, help="Comma separated list of GPUs to use (e.g. 0,1)")
     parser.add_argument("--workers_per_gpu", type=int, default=1, help="Concurrent Blender processes per GPU")
-    parser.add_argument("--render_timeout_seconds", type=int, default=1800, help="Per-scene render timeout in seconds before retrying")
+    parser.add_argument("--render_timeout_seconds", type=int, default=120, help="Per-scene render timeout in seconds before retrying")
     parser.add_argument("--render_timeout_retries", type=int, default=3, help="Number of retries after a render timeout")
     parser.add_argument("--transform_scenes", action="store_true", help="Apply random global transformation")
     parser.add_argument("--texture_mode", type=str, default=None, help="Texture mode to use (per-shading-group, procedural, or per-triangle)")
@@ -454,26 +454,64 @@ def main():
 
     completed_scenes = set()
     if args.resume:
-        print("[*] Resume flag set. Scanning output_dir for existing scenes...")
-        existing_chunks = glob.glob(os.path.join(args.output_dir, "*_dataset_chunk_*.h5")) + glob.glob(os.path.join(args.output_dir, "*_dataset_chunk_*.h5.INCOMPLETE"))
-        for chunk in existing_chunks:
-            try:
-                with h5py.File(chunk, 'r') as f:
-                    for scene_name in f.keys():
-                        if 'hdr_target_image' in f[scene_name]:
-                            if f[scene_name]['hdr_target_image'].shape[0] == args.num_views:
-                                completed_scenes.add(scene_name)
-            except Exception as e:
-                print(f"[*] Warning: Could not read {chunk} during resume scan: {e}")
-        print(f"[*] Found {len(completed_scenes)} scenes already processed in H5 chunks.")
-        for loop_idx in range(args.num_scenes):
-            scene_name = f"scene_{args.start_idx + loop_idx:06d}"
-            if scene_name not in completed_scenes:
-                print(f"[*] Resuming from first unprocessed scene: {scene_name}")
-                break
+        import re
+        from pathlib import Path
+        print(f"[*] Resume flag set. Scanning output_dir for existing scenes for formats {args.formats}...")
+        
+        scene_formats_count = {}
+        for fmt in args.formats:
+            chunk_glob = f"{fmt}_dataset_chunk_*.h5"
+            parent_dir = Path(args.output_dir)
+            chunk_paths = sorted(parent_dir.glob(chunk_glob)) + sorted(parent_dir.glob(chunk_glob + ".INCOMPLETE"))
+            
+            for chunk_path in chunk_paths:
+                try:
+                    with h5py.File(chunk_path, "r") as handle:
+                        for scene_name in handle.keys():
+                            if 'hdr_target_image' in handle[scene_name] and handle[scene_name]['hdr_target_image'].shape[0] == args.num_views:
+                                match = re.search(r"scene_(\d+)$", scene_name)
+                                if match:
+                                    scene_idx = int(match.group(1))
+                                    if scene_idx not in scene_formats_count:
+                                        scene_formats_count[scene_idx] = set()
+                                    scene_formats_count[scene_idx].add(fmt)
+                except Exception as e:
+                    print(f"[*] Warning: Could not read {chunk_path} during resume scan: {e}")
+                    
+        scene_indices = [idx for idx, fmts in scene_formats_count.items() if len(fmts) == len(set(args.formats))]
+        
+        if scene_indices:
+            scene_indices = sorted(set(scene_indices))
+            min_scene = scene_indices[0]
+            max_scene = scene_indices[-1]
+            missing = [scene_idx for scene_idx in range(min_scene, max_scene + 1) if scene_idx not in scene_indices]
+            
+            print(f"[*] Scene index range: {min_scene} to {max_scene}")
+            if missing:
+                print(f"[*] Missing scenes ({len(missing)}): {missing}")
+            else:
+                print("[*] Missing scenes: none")
+                
+            for idx in scene_indices:
+                completed_scenes.add(f"scene_{idx:06d}")
         else:
-            print("[*] Resume scan found no remaining scenes to process.")
-    
+            print("[*] No existing scenes found.")
+
+    json_files = []
+    json_loop_indices_to_generate = []
+    skipped_count = 0
+    for loop_idx in range(args.num_scenes):
+        scene_idx = args.start_idx + loop_idx
+        scene_name = f"scene_{scene_idx:06d}"
+        if args.resume and scene_name in completed_scenes:
+            skipped_count += 1
+            continue
+            
+        json_file = os.path.join(tmp_dir, f"{scene_name}.json")
+        json_files.append(json_file)
+        if not os.path.exists(json_file):
+            json_loop_indices_to_generate.append(loop_idx)
+
     # Start timer
     pipeline_start_time = time.time()
 
@@ -520,7 +558,7 @@ def main():
     render_executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_render_workers)
     
     # Thread for writing H5s sequentially (Disk bound)
-    writer = threading.Thread(target=h5_writer_thread, args=(write_queue, args.output_dir, tmp_dir, args.formats, args.chunk_size, args.num_scenes - len(completed_scenes) if args.resume else args.num_scenes, args.num_views))
+    writer = threading.Thread(target=h5_writer_thread, args=(write_queue, args.output_dir, tmp_dir, args.formats, args.chunk_size, len(json_files), args.num_views))
     writer.daemon = True
     writer.start()
 
@@ -534,22 +572,6 @@ def main():
             scene_file, result = ("failed_scene.json", None)
         write_queue.put((scene_file, result))
 
-    def on_render_done(future):
-        try:
-            scene_file = future.result()
-        except Exception as e:
-            print(f"[GPU Worker] Unexpected render callback failure: {e}")
-            scene_file = None
-        if scene_file is not None:
-            # Submit to CPU processing pool
-            proc_future = process_executor.submit(process_worker_task, scene_file, tmp_dir, args.points, args.formats)
-            proc_future.add_done_callback(on_process_done)
-        else:
-            # Render failed, send None to writer to skip it but advance count
-            # We don't have the scene_file cleanly accessible here unless we bind it, but 
-            # future.result() is None on failure based on render_worker_task.
-            # Actually, let's just use a dummy string to advance the counter
-            write_queue.put(("failed_scene.json", None))
 
     # 3. Stage 1: Generate JSONs
     print("[*] Stage 1: Generating JSON templates...")
@@ -563,21 +585,6 @@ def main():
     texture_mode = args.texture_mode if args.texture_mode is not None else "per-shading-group"
     json_workers = max(1, min(64, os.cpu_count() or 1))
     print(f"[*] Using {json_workers} concurrent JSON generation workers.")
-    json_files = []
-    json_loop_indices_to_generate = []
-    skipped_count = 0
-    for loop_idx in range(args.num_scenes):
-        scene_idx = args.start_idx + loop_idx
-        scene_name = f"scene_{scene_idx:06d}"
-        if args.resume and scene_name in completed_scenes:
-            skipped_count += 1
-            continue
-            
-        json_file = os.path.join(tmp_dir, f"{scene_name}.json")
-        json_files.append(json_file)
-        if not os.path.exists(json_file):
-            json_loop_indices_to_generate.append(loop_idx)
-            
     print(f"[*] Found {len(json_files) - len(json_loop_indices_to_generate)} existing JSONs, generating {len(json_loop_indices_to_generate)} new ones (skipped {skipped_count} from resume)...")
 
     target_json_count = len(json_files)
@@ -617,6 +624,7 @@ def main():
     gpu_counter = 0
     
     try:
+        active_futures = set()
         for scene_file in json_files:
             gpu_id = gpu_list[gpu_counter % len(gpu_list)] if gpu_list else None
             gpu_counter += 1
@@ -631,9 +639,60 @@ def main():
                 args.render_timeout_seconds,
                 args.render_timeout_retries,
             )
-            rend_future.add_done_callback(on_render_done)
+            active_futures.add(rend_future)
 
-        # 5. Wait for completion
+        # 5. Wait for completion, handling dynamic resubmission for failed scenes
+        while active_futures:
+            done, active_futures = concurrent.futures.wait(active_futures, return_when=concurrent.futures.FIRST_COMPLETED)
+            
+            for future in done:
+                try:
+                    scene_file, success = future.result()
+                except Exception as e:
+                    print(f"[GPU Worker] Unexpected render callback failure: {e}")
+                    scene_file, success = ("failed_scene.json", False)
+                    
+                if success:
+                    # Submit to CPU processing pool
+                    proc_future = process_executor.submit(process_worker_task, scene_file, tmp_dir, args.points, args.formats)
+                    proc_future.add_done_callback(on_process_done)
+                else:
+                    if scene_file != "failed_scene.json":
+                        print(f"\n[*] Render completely failed for {scene_file}. Force-generating a new scene to retry...", flush=True)
+                        import re
+                        match = re.search(r'scene_(\d+)\.json', os.path.basename(scene_file))
+                        if match:
+                            scene_idx = int(match.group(1))
+                            try:
+                                # Regenerate the JSON with new random objects to avoid the timeout
+                                generate_scene(
+                                    template_json,
+                                    objaverse_objects,
+                                    scene_idx,
+                                    tmp_dir,
+                                    num_views=args.num_views,
+                                    transform_scene=args.transform_scenes,
+                                    random_diffuse_type=texture_mode,
+                                )
+                                # Pick a random GPU from the available pool
+                                gpu_id = random.choice(gpu_list) if gpu_list else None
+                                rend_future = render_executor.submit(
+                                    render_worker_task,
+                                    scene_file,
+                                    tmp_dir,
+                                    gpu_id,
+                                    args.spp,
+                                    args.render_timeout_seconds,
+                                    args.render_timeout_retries,
+                                )
+                                active_futures.add(rend_future)
+                                continue # Successfully requeued
+                            except Exception as e:
+                                print(f"[*] Failed to force regenerate scene {scene_idx}: {e}", flush=True)
+                    
+                    # If we reach here, we couldn't regenerate or it's a completely unrecoverable failure
+                    write_queue.put((scene_file, None))
+
         render_executor.shutdown(wait=True)
         process_executor.shutdown(wait=True)
         

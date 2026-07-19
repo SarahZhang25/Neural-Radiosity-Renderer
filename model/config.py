@@ -18,7 +18,7 @@ Usage:
 """
 
 from dataclasses import dataclass, field, asdict, fields
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 import yaml
 
 class _ConfigMixin:
@@ -215,28 +215,50 @@ class PredictorConfig(_ConfigMixin):
 class TrainingConfig(_ConfigMixin):
     """Configuration for the training loop and optimization."""
 
-    batch_size: int = 64
-    """Number of samples per training batch."""
+    global_batch_size: int = 128
+    """Total effective batch size across all GPUs. Overrides batch_size if provided."""
 
     learning_rate: float = 1.0e-4
     """Peak learning rate for AdamW optimizer."""
 
-    num_epochs: int = 5000
-    """Total number of training epochs."""
+    num_steps: Optional[int] = None
+    """Total number of training steps (overrides num_epochs)."""
 
-    warmup_epochs: int = 500
-    """Number of linear warmup epochs before cosine annealing."""
+    warmup_steps: Optional[int] = None
+    """Number of linear warmup steps before cosine annealing (overrides warmup_epochs)."""
 
-    save_interval: int = 500
-    """Epoch interval for logging validation visualizations."""
+    save_interval_steps: Optional[int] = None
+    """Step interval for logging validation visualizations (overrides save_interval)."""
+    
+    log_interval_steps: int = 100
+    """Step interval for logging training scalars to terminal and TensorBoard."""
 
-    checkpoint_interval: int = 1000
-    """Epoch interval for saving model checkpoints."""
+    checkpoint_interval_steps: Optional[int] = None
+    """Step interval for saving model checkpoints (overrides checkpoint_interval)."""
 
     image_res: int = 128
     """Rendering resolution (square, in pixels)."""
 
-    data_dir: str = "data_generation/output_auto/datasets/attempt6_table_chair_540"
+    
+
+    batch_size: Optional[int] = None
+    """Legacy: Batch size per GPU (use global_batch_size instead)."""
+
+    num_epochs: int = 5000
+    """Total number of training epochs (fallback if num_steps is None)."""
+
+    warmup_epochs: int = 500
+    """Number of linear warmup epochs before cosine annealing (fallback if warmup_steps is None)."""
+
+    save_interval: int = 500
+    """Epoch interval for logging validation visualizations (fallback)."""
+
+    checkpoint_interval: int = 1000
+    """Epoch interval for saving model checkpoints (fallback)."""
+
+
+
+    data_dir: Union[str, List[str]] = "data_generation/output_auto/datasets/attempt6_table_chair_540"
     """Path to the training dataset directory."""
 
     log_dir: str = "training/logs/attempt6_table_chair_540"
@@ -274,6 +296,13 @@ class TrainingConfig(_ConfigMixin):
 
     num_workers: int = 16
     """Number of DataLoader worker processes."""
+    
+    cache_strategy: Literal['disk', 'ram', 'vram'] = 'disk'
+    """How to cache dataset during training.
+    "disk": reads directly from h5
+    "ram": loads the whole dataset into CPU RAM
+    "vram": loads the whole dataset into GPU memory
+    """
 
     device: str = 'cuda'
     """Device to train on ('cuda' or 'cpu')."""

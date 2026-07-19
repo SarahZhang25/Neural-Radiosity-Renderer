@@ -3,11 +3,11 @@
 examples/
 outputs/
 *.log*
-tmp*
+*.out*
 
+tmp*
 datasets*
-point-cloud-dynamics-model/
+point-cloud-dynamics-model
 renderformer
 renderformer_tex_src
 rigidformer
-datasets

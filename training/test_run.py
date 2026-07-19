@@ -11,7 +11,7 @@ def main():
     parser.add_argument('--config', type=str, default='training/train_config_46M_litePT.yaml', help='Path to config file')
     args = parser.parse_args()
 
-    # We patch the trainer directly to run for just 2 epochs and avoid writing checkpoints or logs.
+    # We patch the trainer directly to run for just few epochs and avoid writing checkpoints or logs.
     print(f"Loading config {args.config} for test run...")
     config = NeuralRadiosityConfig.from_yaml(args.config)
     
@@ -23,9 +23,9 @@ def main():
             save_interval=9999,
             checkpoint_interval=9999,
             package_model=False,
-            data_dir="renderformer/datasets/processed_datasets/dataset_single_obj",
+            # data_dir="renderformer/datasets/processed_datasets/dataset_single_obj",
             log_dir=log_dir,
-            run_name="test_multigpu_training",
+            run_name="test_46M_multigpu_training",
         ),
     )
 
