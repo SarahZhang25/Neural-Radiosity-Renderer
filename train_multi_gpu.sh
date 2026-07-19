@@ -18,6 +18,9 @@ conda activate "$CONDA_ENV_NAME"
 # Construct CUDA_VISIBLE_DEVICES (e.g., 0,1 for 2 GPUs)
 export CUDA_VISIBLE_DEVICES=4,5,6,7
 
-echo "Starting multi-GPU training on $NUM_GPUS GPUs (CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES) using config $CONFIG..."
-python -m torch.distributed.run --nproc_per_node=$NUM_GPUS training/train.py --config $CONFIG
-# python -m torch.distributed.run --nproc_per_node=$NUM_GPUS training/test_run.py --config $CONFIG
+# Generate a random port between 29500 and 29999 to avoid port collisions between concurrent runs
+PORT=$((29500 + RANDOM % 500))
+
+echo "Starting multi-GPU training on $NUM_GPUS GPUs (CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES) using config $CONFIG on port $PORT..."
+python -m torch.distributed.run --nproc_per_node=$NUM_GPUS --master_port=$PORT training/train.py --config $CONFIG
+# python -m torch.distributed.run --nproc_per_node=$NUM_GPUS --master_port=$PORT training/test_run.py --config $CONFIG

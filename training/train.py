@@ -475,9 +475,7 @@ class Trainer:
         """
         self.model.train()
         
-        pbar = tqdm(self.train_loader, desc=f"Epoch {epoch+1}/{self.num_epochs}", disable=not self.is_main_process)
-        
-        for batch in pbar:
+        for batch in self.train_loader:
             if self.global_step >= self.num_steps:
                 break
                 
@@ -671,7 +669,7 @@ class Trainer:
         """
         Execute the full training loop including recording metrics, validation and checkpointing.
         """
-        for epoch in range(self.start_epoch, self.num_epochs):
+        for epoch in tqdm(range(self.start_epoch, self.num_epochs), desc="Epochs", disable=not self.is_main_process):
             if self.is_distributed and self.train_sampler is not None:
                 self.train_sampler.set_epoch(epoch)
 
