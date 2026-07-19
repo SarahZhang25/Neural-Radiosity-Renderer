@@ -16,7 +16,7 @@ source /home/sazhang/miniconda3/etc/profile.d/conda.sh
 conda activate "$CONDA_ENV_NAME"
 
 # Construct CUDA_VISIBLE_DEVICES (e.g., 0,1 for 2 GPUs)
-export CUDA_VISIBLE_DEVICES=4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 # Force NCCL to look for NVLink / direct P2P access
 export NCCL_P2P_DISABLE=0
