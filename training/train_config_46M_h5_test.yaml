@@ -70,7 +70,7 @@ predictor:
 training:
   global_batch_size: 128 # 32 * 4
   learning_rate: 4.0e-4 # increased to take advantage of large batch size
-  num_steps: 1000
+  num_steps: 300
   warmup_steps: 10
   log_interval_steps: 29 # 29 steps per epoch...
   save_interval_steps: 5000  # for visualization

@@ -14,7 +14,7 @@
 # --  unified encoder -- frees up enough params for another hidden dim in pointnet
 # --  uses OBB-based RoPE
 # --  use 2 register tokens
-# Data: dataset_uniform_chunk_0000-0004-- 5000 scene * 2.5k epochs / 128 batch size => ~100k steps
+# Data: dataset_uniform_chunk_0000-0005-- 20_000 scenes, 200000 steps, 128 batch size (=> 6,250 EPOCHS)
 
 
 encoder:
@@ -71,11 +71,12 @@ training:
 #  According to the linear scaling rule, 
 #  a 4x increase in batch size usually allows for a 4x increase in learning rate
   global_batch_size: 128 # 32 * 4
-  learning_rate: 4.0e-4 # increased to take advantage of large batch size
-  num_steps: 500000
-  warmup_steps: 10000
+  learning_rate: 4.0e-4 # increased to take advantage of larger batch size
+  num_steps: 200000 # 6,250 EPOCHS....
+  warmup_steps: 1
   save_interval_steps: 5000  # for visualization
   checkpoint_interval_steps: 25000  # for saving model checkpoint 
+  log_interval_steps: 32 # 4000/128 = 31.25 steps per epoch...
   image_res: 128
   data_dir: 
     - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0000.h5"
@@ -84,7 +85,7 @@ training:
     - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0003.h5"
     - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0004.h5"
   log_dir: "training/logs/dataset_uniform_chunk_0000-0004"
-  run_name: "params46M_camray" # Optional string tag for log dir name
+  run_name: "params46M_pointnet_camrays" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42
@@ -94,5 +95,5 @@ training:
   use_amp: True
   use_compile: False
   package_model: True
-  num_workers: 2
+  num_workers: 8
   cache_strategy: 'disk'
