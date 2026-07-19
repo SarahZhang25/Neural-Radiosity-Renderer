@@ -1,4 +1,5 @@
 import os
+import time
 import argparse
 import yaml
 from datetime import datetime
@@ -474,6 +475,8 @@ class Trainer:
         Logs metrics and checkpoints based on global_step.
         """
         self.model.train()
+        _log_timer = time.perf_counter()
+        _log_step_count = 0
         
         for batch in self.train_loader:
             if self.global_step >= self.num_steps:
@@ -490,6 +493,7 @@ class Trainer:
             loss.backward()
             self.optimizer.step()
             self.scheduler.step()
+            _log_step_count += 1
             
             # Only log at intervals. Use rank-0 local metrics (no all_reduce)
             # to avoid CUDA syncs and collective communication. The local values
@@ -515,8 +519,14 @@ class Trainer:
                 self.writer.add_scalar('SSIM/train', step_ssim, self.global_step)
                 self.writer.add_scalar('LPIPS/train', step_lpips, self.global_step)
 
+                now = time.perf_counter()
+                avg_ms = (now - _log_timer) / _log_step_count * 1000
+                _log_timer = now
+                _log_step_count = 0
+                self.writer.add_scalar('Train/StepTime_ms', avg_ms, self.global_step)
+
                 if pbar is not None:
-                    pbar.set_postfix({'loss': f"{step_loss:.4f}", 'psnr': f"{step_psnr:.2f}"})
+                    pbar.set_postfix({'loss': f"{step_loss:.4f}", 'psnr': f"{step_psnr:.2f}", 'ms/step': f"{avg_ms:.0f}"})
 
             self.global_step += 1
             
