@@ -137,6 +137,12 @@ class SceneTransformerConfig(_ConfigMixin):
     num_register_tokens: int = 2
     """Number of learnable register tokens prepended to the sequence."""
 
+    use_obj_obj_attention_bias: bool = False
+    """Whether to use geometry-aware object-to-object attention bias."""
+
+    obj_obj_bias_hidden_dim: int = 64
+    """Hidden dimension of the geometry bias encoders."""
+
 
 @dataclass(frozen=True)
 class RayEncoderConfig(_ConfigMixin):

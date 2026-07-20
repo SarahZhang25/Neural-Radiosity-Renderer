@@ -1,0 +1,105 @@
+# Training Configuration
+# about 46M param
+# Total Parameters: 45,740,110
+# Trainable Parameters: 45,740,102
+#   obj_encoder: 13,721,088 params (30.00% of total)
+#   receiver_geom_encoder: 34,560 params (0.08% of total)
+#   sender_geom_encoder: 34,560 params (0.08% of total)
+#   scene_transformer: 12,617,732 params (27.59% of total)
+#   ray_encoder: 395,264 params (0.86% of total)
+#   predictor: 18,935,882 params (41.40% of total)
+#     dpt_head: 6,314,051 params (13.80% of total)
+
+# Training: 
+# Model: 
+# --> use newly implemented obj-obj attention bias (adds ~70K params)
+# --  camray ray encoder
+# --  unified encoder -- frees up enough params for another hidden dim in pointnet
+# --  uses OBB-based RoPE
+# --  use 2 register tokens
+# Data: dataset_uniform_chunk_0000-0005-- 20_000 scenes, 200000 steps, 128 batch size (=> 6,250 EPOCHS)
+
+
+encoder:
+  input_dim: 16  # Position (x,y,z) + Normal (nx,ny,nz) + Material (10)
+  hidden_dims: [512, 1024, 1536, 2048]
+  output_dim: 512
+  backbone_dim: 768
+  pooling_type: 'hierarchical' # 'hierarchical' 'max' or 'local_features'
+  num_hierarchical_levels: 3 # Ignored when using local features
+  use_local_patches: false
+
+decoder:
+  hidden_dim: 512
+  ffn_hidden_dim: 2048 # 512 * 4???
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.0
+  activation: 'gelu'
+  return_all_layers: true
+  use_self_attention: true # Whether to double the max frequency for RoPE.
+  norm_type: 'layer_norm'
+  qk_norm: true
+  bias: true
+  rope_double_max_freq: false
+  num_register_tokens: 2
+
+  use_obj_obj_attention_bias: true
+  obj_obj_bias_hidden_dim: 64
+
+ray_encoder:
+  pe_type: 'rope_obb' # RoPE handles spatial position encoding. Options: 'rope_centroid' (3D centroid), 'rope_obb' (12D OBB)
+  vertex_pe_num_freqs: 8 # this controls how many frequencies are applied for the pe
+  vdir_pe_type: 'camray'
+  vdir_num_freqs: 4
+  patch_size: 16
+  norm_type: 'layer_norm'
+  view_transformer_latent_dim: 512 # Must match predictor hidden_dim
+  view_transformer_n_heads: 4
+
+predictor:
+  # TODO: add a obj num_freq term?
+  hidden_dim: 512
+  ffn_hidden_dim: 1024
+  num_layers: 4
+  num_heads: 4
+  dropout: 0
+  activation: 'gelu'
+  norm_type: 'layer_norm'
+  pe_type: 'rope_obb' # Options: 'rope_centroid' (3D centroid), 'rope_obb' (12D OBB), 'nerf'
+  pe_num_freqs: 8 # is this redunant to vertex_pe_num_freqs? TODO: figure this out 
+  use_dpt_decoder: true
+  dpt_features: 128
+  dpt_out_channels: [64, 128, 256, 512] 
+  include_alpha: false
+
+training:
+#  According to the linear scaling rule, 
+#  a 4x increase in batch size usually allows for a 4x increase in learning rate
+  global_batch_size: 128 # 32 * 4
+  learning_rate: 1.0e-4 # increased to take advantage of larger batch size
+  num_steps: 200000 # 6,250 EPOCHS....
+  warmup_steps: 8000
+  save_interval_steps: 5000  # for visualization
+  checkpoint_interval_steps: 25000  # for saving model checkpoint 
+  log_interval_steps: 32 # 4000/128 = 31.25 steps per epoch...
+  image_res: 128
+  data_dir: 
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0000.h5"
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0001.h5"
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0002.h5"
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0003.h5"
+    - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0004.h5"
+  log_dir: "training/logs/dataset_uniform_chunk_0000-0004"
+  run_name: "params46M_pointnet_camrays" # Optional string tag for log dir name
+  # max_dataset_size: 10   # Optional max samples for dataset
+  # shuffle_data: true
+  # shuffle_data_seed: 42
+  primary_loss: 'mae' # 'mse'
+  lpips_backbone: 'alex' # 'vgg'
+  lpips_loss_weighting: 0.05
+  use_amp: True
+  use_compile: False
+  package_model: True
+  num_workers: 8
+  cache_strategy: 'disk'

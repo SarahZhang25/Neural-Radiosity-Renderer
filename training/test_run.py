@@ -8,7 +8,7 @@ from training.train import Trainer
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default='training/train_config_46M_litePT.yaml', help='Path to config file')
+    parser.add_argument('--config', type=str, default='training/train_config_46M_pointnet_h5.yaml', help='Path to config file')
     args = parser.parse_args()
 
     # We patch the trainer directly to run for just few epochs and avoid writing checkpoints or logs.
@@ -19,14 +19,19 @@ def main():
     log_dir = "tmp/test_run"
     config = replace(config,
         training=replace(config.training,
-            num_epochs=10,
-            save_interval=9999,
-            checkpoint_interval=9999,
+            global_batch_size=32,
+            num_steps=10000,
+            warmup_steps=1000,
+            save_interval_steps=1000,
             package_model=False,
-            # data_dir="renderformer/datasets/processed_datasets/dataset_single_obj",
-            log_dir=log_dir,
-            run_name="test_46M_multigpu_training",
+            data_dir="tmp/dataset_test/nmr_dataset_chunk_0000.h5",
+            log_dir="tmp/test_run",
+            run_name="TEST_46M_pointnet_obj_obj_bias_dim128",
         ),
+        decoder=replace(config.decoder,
+            use_obj_obj_attention_bias=False,
+            obj_obj_bias_hidden_dim=128
+        )
     )
 
     # Save a temporary config file so Trainer can load it
@@ -39,7 +44,7 @@ def main():
     try:
         trainer = Trainer(temp_config)
         if trainer.is_main_process:
-            print(f"Starting {config.training.num_epochs}-epoch test run...")
+            print(f"Starting test run...")
         trainer.run()
         if trainer.is_main_process:
             print("Test run completed successfully!")

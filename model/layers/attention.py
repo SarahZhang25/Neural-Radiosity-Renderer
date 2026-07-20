@@ -112,7 +112,7 @@ class MultiHeadAttention(nn.Module):
             self.q_norm = nn.Identity()
             self.k_norm = nn.Identity()
 
-    def forward(self, q, k, v, src_key_padding_mask=None, rope_cos=None, rope_sin=None, rope_ctx_cos=None, rope_ctx_sin=None, force_sdpa=False):
+    def forward(self, q, k, v, src_key_padding_mask=None, rope_cos=None, rope_sin=None, rope_ctx_cos=None, rope_ctx_sin=None, force_sdpa=False, geom_q=None, geom_k=None):
         # src_key_padding_mask: (B, N), key padding mask, things you want to attend to is True
         bs, src_len = q.shape[0], q.shape[1]
         ctx_len = k.shape[1]
@@ -123,6 +123,12 @@ class MultiHeadAttention(nn.Module):
             q = self.q_proj(q)
             k = self.k_proj(k)
             v = self.v_proj(v)
+
+        if geom_q is not None:
+            # Add geometry bias BEFORE RoPE, so it gets modulated by relative position later
+            q = q + geom_q
+        if geom_k is not None:
+            k = k + geom_k
 
         # qk normalization
         q = self.q_norm(q).type(v.dtype)
@@ -498,7 +504,7 @@ class AttentionLayer(nn.Module):
         
         self.ffn_norm = norm_module(query_dim, eps=EPS)
 
-    def forward(self, query, kv=None, src_key_padding_mask=None, rope_cos=None, rope_sin=None, rope_ctx_cos=None, rope_ctx_sin=None, force_sdpa=False, patch_h=None, patch_w=None):
+    def forward(self, query, kv=None, src_key_padding_mask=None, rope_cos=None, rope_sin=None, rope_ctx_cos=None, rope_ctx_sin=None, force_sdpa=False, patch_h=None, patch_w=None, geom_q=None, geom_k=None):
         """
         Args:
             query (torch.Tensor): (B, N, query_dim)
@@ -510,6 +516,8 @@ class AttentionLayer(nn.Module):
             rope_ctx_sin (torch.Tensor): (B, 1, N, head_dim), sine tensor for RoPE, None if no RoPE is applied
             patch_h (int): height of the patch, used for swin self-attention
             patch_w (int): width of the patch, used for swin self-attention
+            geom_q (torch.Tensor): (B, N, query_dim), optional geometric bias for queries
+            geom_k (torch.Tensor): (B, N, kv_dim), optional geometric bias for keys
         Returns:
             torch.Tensor: (B, N, query_dim)
         """
@@ -526,7 +534,7 @@ class AttentionLayer(nn.Module):
             ctx_len = kv.shape[1]
 
         # multihead attention
-        attn_output = self.dropout(self.multihead_attn(q, kv, kv, src_key_padding_mask, rope_cos, rope_sin, rope_ctx_cos, rope_ctx_sin, force_sdpa=force_sdpa))
+        attn_output = self.dropout(self.multihead_attn(q, kv, kv, src_key_padding_mask, rope_cos, rope_sin, rope_ctx_cos, rope_ctx_sin, force_sdpa=force_sdpa, geom_q=geom_q, geom_k=geom_k))
         query = query + attn_output
 
         if self.add_self_attn:
@@ -597,7 +605,7 @@ class TransformerEncoder(nn.Module):
             )
         self.return_all_layers = return_all_layers
 
-    def forward(self, x, src_key_padding_mask=None, obj_pos=None):
+    def forward(self, x, src_key_padding_mask=None, obj_pos=None, geom_q=None, geom_k=None):
         # src_key_padding_mask: (B, N), key padding mask, things you want to attend to is True
         if self.rope_dim is not None:
             assert obj_pos is not None, "obj_pos must be provided if rope_dim is not None"
@@ -609,7 +617,7 @@ class TransformerEncoder(nn.Module):
         all_layers = [] if self.return_all_layers else None
 
         for layer in self.layers:
-            x = layer(x, src_key_padding_mask=src_key_padding_mask, rope_cos=rope_cos, rope_sin=rope_sin)
+            x = layer(x, src_key_padding_mask=src_key_padding_mask, rope_cos=rope_cos, rope_sin=rope_sin, geom_q=geom_q, geom_k=geom_k)
             if self.return_all_layers:
                 all_layers.append(x)
                 

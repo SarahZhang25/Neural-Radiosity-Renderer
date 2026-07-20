@@ -11,6 +11,7 @@ from model.config import NeuralRadiosityConfig
 from model.encoder import PointNetEncoder, LitePTEncoderAdapter
 from model.layers.attention import TransformerEncoder
 from model.predictor_rope import RadiancePredictor
+from model.attn_bias import ReceiverGeometryEncoder, SenderGeometryEncoder
 # from model.state_manager import StateManager
 from model.ray_encoder import RayEncoder
 
@@ -139,6 +140,17 @@ class GlobalIlluminationModel(torch.nn.Module):
             self.register_tokens = torch.nn.Parameter(torch.randn(1, self.num_register_tokens, dec.hidden_dim))
 
         # 3. View-Independent Scene Transformer
+        self.use_obj_obj_attention_bias = getattr(dec, 'use_obj_obj_attention_bias', False)
+        if self.use_obj_obj_attention_bias:
+            self.receiver_geom_encoder = ReceiverGeometryEncoder(
+                hidden_dim=getattr(dec, 'obj_obj_bias_hidden_dim', 64), 
+                output_dim=dec.hidden_dim
+            )
+            self.sender_geom_encoder = SenderGeometryEncoder(
+                hidden_dim=getattr(dec, 'obj_obj_bias_hidden_dim', 64), 
+                output_dim=dec.hidden_dim
+            )
+
         self.scene_transformer = TransformerEncoder(
             num_layers=dec.num_layers,
             num_heads=dec.num_heads,
@@ -274,18 +286,50 @@ class GlobalIlluminationModel(torch.nn.Module):
             center_pos = center_pos.expand(-1, self.num_register_tokens, -1)
             object_centroids = torch.cat([center_pos, object_centroids], dim=1)
 
-        # 4. Bi-Directional Interaction
-        # all_state_layers, all_obj_layers = self.scene_transformer(
-        #     state_tokens=state_tokens,
-        #     obj_tokens=object_tokens,
-        #     state_pos=state_positions,
-        #     obj_pos=object_centroids
-        # )
+        # 3.5 Prepare Geometric Bias
+        obb_axes_world = None
+        if self.rope_variant == 'obb' or self.use_obj_obj_attention_bias:
+            obb_axes_world = compute_obb_axes(obj_positions)  # (B, N_obj, 9)
+
+        geom_q, geom_k = None, None
+        if self.use_obj_obj_attention_bias:
+            # Material properties are per-point: (B, N_obj, N_v, 10).
+            # For the object-level geometric bias, we mean-pool them to get a single
+            # material descriptor per object: (B, N_obj, 10).
+            if obj_properties.dim() == 4:
+                obj_materials = obj_properties.mean(dim=2)  # (B, N_obj, 10)
+            else:
+                obj_materials = obj_properties  # (B, N_obj, 10)
+
+            # If the encoder extracted multiple local patches per object, we must
+            # repeat the material and extent descriptors to match the token sequence length.
+            if self.obj_encoder.use_local_patches:
+                obj_materials = obj_materials.repeat_interleave(n_centroids, dim=1)
+                obb_axes_world_bias = obb_axes_world.repeat_interleave(n_centroids, dim=1)
+            else:
+                obb_axes_world_bias = obb_axes_world
+
+            # Register tokens do not correspond to physical objects, so we pad their
+            # geometric features with zeros. The MLP will map these zeros to a learned constant.
+            if self.num_register_tokens > 0:
+                reg_mats = torch.zeros(B, self.num_register_tokens, 10, device=obj_materials.device, dtype=obj_materials.dtype)
+                obj_materials = torch.cat([reg_mats, obj_materials], dim=1)
+                
+                reg_axes = torch.zeros(B, self.num_register_tokens, 9, device=obb_axes_world_bias.device, dtype=obb_axes_world_bias.dtype)
+                obb_axes_world_bias = torch.cat([reg_axes, obb_axes_world_bias], dim=1)
+
+            # Generate the query and key geometric bias vectors.
+            geom_q = self.receiver_geom_encoder(obb_axes_world_bias, obj_materials)
+            geom_k = self.sender_geom_encoder(obb_axes_world_bias, obj_materials)
+
+        # 4. Obj-Obj Interaction
         # self-attn only transformer
         all_obj_layers = self.scene_transformer(
             x=object_tokens,
             src_key_padding_mask=obj_mask,
-            obj_pos=object_centroids
+            obj_pos=object_centroids,
+            geom_q=geom_q,
+            geom_k=geom_k
         ) # list of (B, Seq_Len, D) -- passed directly to predictor
         
         # Pre-extract rotation from w2c once, reused for both token positions and ray directions
@@ -301,19 +345,19 @@ class GlobalIlluminationModel(torch.nn.Module):
 
         # 6. Compute OBB if using rope_obb and concatenate centroid + axes -> (B, Seq_Len, 12)
         if self.rope_variant == 'obb':
-            # Compute OBB axes for each object from its point cloud
-            # obj_positions: (B, N_obj, N_v, 3)
-            obb_axes = compute_obb_axes(obj_positions)  # (B, N_obj, 9)
-
+            # obb_axes_world was computed above
             # Transform axes to camera space (rotation only, axes are direction vectors)
             if w2c is not None:
-                # obb_axes: (B, N_obj, 9) -> (B, N_obj, 3, 3) for rotation
-                obb_axes_3x3 = obb_axes.view(B, N_obj, 3, 3)  # 3 axes, each 3D
+                # obb_axes_world: (B, N_obj, 9) -> (B, N_obj, 3, 3) for rotation
+                obb_axes_3x3 = obb_axes_world.view(B, N_obj, 3, 3)  # 3 axes, each 3D
                 # Rotate each axis: (B, N_obj, 3, 3) @ (B, 1, 3, 3) -> (B, N_obj, 3, 3)
                 obb_axes_cam = torch.einsum('boij,bjk->boik', obb_axes_3x3, w2c_R.transpose(1, 2))  # (B, N_obj, 3, 3)
                 obb_axes_cam_flat = obb_axes_cam.reshape(B, N_obj, 9)  # (B, N_obj, 9)
             else:
-                obb_axes_cam_flat = obb_axes  # (B, N_obj, 9)
+                obb_axes_cam_flat = obb_axes_world  # (B, N_obj, 9)
+
+            if self.obj_encoder.use_local_patches:
+                obb_axes_cam_flat = obb_axes_cam_flat.repeat_interleave(self.obj_encoder.num_centroids, dim=1)
 
             # Handle register tokens: pad OBB axes with zeros for register tokens
             if self.num_register_tokens > 0:

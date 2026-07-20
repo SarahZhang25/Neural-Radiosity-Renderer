@@ -56,6 +56,12 @@ Home directory files:
 
 ## Design notes
 
+### Geometry-Aware Obj-Obj Attention Bias (Factored QK)
+To capture coarse radiosity form-factors without relying on $O(N^2)$ bias matrices that break FlashAttention integration, the scene transformer features a physically-motivated **Geometry-Aware Attention Bias**. 
+By encoding object materials, extents (OBB axes), and emissivities into query ($\delta\mathbf{q}$) and key ($\delta\mathbf{k}$) vectors and injecting them *before* RoPE, the relative position rotation inherently modulates the dot-product $\delta\mathbf{q}^\top \delta\mathbf{k}$. This allows the attention mechanism to natively decay interactions based on distance and orientation while remaining fully factored and FlashAttention compatible.
+
+For full mathematical details and implementation specifics, see the [model/README.md](file:///home/sazhang/Neural-Radiosity-Renderer/model/README.md).
+
 ### Register Tokens
 To capture global scene context and reduce high-frequency noise without relying on a dedicated spatial state manager, the architecture supports appending learnable **register tokens** to the scene representation.
 * **Initialization:** A configurable number of learnable embeddings (`num_register_tokens`) are prepended to the input sequence of the view-independent scene transformer.
