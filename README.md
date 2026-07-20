@@ -91,6 +91,19 @@ Uses an Oriented Bounding Box (OBB) representation, giving 12D positional inform
 - Note on capacity: Because the 12D representation requires more frequency bands, the maximum `rope_dim` ceiling is lower than for the 3D centroid variant. Ray tokens (which have no OBB) are zero-padded to 12D.
 
 
+
+### LitePT Encoder Integration [New]
+To capture rich, multi-scale geometric priors from point clouds, the legacy `PointNetEncoder` can be swapped for a state-of-the-art transformer-based backbone via `LitePTEncoderAdapter`. The LitePT integration introduces several critical capabilities designed specifically for scene rendering:
+
+**1. Encoder-Only Execution (`enc_mode=True`)**:
+Instead of running a full U-Net style encoder-decoder, the adapter stops at the bottleneck of the LitePT architecture. The deepest encoder stages contain highly aggregated, global semantic features (representing large sections of the object), bypassing the computationally expensive decoder which exists primarily to recover local, per-point spatial resolution.
+
+**2. Hierarchical Pooling**:
+Configurable via `pooling_type: 'hierarchical'` and `num_hierarchical_levels`. Rather than taking just the final global token, the model manually intercepts the forward pass at the last $N$ stages of the LitePT encoder. At each of these downsampled scales, it performs both spatial scatter-max and scatter-mean pooling. These multi-scale global descriptors are then concatenated and linearly projected to form an exceptionally rich global object token that encompasses both medium and macro-scale geometric structures.
+
+**3. Pretrained Instance Segmentation Weights Transfer**:
+The architecture supports seamless loading of official ScanNet pretrained weights (e.g., `insseg-litept-small-v1m2`). Because the adapter only utilizes the encoder branch, both semantic and instance segmentation weights map perfectly to the model. Furthermore, the adapter includes a custom weight-loading mechanism that overcomes input channel mismatches: if the pretrained model expects 6 channels (XYZ + Normals) but the rendering pipeline provides 16 channels (XYZ + Normals + 10 Material properties), the adapter automatically splices the pretrained geometric weights into the first 6 channels of the `embedding.stem` layer while randomly initializing the new material channels. This provides a massive geometric head start during training.
+
 ### Local patches [found to not work well]
 There is an option to not just use a single token per object, but instead use N tokens where each token represents a patch of the object.
 The motivation for this is that local patch features will preserve more local geometric information than collapsing the object geometry into a single token representation.
