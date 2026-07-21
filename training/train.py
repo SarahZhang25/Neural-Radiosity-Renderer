@@ -6,6 +6,7 @@ from datetime import datetime
 import logging
 import shutil
 from tqdm import tqdm
+from typing import Optional
 
 import torch
 import torch.nn as nn
