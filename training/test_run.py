@@ -26,12 +26,12 @@ def main():
             package_model=False,
             data_dir="tmp/dataset_test/nmr_dataset_chunk_0000.h5",
             log_dir="tmp/test_run",
-            run_name="TEST_46M_pointnet_obj_obj_bias_dim128",
+            run_name="TEST_46M_pointnet_softplus_final_output_proj",
         ),
-        decoder=replace(config.decoder,
-            use_obj_obj_attention_bias=False,
-            obj_obj_bias_hidden_dim=128
-        )
+        # decoder=replace(config.decoder,
+        #     use_obj_obj_attention_bias=False,
+        #     obj_obj_bias_hidden_dim=128
+        # )
     )
 
     # Save a temporary config file so Trainer can load it
@@ -42,7 +42,7 @@ def main():
         yaml.dump(config.to_dict(), f, default_flow_style=False)
         
     try:
-        trainer = Trainer(temp_config)
+        trainer = Trainer(config_path=temp_config, original_config_path=args.config)
         if trainer.is_main_process:
             print(f"Starting test run...")
         trainer.run()
