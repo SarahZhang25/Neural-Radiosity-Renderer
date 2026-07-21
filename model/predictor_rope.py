@@ -120,7 +120,7 @@ class RadiancePredictor(nn.Module):
                 out_dim=4 if include_alpha else 3
             )
             self.out_layers = list(range(num_layers - 4, num_layers)) 
-        self.out_proj_act = nn.GELU()  # from: nn.ELU(alpha=1e-3) in RenderFormer
+        self.out_proj_act = nn.Softplus()  # from: nn.GELU() and previously nn.ELU(alpha=1e-3) in RenderFormer
 
 
     def forward(

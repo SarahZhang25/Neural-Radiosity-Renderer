@@ -217,8 +217,8 @@ class GlobalIlluminationModel(torch.nn.Module):
         Forward pass to predict radiance.
 
         Args:
-            rays_o: Camera origin (B, 3)
-            rays_d: Camera view directions (B, H, W, 3)
+            rays_o: Camera origins (B, 3)
+            rays_d: Camera view directions in camera space (B, H, W, 3)
             obj_positions: Object point clouds (B, N_obj, N_vertices, 3)
             obj_properties: Object properties (B, N_obj, N_v, 10) per-point. Legacy: (B, N_obj, 10) uniform texture per object
             obj_normals: Object normals (B, N_obj, N_vertices, 3)
@@ -374,12 +374,13 @@ class GlobalIlluminationModel(torch.nn.Module):
         # 6. Ray Encoding
         # ray_tokens: (B, N_patches, D)
         if w2c is not None:
-             # rotate rays to camera space, where camera origin is 0
-             rays_o_input = torch.zeros_like(rays_o) 
-             rays_d_input = torch.einsum('bij,bhwj->bhwi', w2c_R, rays_d)
+            # camera origin is 0
+            rays_o_input = torch.zeros_like(rays_o) 
+            # rays_d_input = torch.einsum('bij,bhwj->bhwi', w2c_R, rays_d) # already in camera space
         else:
-             rays_o_input = rays_o
-             rays_d_input = rays_d
+            rays_o_input = rays_o
+             
+        rays_d_input = rays_d
              
         ray_tokens, ray_token_pos = self.ray_encoder(
             rays_o_input, 
