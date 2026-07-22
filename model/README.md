@@ -84,6 +84,30 @@ Our specific geometric variation—injecting this factored bias before RoPE to l
    - Computes OBB axes before the transformer block to feed the bias encoders.
    - Automatically handles padding for learnable register tokens.
 
-4. **Configuration (`config.py`)**
-   - Enabled via the opt-in flag `use_obj_obj_attention_bias` inside `SceneTransformerConfig`.
+    - Enabled via the opt-in flag `use_obj_obj_attention_bias` inside `SceneTransformerConfig`.
    - Hidden dimension controlled via `geom_bias_hidden_dim`.
+
+## Hybrid RoPE Projection (CamRay vs 3D)
+
+In addition to the factored QK bias, our global illumination model features a novel **Hybrid RoPE Coordinate Projection** to solve a critical limitation when mixing 3D coordinates and 2D unnormalized ray directions.
+
+### The Problem with 3D/2D RoPE Mixing
+We use **CamRays** (`[u, v, -1]`) for ray queries to preserve the 2D linearity of the image plane. However, the scene objects exist in physical 3D camera space (`[X, Y, Z]`). Standard RoPE computes the relative distance by subtracting these coordinates: `(X - u, Y - v, Z - (-1))`.
+
+Subtracting a 3D direction vector from an absolute 3D position is mathematically invalid and scrambles the RoPE frequencies. 
+Furthermore, one might try to fix this by expanding the coordinate space (e.g. `[X, Y, Z, 0, 0, 0]` vs `[0, 0, 0, u, v, -1]`). However, because RoPE's final attention calculation evaluates as an orthogonal sum via dot products, **the network cannot learn cross-term spatial interactions across independent RoPE slots**. The model would just learn $f(X) + g(u)$ instead of analyzing if the ray $u$ actually aligns with the object position $X$.
+
+### The Solution: Shared Projective Space
+To allow RoPE to naturally learn relative spatial alignment, the object position and ray direction MUST be mapped into the exact same coordinate slots. 
+
+We implement a Hybrid Projection `(proj_x, proj_y, depth)` for the first 3 slots of our 12D OBB RoPE encoding:
+- **Objects**: Map `(X, Y, Z)` to `(-X/Z, -Y/Z, -Z)` (projected onto the $Z=-1$ plane, keeping $-Z$ for positive absolute depth).
+- **CamRays**: Map `(u, v, -1)` to `(u, v, 0)`.
+
+When RoPE subtracts them (`obj - ray = (-X/Z - u, -Y/Z - v, -Z)`):
+1. **Slots 1 & 2**: Encodes the **exact 2D image-space alignment** between the ray and the object's physical projection on the screen.
+2. **Slot 3**: Encodes the **absolute 3D depth** (since the ray's depth is 0), ensuring occlusion can be reasoned about.
+3. **Slots 4-12**: The OBB axes remain untouched in 3D space.
+
+### Connection to Related Works
+This conceptual approach of mapping 3D geometry onto a shared 2D projective space for attention alignment is closely related to recent state-of-the-art multimodal research. Frameworks like **MotionWeaver** and **Kinema4D** project camera-space $(X, Y, Z)$ coordinates onto the image plane to ensure geometric tokens and visual queries are mathematically grounded in the exact same spatiotemporal location before computing attention. Similarly, architectures like **Projective Positional Encoding (PRoPE)** bake camera viewing frustums and geometries directly into relative positional encodings, translating 3D spatial relationships directly into image-space offsets to maintain translation invariance and spatial continuity.

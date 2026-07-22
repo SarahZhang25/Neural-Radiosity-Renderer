@@ -26,7 +26,7 @@ def main():
             package_model=False,
             data_dir="tmp/dataset_test/nmr_dataset_chunk_0000.h5",
             log_dir="tmp/test_run",
-            run_name="TEST_46M_pointnet_final_output_proj_SOFTPLUS",
+            run_name="TEST_46M_pointnet_gelu_new-img-space-rope",
         ),
         # decoder=replace(config.decoder,
         #     use_obj_obj_attention_bias=False,

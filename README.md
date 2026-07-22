@@ -96,6 +96,13 @@ Uses an Oriented Bounding Box (OBB) representation, giving 12D positional inform
 - Data flow: `GlobalIlluminationModel` computes OBB from raw point clouds → centroid gets full affine camera transform, axes get rotation only (translation invariant) → 12D positions passed to transformers.
 - Note on capacity: Because the 12D representation requires more frequency bands, the maximum `rope_dim` ceiling is lower than for the 3D centroid variant. Ray tokens (which have no OBB) are zero-padded to 12D.
 
+### Hybrid RoPE Projection (Image Space) in Rendering Stage
+To solve the dimensional mismatch of subtracting 3D object centroids from 2D unnormalized CamRay directions during the cross-attention rendering stage, the model features a novel **Hybrid RoPE Projection**. 
+Enabled via `img_space_cross_attn_rope`, this mathematically projects the 3D object coordinates `(X, Y, Z)` onto the exact same virtual 2D image plane as the ray queries `(u, v, -1)`. 
+By mapping objects to `(-X/Z, -Y/Z, -Z)` and rays to `(u, v, 0)`, the RoPE relative coordinate difference `(-X/Z - u, -Y/Z - v, -Z)` perfectly evaluates true 2D alignment on the screen in the first two dimensions, while exactly preserving absolute 3D object depth in the third dimension to reason about occlusion.
+
+For full mathematical details and literature comparisons, see the [model/README.md](file:///home/sazhang/Neural-Radiosity-Renderer/model/README.md).
+
 
 ### Local patches [found to not work well]
 There is an option to not just use a single token per object, but instead use N tokens where each token represents a patch of the object.
