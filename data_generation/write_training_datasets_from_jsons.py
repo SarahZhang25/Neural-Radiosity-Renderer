@@ -48,6 +48,7 @@ def load_exr(path):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             return img.astype(np.float32)
     except Exception:
+        print("failed cv2 import")
         pass
 
     try:
@@ -57,6 +58,7 @@ def load_exr(path):
         else:
             return imageio.imread(path, plugin="EXR-FI").astype(np.float32)
     except Exception:
+        print("failed imageio import")
         pass
 
     try:
@@ -71,6 +73,7 @@ def load_exr(path):
         b = np.frombuffer(file.channel('B', pt), dtype=np.float32).reshape(size[1], size[0])
         return np.stack([r, g, b], axis=-1)
     except Exception:
+        print("failed OpenEXR import")
         pass
 
     raise RuntimeError(f"Failed to load EXR file: {path}. Ensure cv2, imageio, or OpenEXR is installed.")
