@@ -19,7 +19,7 @@ def main():
     log_dir = "tmp/test_run"
     config = replace(config,
         training=replace(config.training,
-            global_batch_size=32,
+            global_batch_size=48, # 16 * 3 gpu
             num_steps=10000,
             warmup_steps=1000,
             save_interval_steps=1000,
