@@ -24,7 +24,7 @@ class PointNetEncoder(nn.Module):
         output_dim: int = 512,
         backbone_dim: int = 768,
         use_batch_norm: bool = True,
-        pooling_type: str = 'hierarchical', # 'local_features', 'max' 
+        pooling_type: str = 'hierarchical', # 'hierarchical', 'hierarchical_richer', 'local_features', 'max' 
         num_hierarchical_levels: int = 5,
         use_local_patches: bool = False,
         num_centroids: int = 16,   # K centroids    
@@ -71,6 +71,28 @@ class PointNetEncoder(nn.Module):
             # Each level contributes backbone_dim*2 features (max+mean)
             total_feat_dim = backbone_dim * 2 * (1 + num_hierarchical_levels)
             self.hierarchical_proj = nn.Linear(total_feat_dim, backbone_dim)
+        
+        elif pooling_type == 'hierarchical_rich': # version with nonlinearities
+            self.hierarchical_layers = nn.ModuleList()
+            for _ in range(num_hierarchical_levels):
+                # Each level: Conv1d for local feature extraction
+                self.hierarchical_layers.append(nn.Sequential(
+                    nn.Conv1d(backbone_dim, backbone_dim, 1),
+                    nn.BatchNorm1d(backbone_dim) if use_batch_norm else nn.Identity(),
+                    nn.SiLU()
+                ))
+                
+            # Project concatenated multi-scale features back to backbone_dim
+            # Input: global (backbone_dim*2) + level1 (backbone_dim*2) + ... + levelN (backbone_dim*2)
+            # Total: backbone_dim * 2 * (1 + num_hierarchical_levels)
+            total_feat_dim = backbone_dim * 2 * (1 + num_hierarchical_levels)
+            self.hierarchical_proj = nn.Sequential(
+                nn.Linear(total_feat_dim, backbone_dim * 2),
+                nn.SiLU(),
+                nn.Dropout(0.1),  # Optional: helps prevent overfitting the hierarchical levels
+                nn.Linear(backbone_dim * 2, backbone_dim)
+            )
+
 
         # Set Abstraction projection (used when use_local_patches is True)
         if self.use_local_patches:
@@ -204,7 +226,7 @@ class PointNetEncoder(nn.Module):
         elif self.pooling_type == 'max':
             geometry_token = torch.max(per_point_features, dim=2)[0]  # (B, backbone_dim)
 
-        elif self.pooling_type == 'hierarchical':
+        elif self.pooling_type in ('hierarchical', 'hierarchical_rich'):
             # Multi-scale pooling
             global_max = torch.max(per_point_features, dim=2)[0]
             global_mean = torch.mean(per_point_features, dim=2)
@@ -318,7 +340,7 @@ class LitePTEncoderAdapter(nn.Module):
                 print(f"Warning: Pretrained weights {pretrained_weights_path} not found.")
 
         # Project LitePT output dimension to out_channels
-        if self.pooling_type == 'hierarchical':
+        if self.pooling_type in ('hierarchical', 'hierarchical_rich'):
             # Collect from the last `num_hierarchical_levels` stages
             total_dim = sum(2 * enc_channels[-i] for i in range(1, self.num_hierarchical_levels + 1))
             self.hierarchical_proj = nn.Linear(total_dim, out_channels)
@@ -386,7 +408,7 @@ class LitePTEncoderAdapter(nn.Module):
             point.sparsify()
             point = self.backbone.embedding(point)
 
-            if self.pooling_type == 'hierarchical':
+            if self.pooling_type in ('hierarchical', 'hierarchical_rich'):
                 multiscale_features = []
                 stages = list(self.backbone.enc._modules.items())
                 

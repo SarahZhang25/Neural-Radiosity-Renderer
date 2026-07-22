@@ -44,8 +44,8 @@ class PointNetConfig(_ConfigMixin):
     backbone_dim: int = 768
     """Internal feature width of the PointNet backbone before output projection."""
 
-    pooling_type: Literal['hierarchical', 'max', 'local_features'] = 'hierarchical'
-    """Pooling strategy: 'hierarchical' multi-scale, 'max' global, or 'local_features' set abstraction."""
+    pooling_type: Literal['hierarchical', 'hierarchical_rich', 'max', 'local_features'] = 'hierarchical'
+    """Pooling strategy: 'hierarchical' multi-scale, 'hierarchical_rich' multi-scale with non-linearities, 'max' global, or 'local_features' set abstraction."""
 
     num_hierarchical_levels: int = 3
     """Number of hierarchical pooling levels (ignored when pooling_type != 'hierarchical')."""
