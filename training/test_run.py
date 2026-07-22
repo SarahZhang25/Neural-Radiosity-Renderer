@@ -26,7 +26,7 @@ def main():
             package_model=False,
             data_dir="tmp/dataset_test/nmr_dataset_chunk_0000.h5",
             log_dir="tmp/test_run",
-            run_name="TEST_46M_pointnet_softplus_final_output_proj",
+            run_name="TEST_46M_pointnet_final_output_proj_SOFTPLUS",
         ),
         # decoder=replace(config.decoder,
         #     use_obj_obj_attention_bias=False,
@@ -36,10 +36,15 @@ def main():
 
     # Save a temporary config file so Trainer can load it
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
-    temp_config = f"{log_dir}/test_config_temp_rank{local_rank}.yaml"
+    temp_config = f"{log_dir}/test_config_temp.yaml"
     os.makedirs(log_dir, exist_ok=True)
-    with open(temp_config, 'w') as f:
-        yaml.dump(config.to_dict(), f, default_flow_style=False)
+    if local_rank == 0:
+        with open(temp_config, 'w') as f:
+            yaml.dump(config.to_dict(), f, default_flow_style=False)
+    else:
+        import time
+        while not os.path.exists(temp_config):
+            time.sleep(0.1)
         
     try:
         trainer = Trainer(config_path=temp_config, original_config_path=args.config)
@@ -50,7 +55,7 @@ def main():
             print("Test run completed successfully!")
     finally:
         # Cleanup
-        if os.path.exists(temp_config):
+        if local_rank == 0 and os.path.exists(temp_config):
             os.remove(temp_config)
 
 if __name__ == "__main__":

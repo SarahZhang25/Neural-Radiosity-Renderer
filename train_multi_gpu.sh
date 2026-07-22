@@ -5,9 +5,7 @@
 # Specifying the number of GPUs and a custom config
 # ./train_multi_gpu.sh 4 training/train_config_46M_h5_test.yaml
 # Use 2 GPUs, specifically GPUs 1 and 3
-# ./train_multi_gpu.sh 2 training/train_config_46M_pointnet_h5_objobj_bias.yaml "1,3"
-# Use one GPU (note: no parens)
-# ./train_multi_gpu.sh 1 training/train_config_46M_pointnet_h5_objobj_bias.yaml 0
+# ./train_multi_gpu.sh 2 training/train_config_46M_pointnet_h5_objobj_bias.yaml 1,3
 
 # Default to 2 GPUs if not specified
 NUM_GPUS=${1:-2}

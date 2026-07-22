@@ -151,11 +151,11 @@ class Trainer:
         
         self.is_distributed = "LOCAL_RANK" in os.environ
         if self.is_distributed:
-            dist.init_process_group(backend="nccl")
             self.local_rank = int(os.environ["LOCAL_RANK"])
             self.is_main_process = self.local_rank == 0
             self.device = torch.device(f'cuda:{self.local_rank}')
             torch.cuda.set_device(self.device)
+            dist.init_process_group(backend="nccl")
         else:
             self.local_rank = 0
             self.is_main_process = True
