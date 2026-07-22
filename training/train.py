@@ -6,6 +6,7 @@ from datetime import datetime
 import logging
 import shutil
 from tqdm import tqdm
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -131,7 +132,17 @@ def make_vis_grid(linear_rendered, gt_img, max_images=16, diff_amplify=5.0):
 
 
 class Trainer:
-    def __init__(self, config_path: str, resume_path: str = None, synthetic: bool = False, profile: bool = False):
+    def __init__(
+        self,
+        config_path: str,
+        original_config_path: Optional[str] = None,
+        resume_path: Optional[str] = None,
+        synthetic: bool = False,
+        profile: bool = False
+    ):
+        
+        self.config_path = config_path
+        self.original_config_path = original_config_path or config_path
         """
         Initialize the trainer with configuration parameters and model setup.
         Sets up datasets, model, optimizer, scheduler, and logging directories.
@@ -140,11 +151,11 @@ class Trainer:
         
         self.is_distributed = "LOCAL_RANK" in os.environ
         if self.is_distributed:
-            dist.init_process_group(backend="nccl")
             self.local_rank = int(os.environ["LOCAL_RANK"])
             self.is_main_process = self.local_rank == 0
             self.device = torch.device(f'cuda:{self.local_rank}')
             torch.cuda.set_device(self.device)
+            dist.init_process_group(backend="nccl")
         else:
             self.local_rank = 0
             self.is_main_process = True
@@ -347,7 +358,7 @@ class Trainer:
                 os.makedirs(self.log_dir, exist_ok=True)
                 os.makedirs(self.checkpoint_dir, exist_ok=True)
                 print("Logging to new directory:", self.log_dir)
-                shutil.copy(config_path, os.path.join(self.log_dir, 'config.yaml'))
+                shutil.copy(self.original_config_path, os.path.join(self.log_dir, 'config.yaml'))
 
 
         if self.is_main_process:
@@ -367,7 +378,7 @@ class Trainer:
             self.writer.add_text("Batching Info", summary.replace('\n', '  \n'), 0)
             
             # Log the raw YAML configuration to TensorBoard
-            with open(config_path, 'r') as f:
+            with open(self.original_config_path, 'r') as f:
                 config_yaml_str = f.read()
             self.writer.add_text("Model Config YAML", f"```yaml\n{config_yaml_str}\n```", 0)
         else:
@@ -694,4 +705,4 @@ if __name__ == "__main__":
     parser.add_argument('--profile', action='store_true', help='Enable torch.profiler to dump a trace of the first few epochs')
     args = parser.parse_args()
     
-    Trainer(args.config, args.resume, args.synthetic, args.profile).run()
+    Trainer(args.config, resume_path=args.resume, synthetic=args.synthetic, profile=args.profile).run()

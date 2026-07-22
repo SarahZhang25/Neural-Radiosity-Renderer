@@ -285,7 +285,7 @@ class H5SceneDataset(Dataset):
             print(f"[{split}] Using all {len(sample_order)} samples across {len(self.chunk_files)} chunks")
         else:
             assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
-            split_idx = int(len(sample_order) * 0.9)
+            split_idx = int(len(sample_order) * 0.8) # TODO:CHANGE BACK TO 0.9
             if split == 'train':
                 sample_order = sample_order[:split_idx]
             else:

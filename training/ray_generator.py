@@ -24,7 +24,7 @@ class RayGenerator(nn.Module):
         
         Returns:
             rays_o: (*BATCH_SHAPE, 3)  # per batch camera origin, assume perspective camera
-            rays_d: (*BATCH_SHAPE, H, W, 3) unnormalized ray directions
+            rays_d: (*BATCH_SHAPE, H, W, 3) unnormalized ray directions in camera space
         """
         
         batch_shape = c2w.shape[:-2]
@@ -36,15 +36,16 @@ class RayGenerator(nn.Module):
         fx = fy = img_res / 2 / torch.tan(.5 * fov[..., 0, None, None])
         x = x.expand(*batch_shape, img_res, img_res)
         y = y.expand(*batch_shape, img_res, img_res)
-        dirs = torch.stack([
+        rays_d = torch.stack([
             (x - cx) / fx,
             -(y - cy) / fy,
             -torch.ones_like(x)
         ], dim=-1)  # [*batch_shape, H, W, 3]
-        R = c2w[..., :3, :3]  # [*batch_shape, 3, 3]
-        t = c2w[..., :3, 3]  # [*batch_shape, 3]
+        t = c2w[..., :3, 3]  # [*batch_shape, 3] 
 
-        rays_d = torch.sum(dirs[..., None, :] * R[..., None, None, :, :], dim=-1)  # [*batch_shape, H, W, 3]
+        # Leave in camera space, don't need the following
+        # R = c2w[..., :3, :3]  # [*batch_shape, 3, 3]
+        # rays_d = torch.sum(rays_d[..., None, :] * R[..., None, None, :, :], dim=-1)  # [*batch_shape, H, W, 3]
 
         return t, rays_d
 
