@@ -10,15 +10,17 @@
 
 # Training: 
 # Model: 
-# --> using pretrained instance segmentation model weights
+# -- using pretrained instance segmentation model weights
+#  --> do linear proj layer to map from 16 to 6 pretrained input dim
 # --  using multi-scale/hierarchical litePT features
 # --  using LitePT-S (default arch) instad of PointNet
 # --  camray ray encoder 
 # --  unified encoder
 # --  uses OBB-based RoPE
 # --  use 2 register tokens
-# Data: dataset_uniform_chunk_0000-0005-- 20_000 scenes, 200_000 steps, 128 batch size (=> 6,250 EPOCHS?)
-
+# Data: dataset_uniform_chunk_0000-0005-- 20_000 scenes, 100_000 steps, 256 batch size (=> 6,250/2 EPOCHS?)
+#   - compare against run name "params46M_litePT" which spliced the input weights. 
+#   - note we are using double the GPUs -> so steps are halved, LR was doubled. 
 
 encoder_type: 'litept'
 litept_encoder:
@@ -80,11 +82,11 @@ predictor:
 training:
 #  According to the linear scaling rule, 
 #  a 4x increase in batch size usually allows for a 4x increase in learning rate
-  global_batch_size: 128 # 32 * 4
-  learning_rate: 1.0e-4 # increased to take advantage of larger batch size
-  num_steps: 200000 # 6,250 EPOCHS....
-  warmup_steps: 8000
-  save_interval_steps: 5000  # for visualization
+  global_batch_size: 256 # 32 * 8
+  learning_rate: 2.0e-4 # increased to take advantage of larger batch size
+  num_steps: 100000 # 6,250/2 EPOCHS....
+  warmup_steps: 4000
+  save_interval_steps: 2500  # for visualization
   checkpoint_interval_steps: 25000  # for saving model checkpoint 
   log_interval_steps: 32 # 4000/128 = 31.25 steps per epoch...
   image_res: 128
@@ -95,7 +97,7 @@ training:
     - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0003.h5"
     - "/storage/sazhang/datasets/dataset_uniform/nmr_dataset_chunk_0004.h5"
   log_dir: "training/logs/dataset_uniform_chunk_0000-0004"
-  run_name: "params46M_litePT" # Optional string tag for log dir name
+  run_name: "params46M_litePT_linear_input_proj" # Optional string tag for log dir name
   # max_dataset_size: 10   # Optional max samples for dataset
   # shuffle_data: true
   # shuffle_data_seed: 42

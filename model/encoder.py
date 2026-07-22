@@ -272,19 +272,9 @@ class LitePTEncoderAdapter(nn.Module):
         except ImportError:
             raise ImportError("Could not import LitePT. Ensure LitePT/litept exists in the project root.")
 
-        self.backbone = LitePT(
-            in_channels=in_channels,
-            stride=stride,
-            enc_depths=enc_depths,
-            enc_channels=enc_channels,
-            enc_num_head=enc_num_head,
-            enc_patch_size=enc_patch_size,
-            enc_conv=enc_conv,
-            enc_attn=enc_attn,
-            enc_rope_freq=enc_rope_freq,
-            drop_path=drop_path,
-            enc_mode=True
-        )
+        backbone_in_channels = in_channels
+        self.input_proj = nn.Identity()
+        enc_state_dict = None
 
         if pretrained_weights_path:
             import os
@@ -300,22 +290,31 @@ class LitePTEncoderAdapter(nn.Module):
                 stem_weight_key = 'embedding.stem.conv.weight'
                 if stem_weight_key in enc_state_dict:
                     pretrained_stem_w = enc_state_dict[stem_weight_key]
-                    current_stem_w = self.backbone.state_dict()[stem_weight_key]
+                    pretrained_in_channels = pretrained_stem_w.shape[-1]
                     
-                    if pretrained_stem_w.shape != current_stem_w.shape:
-                        print(f"Adapting pretrained stem weights from {pretrained_stem_w.shape} to {current_stem_w.shape}")
-                        # Shape is [out_channels, k0, k1, k2, in_channels]
-                        # Copy the matching input channels (e.g. first 3 or 6)
-                        min_in_channels = min(pretrained_stem_w.shape[-1], current_stem_w.shape[-1])
-                        # Initialize the current weights properly (they are already random init, but just in case)
-                        adapted_w = current_stem_w.clone()
-                        # Copy over the pretrained channels
-                        adapted_w[..., :min_in_channels] = pretrained_stem_w[..., :min_in_channels]
-                        enc_state_dict[stem_weight_key] = adapted_w
-
-                self.backbone.load_state_dict(enc_state_dict, strict=False)
+                    if pretrained_in_channels != in_channels:
+                        print(f"Dynamically projecting input features from {in_channels} to {pretrained_in_channels} to match pretrained weights.")
+                        self.input_proj = nn.Linear(in_channels, pretrained_in_channels)
+                        backbone_in_channels = pretrained_in_channels
             else:
                 print(f"Warning: Pretrained weights {pretrained_weights_path} not found.")
+
+        self.backbone = LitePT(
+            in_channels=backbone_in_channels,
+            stride=stride,
+            enc_depths=enc_depths,
+            enc_channels=enc_channels,
+            enc_num_head=enc_num_head,
+            enc_patch_size=enc_patch_size,
+            enc_conv=enc_conv,
+            enc_attn=enc_attn,
+            enc_rope_freq=enc_rope_freq,
+            drop_path=drop_path,
+            enc_mode=True
+        )
+
+        if enc_state_dict is not None:
+            self.backbone.load_state_dict(enc_state_dict, strict=False)
 
         # Project LitePT output dimension to out_channels
         if self.pooling_type == 'hierarchical':
@@ -363,6 +362,7 @@ class LitePTEncoderAdapter(nn.Module):
         
         # (B, N, in_channels) -> (B*N, in_channels)
         feat = torch.cat(features_list, dim=-1).view(B * N, -1)
+        feat = self.input_proj(feat)
         coord = surface_pos.view(B * N, 3)
         
         # Offset array for LitePT (cumulative point counts)
