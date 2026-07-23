@@ -221,6 +221,9 @@ class TrainingConfig(_ConfigMixin):
     learning_rate: float = 1.0e-4
     """Peak learning rate for AdamW optimizer."""
 
+    min_learning_rate: float = 1.0e-6
+    """Minimum learning rate at the end of cosine decay."""
+
     num_steps: Optional[int] = None
     """Total number of training steps (overrides num_epochs)."""
 
@@ -270,8 +273,11 @@ class TrainingConfig(_ConfigMixin):
     max_dataset_size: Optional[int] = None
     """Optional cap on the number of dataset samples (None = use all)."""
 
+    dataset_split_ratio: float = 0.9
+    """Fraction of dataset to use for training (the rest is for validation)."""
+
     shuffle_dataset: bool = True
-    """Whether to shuffle the dataset before splitting."""
+    """Whether to shuffle the dataset after splitting."""
 
     shuffle_data_seed: int = 42
     """Random seed for dataset shuffling."""

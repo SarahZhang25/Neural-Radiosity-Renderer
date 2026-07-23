@@ -177,6 +177,7 @@ class Trainer:
             data_dir=tc.data_dir,
             image_res=tc.image_res,
             split='train',
+            split_ratio=tc.dataset_split_ratio,
             max_dataset_size=tc.max_dataset_size,
             shuffle=tc.shuffle_dataset,
             shuffle_seed=tc.shuffle_data_seed
@@ -185,6 +186,7 @@ class Trainer:
             data_dir=tc.data_dir,
             image_res=tc.image_res,
             split='val',
+            split_ratio=tc.dataset_split_ratio,
             max_dataset_size=tc.max_dataset_size,
             shuffle=tc.shuffle_dataset,
             shuffle_seed=tc.shuffle_data_seed
@@ -323,7 +325,7 @@ class Trainer:
 
         # Scheduler
         warmup_scheduler = LinearLR(self.optimizer, start_factor=0.01, total_iters=self.warmup_steps)
-        cosine_scheduler = CosineAnnealingLR(self.optimizer, T_max=self.num_steps - self.warmup_steps)
+        cosine_scheduler = CosineAnnealingLR(self.optimizer, T_max=self.num_steps - self.warmup_steps, eta_min=tc.min_learning_rate)
         self.scheduler = SequentialLR(self.optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[self.warmup_steps])
 
         log_dir_root = tc.log_dir

@@ -88,6 +88,7 @@ class NPZSceneDataset(Dataset):
         image_res: int = 128,
         num_points_per_object: int = 2048,
         split: str = 'train',
+        split_ratio: float = 0.9,
         max_dataset_size: int = None,
         shuffle: bool = True,
         shuffle_seed: int = 42
@@ -123,23 +124,23 @@ class NPZSceneDataset(Dataset):
         self.files = [item for item in self.files if item not in corrupted_paths]
         print(f"Removed {len(corrupted_paths)} corrupted images")
 
-        # Shuffle with a fixed seed
+        if split == "all":
+            print(f"[{split}] Using all {len(self.files)} samples in {data_dir}")
+        else:
+            assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
+            split_idx = int(len(self.files) * split_ratio)
+            if split == 'train':
+                self.files = self.files[:split_idx]
+            else:
+                self.files = self.files[split_idx:]
+
+        # Shuffle with a fixed seed AFTER splitting to ensure train/val sets are disjoint in time/scenes
         if shuffle:
             rng = np.random.RandomState(shuffle_seed)
             rng.shuffle(self.files)
         
         if max_dataset_size is not None and len(self.files) > max_dataset_size:
             self.files = self.files[:max_dataset_size]
-            
-        if split == "all":
-            print(f"[{split}] Using all {len(self.files)} samples in {data_dir}")
-        else:
-            assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
-            split_idx = int(len(self.files) * 0.9)
-            if split == 'train':
-                self.files = self.files[:split_idx]
-            else:
-                self.files = self.files[split_idx:]
 
         print(f"[{split}] Found {len(self.files)} samples in {data_dir}")
 
@@ -231,6 +232,7 @@ class H5SceneDataset(Dataset):
         image_res: int = 128,
         num_points_per_object: int = 2048,
         split: str = 'train',
+        split_ratio: float = 0.9,
         max_dataset_size: int = None,
         shuffle: bool = True,
         shuffle_seed: int = 42
@@ -274,6 +276,17 @@ class H5SceneDataset(Dataset):
         # This replaces a list of N string tuples with a single numpy array (~100x less memory).
         sample_order = np.arange(total_samples, dtype=np.int32)
         
+        if split == "all":
+            print(f"[{split}] Using all {len(sample_order)} samples across {len(self.chunk_files)} chunks")
+        else:
+            assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
+            # Split based on scene count to ensure completely unseen scenes in val set
+            split_idx = int(total_scenes * split_ratio) * self.num_views_per_scene
+            if split == 'train':
+                sample_order = sample_order[:split_idx]
+            else:
+                sample_order = sample_order[split_idx:]
+        
         if shuffle:
             rng = np.random.RandomState(shuffle_seed)
             rng.shuffle(sample_order)
@@ -281,18 +294,8 @@ class H5SceneDataset(Dataset):
         if max_dataset_size is not None and len(sample_order) > max_dataset_size:
             sample_order = sample_order[:max_dataset_size]
         
-        if split == "all":
-            print(f"[{split}] Using all {len(sample_order)} samples across {len(self.chunk_files)} chunks")
-        else:
-            assert split in ['train', 'val'], "split must be 'train', 'val', or 'all'"
-            split_idx = int(len(sample_order) * 0.9)
-            if split == 'train':
-                sample_order = sample_order[:split_idx]
-            else:
-                sample_order = sample_order[split_idx:]
-        
         self.sample_order = sample_order
-        print(f"[{split}] Found {len(self.sample_order)} samples ({total_scenes} scenes x {self.num_views_per_scene} views) across {len(self.chunk_files)} chunks")
+        print(f"[{split}] Found {len(self.sample_order)} samples across {len(self.chunk_files)} chunks")
 
         # Lazily store opened H5 handles per worker to avoid multiprocess fork issues
         self._h5_handles = {}

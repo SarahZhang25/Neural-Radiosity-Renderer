@@ -72,6 +72,7 @@ training:
 #  a 4x increase in batch size usually allows for a 4x increase in learning rate
   global_batch_size: 128 # 32 * 4
   learning_rate: 1.0e-4 # increased to take advantage of larger batch size
+  min_learning_rate: 1.0e-6
   num_steps: 200000 # 6,250 EPOCHS....
   warmup_steps: 8000
   save_interval_steps: 5000  # for visualization
