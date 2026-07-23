@@ -1,19 +1,17 @@
 # Training Configuration
-# about 73M param
-# Total Parameters: 72,591,438
-# Trainable Parameters: 72,591,430
-#   obj_encoder: 40,936,448 params (56.39% of total)
-#   scene_transformer: 12,617,732 params (17.38% of total)
-#   ray_encoder: 100,352 params (0.14% of total)
-#   predictor: 18,935,882 params (26.09% of total)
-#     dpt_head: 6,314,051 params (8.70% of total)
+# about 104M param
+# Total Parameters: 104,431,502
+# Trainable Parameters: 104,431,494
+#   obj_encoder: 37,000,704 params (35.43% of total)
+#   scene_transformer: 28,363,780 params (27.16% of total)
+#   ray_encoder: 100,352 params (0.10% of total)
+#   predictor: 38,965,130 params (37.31% of total)
+#     dpt_head: 10,595,203 params (10.15% of total)
 
 # Training: 
 # Model: 
-# --> deeper and wider obj_encoder, increased backbone dim: 56% of model capacity now
-# --> new hierarchical_rich encoder pooling option: 
-#     - add nonlinearity through batchnorm + silu after each conv1d. 
-#     - hierarchical_proj increased from 1 to 2 linear layers
+# --> increase token dimension to 
+# -- new hierarchical_rich encoder pooling option: 
 # --  camray ray encoder
 # --  unified encoder -- frees up enough params for another hidden dim in pointnet
 # --  uses OBB-based RoPE
@@ -23,16 +21,16 @@
 
 encoder:
   input_dim: 16  # Position (x,y,z) + Normal (nx,ny,nz) + Material (10)
-  hidden_dims: [512, 1024, 2048, 2048, 2048]
-  output_dim: 512
+  hidden_dims: [512, 1024, 2048, 2048]
+  output_dim: 768
   backbone_dim: 1024
   pooling_type: 'hierarchical_rich' # 'hierarchical' 'max' or 'local_features'
   num_hierarchical_levels: 4 # Ignored when using local features
   use_local_patches: false
 
 decoder:
-  hidden_dim: 512
-  ffn_hidden_dim: 2048 # 512 * 4???
+  hidden_dim: 768
+  ffn_hidden_dim: 3072 # 512 * 4???
   num_layers: 4
   num_heads: 4
   dropout: 0.0 # turn on a bit of dropout when training on larger dataset
@@ -52,13 +50,13 @@ ray_encoder:
   vdir_num_freqs: 4
   patch_size: 8
   norm_type: 'layer_norm'
-  view_transformer_latent_dim: 512 # Must match predictor hidden_dim
+  view_transformer_latent_dim: 768 # Must match predictor hidden_dim
   view_transformer_n_heads: 4
 
 predictor:
   # TODO: add a obj num_freq term?
-  hidden_dim: 512
-  ffn_hidden_dim: 1024 ## TODO: EXPAND THIS FOR NEXT RUN 
+  hidden_dim: 768
+  ffn_hidden_dim: 1536 ## TODO: EXPAND THIS FOR NEXT RUN ??
   num_layers: 4
   num_heads: 4
   dropout: 0
@@ -68,14 +66,14 @@ predictor:
   pe_num_freqs: 8 # is this redunant to vertex_pe_num_freqs? TODO: figure this out 
   use_dpt_decoder: true
   dpt_features: 128
-  dpt_out_channels: [64, 128, 256, 512] 
+  dpt_out_channels: [96, 192, 384, 768] 
   include_alpha: false
   img_space_cross_attn_rope: true # make this explicit, even though defaults to true already
 
 training:
 #  According to the linear scaling rule, 
 #  a 4x increase in batch size usually allows for a 4x increase in learning rate
-  global_batch_size: 128 # 32 * 4
+  global_batch_size: 64 # 32 * 4
   learning_rate: 1.0e-4 # increased to take advantage of larger batch size
   num_steps: 200000 # 6,250 EPOCHS....
   warmup_steps: 8000

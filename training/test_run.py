@@ -19,17 +19,18 @@ def main():
     log_dir = "tmp/test_run"
     config = replace(config,
         training=replace(config.training,
-            global_batch_size=96, # 32 * 3 gpu
+            global_batch_size=32, # 32 * 3 gpu
             num_steps=5000,
             warmup_steps=500,
-            save_interval_steps=5000,
-            log_interval_steps=500,
+            save_interval_steps=500,
+            log_interval_steps=100,
             package_model=False,
             data_dir="tmp/dataset_test/nmr_dataset_chunk_0000.h5",
             log_dir="tmp/test_run",
-            run_name="TEST_73M_pointnet-hierarchical-rich_gelu_new-img-space-rope",
-            learning_rate= config.training.learning_rate * 2.5 # sclae up as batch size inc. default is 1e-4
-            
+            run_name="TEST_104M_pointnet_tokendim768_patch8",
+            learning_rate=config.training.learning_rate * 2, # scale up as batch size inc. default is 1e-4
+            # image_res=128,
+            # lpips_loss_weighting=0.07
         ),
         # decoder=replace(config.decoder,
         #     use_obj_obj_attention_bias=False,
