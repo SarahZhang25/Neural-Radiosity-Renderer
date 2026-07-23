@@ -244,7 +244,7 @@ def process_worker_task(scene_file, exr_dir, points, formats):
         traceback.print_exc()
         return scene_file, None
 
-def generate_json_worker_task(loop_idx, start_idx, template_json, objaverse_objects, tmp_dir, num_views, transform_scenes, texture_mode):
+def generate_json_worker_task(loop_idx, start_idx, template_json, objaverse_objects, tmp_dir, num_views, transform_scenes, texture_mode, color_lights):
     """Generates one scene JSON and returns its index for stable output ordering."""
     scene_idx = start_idx + loop_idx
     json_file = os.path.join(tmp_dir, f"scene_{scene_idx:06d}.json")
@@ -257,6 +257,7 @@ def generate_json_worker_task(loop_idx, start_idx, template_json, objaverse_obje
             num_views=num_views,
             transform_scene=transform_scenes,
             random_diffuse_type=texture_mode,
+            color_lights=color_lights,
         )
     return loop_idx, json_file
 
@@ -434,7 +435,7 @@ def main():
     parser.add_argument("--spp", type=int, default=512, help="Blender samples per pixel")
     parser.add_argument("--gpus", type=str, default=None, help="Comma separated list of GPUs to use (e.g. 0,1)")
     parser.add_argument("--workers_per_gpu", type=int, default=1, help="Concurrent Blender processes per GPU")
-    parser.add_argument("--render_timeout_seconds", type=int, default=120, help="Per-scene render timeout in seconds before retrying")
+    parser.add_argument("--render_timeout_seconds", type=int, default=1200, help="Per-scene render timeout in seconds before retrying. Default is 20 minutes. (Note: should increase this for more views per scene.)")
     parser.add_argument("--render_timeout_retries", type=int, default=3, help="Number of retries after a render timeout")
     parser.add_argument("--transform_scenes", action="store_true", help="Apply random global transformation")
     parser.add_argument("--texture_mode", type=str, default=None, help="Texture mode to use (per-shading-group, procedural, or per-triangle)")
@@ -443,6 +444,7 @@ def main():
     parser.add_argument("--start_idx", type=int, default=0, help="Starting index for scene naming (useful for resuming generation)")
     parser.add_argument("--json_only", action="store_true", help="Only generate JSONs, skip rendering and H5 processing")
     parser.add_argument("--resume", action="store_true", help="Resume from incomplete chunks and skip existing scenes")
+    parser.add_argument("--color_lights", action="store_true", help="Randomly tint lights to non-white colors to train color constancy")
     args = parser.parse_args()
 
     # Offset the seed by start_idx so resumed generation runs produce new, unique scenes
@@ -606,6 +608,7 @@ def main():
                         args.num_views,
                         args.transform_scenes,
                         texture_mode,
+                        args.color_lights,
                     )
                     for loop_idx in json_loop_indices_to_generate
                 ]
@@ -615,7 +618,7 @@ def main():
                     # json_files is already fully populated with paths, we just needed them to generate
                     pbar.update(1)
         
-    print(f"[*] Generated {len(json_files)} JSONs.")
+    print(f"[*] Have {len(json_files)} JSONs ready to go.")
     if args.json_only:
         return
     
@@ -673,6 +676,7 @@ def main():
                                     num_views=args.num_views,
                                     transform_scene=args.transform_scenes,
                                     random_diffuse_type=texture_mode,
+                                    color_lights=args.color_lights,
                                 )
                                 # Pick a random GPU from the available pool
                                 gpu_id = random.choice(gpu_list) if gpu_list else None
