@@ -265,22 +265,23 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
     """Dedicated thread to receive completed dictionaries, stream directly to H5, and cleanup."""
     import tqdm
     processed_count = 0
-    next_chunk_id = 0
     
-    existing_chunks = glob.glob(os.path.join(output_dir, "*_dataset_chunk_*.h5")) + glob.glob(os.path.join(output_dir, "*_dataset_chunk_*.h5.INCOMPLETE"))
+    # Track states per format
+    next_chunk_ids = {fmt: 0 for fmt in formats}
+    scenes_in_current_chunk = {fmt: 0 for fmt in formats}
+    resume_incomplete = {fmt: False for fmt in formats}
     
-    scenes_in_current_chunk = 0
-    resume_incomplete = False
-    
-    if existing_chunks:
-        chunk_ids = [int(os.path.basename(c).split('_')[3].split('.')[0]) for c in existing_chunks if len(os.path.basename(c).split('_')) >= 4]
-        if chunk_ids:
-            max_id = max(chunk_ids)
-            is_corrupted = False
-            is_incomplete = False
-            existing_keys_count = 0
-            
-            for fmt in formats:
+    for fmt in formats:
+        existing_chunks = glob.glob(os.path.join(output_dir, f"{fmt}_dataset_chunk_*.h5")) + glob.glob(os.path.join(output_dir, f"{fmt}_dataset_chunk_*.h5.INCOMPLETE"))
+        
+        if existing_chunks:
+            chunk_ids = [int(os.path.basename(c).split('_')[3].split('.')[0]) for c in existing_chunks if len(os.path.basename(c).split('_')) >= 4]
+            if chunk_ids:
+                max_id = max(chunk_ids)
+                is_corrupted = False
+                is_incomplete = False
+                existing_keys_count = 0
+                
                 h5_path = os.path.join(output_dir, f"{fmt}_dataset_chunk_{max_id:04d}.h5")
                 incomplete_path = h5_path + ".INCOMPLETE"
                 
@@ -297,43 +298,44 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
                             for k in f.keys():
                                 if 'hdr_target_image' in f[k] and f[k]['hdr_target_image'].shape[0] == num_views:
                                     valid_keys.append(k)
-                            if len(valid_keys) > existing_keys_count:
-                                existing_keys_count = len(valid_keys)
+                            existing_keys_count = len(valid_keys)
                     except Exception:
                         is_corrupted = True
-                        break
-            
-            if is_corrupted:
-                print(f"[*] Warning: Chunk {max_id} appears corrupted from a previous crash. Overwriting it.", flush=True)
-                next_chunk_id = max_id
-            elif is_incomplete:
-                print(f"[*] Resuming incomplete chunk {max_id} with {existing_keys_count} existing scenes.", flush=True)
-                next_chunk_id = max_id
-                resume_incomplete = True
-                scenes_in_current_chunk = existing_keys_count
-            else:
-                next_chunk_id = max_id + 1
+                
+                if is_corrupted:
+                    print(f"[*] Warning: {fmt} chunk {max_id} appears corrupted. Overwriting it.", flush=True)
+                    next_chunk_ids[fmt] = max_id
+                elif is_incomplete:
+                    print(f"[*] Resuming incomplete {fmt} chunk {max_id} with {existing_keys_count} existing scenes.", flush=True)
+                    next_chunk_ids[fmt] = max_id
+                    resume_incomplete[fmt] = True
+                    scenes_in_current_chunk[fmt] = existing_keys_count
+                else:
+                    next_chunk_ids[fmt] = max_id + 1
 
     current_h5_files = {}
 
-    def open_chunk(chunk_id, append=False):
+    def open_chunk(fmt, chunk_id, append=False):
         base_chunk_name = f"dataset_chunk_{chunk_id:04d}"
-        for fmt in formats:
-            h5_path = os.path.join(output_dir, f"{fmt}_{base_chunk_name}.h5.INCOMPLETE")
-            mode = 'a' if append else 'w'
-            current_h5_files[fmt] = h5py.File(h5_path, mode)
+        h5_path = os.path.join(output_dir, f"{fmt}_{base_chunk_name}.h5.INCOMPLETE")
+        mode = 'a' if append else 'w'
+        current_h5_files[fmt] = h5py.File(h5_path, mode)
             
-    def close_chunk(abort=False):
-        for fmt, h5f in current_h5_files.items():
-            incomplete_path = h5f.filename
-            h5f.close()
-            if not abort and os.path.exists(incomplete_path):
-                final_path = incomplete_path.replace('.h5.INCOMPLETE', '.h5')
-                os.rename(incomplete_path, final_path)
-        current_h5_files.clear()
+    def close_chunk(fmt=None, abort=False):
+        fmts_to_close = [fmt] if fmt else list(current_h5_files.keys())
+        for f in fmts_to_close:
+            if f in current_h5_files:
+                h5f = current_h5_files[f]
+                incomplete_path = h5f.filename
+                h5f.close()
+                if not abort and os.path.exists(incomplete_path):
+                    final_path = incomplete_path.replace('.h5.INCOMPLETE', '.h5')
+                    os.rename(incomplete_path, final_path)
+                del current_h5_files[f]
 
-    # Open first chunk files
-    open_chunk(next_chunk_id, append=resume_incomplete)
+    # Open first chunk files for all formats
+    for fmt in formats:
+        open_chunk(fmt, next_chunk_ids[fmt], append=resume_incomplete[fmt])
 
     with tqdm.tqdm(total=total_scenes, desc="Pipeline Progress", unit="scene", mininterval=0.5, maxinterval=45.0) as pbar:
         while processed_count < total_scenes:
@@ -352,6 +354,10 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
                     # Write immediately to open H5 files (Zero RAM buffering!)
                     for fmt in formats:
                         if fmt in result:
+                            # Verify current file is open; if not (e.g. rolled over), open it.
+                            if fmt not in current_h5_files:
+                                open_chunk(fmt, next_chunk_ids[fmt])
+                                
                             h5f = current_h5_files[fmt]
                             scene_name = result['scene_name']
                             if scene_name in h5f:
@@ -371,21 +377,22 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
                                 grp.create_dataset("texture", data=result['rf']['texture'], compression="lzf")
                                 grp.create_dataset("fov", data=result['rf']['fov'])
 
-                    scenes_in_current_chunk += 1
+                            scenes_in_current_chunk[fmt] += 1
+                            
+                            # If chunk is full, rotate to next FOR THIS FORMAT ONLY
+                            if scenes_in_current_chunk[fmt] >= chunk_size:
+                                pbar.write(f"[Writer] Finished writing {fmt} chunk {next_chunk_ids[fmt]}.")
+                                close_chunk(fmt=fmt)
+                                next_chunk_ids[fmt] += 1
+                                scenes_in_current_chunk[fmt] = 0
+                                # Open next chunk if we aren't done yet
+                                if processed_count < total_scenes:
+                                    open_chunk(fmt, next_chunk_ids[fmt])
                     
                     # Safe to cleanup intermediate files immediately now that it's in the H5
                     # don't clean up for now so that I can come back and rerun for rf format...
                     cleanup_files(scene_file, tmp_dir, num_views, remove_json=False, remove_renders=False)
 
-                    # If chunk is full, rotate to next
-                    if scenes_in_current_chunk >= chunk_size:
-                        pbar.write(f"[Writer] Finished writing chunk {next_chunk_id}.")
-                        close_chunk()
-                        next_chunk_id += 1
-                        scenes_in_current_chunk = 0
-                        # Open next chunk if we aren't done yet
-                        if processed_count < total_scenes:
-                            open_chunk(next_chunk_id)
                 else:
                     pbar.write(f"[Writer] Skipped {os.path.basename(scene_file)} due to previous errors. Total: {processed_count}/{total_scenes}")
                     
@@ -398,8 +405,7 @@ def h5_writer_thread(write_queue, output_dir, tmp_dir, formats, chunk_size, tota
                 break
                 
     # Close any remaining open files at the end
-    if current_h5_files:
-        close_chunk()
+    close_chunk()
 
 def gpu_monitor_thread(gpu_list, stop_event, peak_mem_dict):
     while not stop_event.is_set():
