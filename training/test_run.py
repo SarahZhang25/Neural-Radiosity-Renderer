@@ -27,8 +27,8 @@ def main():
             package_model=False,
             data_dir="tmp/dataset_test/nmr_dataset_chunk_0000.h5",
             log_dir="tmp/test_run",
-            run_name="TEST_104M_pointnet_tokendim768_patch8",
-            learning_rate=config.training.learning_rate * 2, # scale up as batch size inc. default is 1e-4
+            run_name="TEST_104M_pointnet_tokendim768_patch8_updated_spherical_cross_attn_rope",
+            learning_rate=config.training.learning_rate * 2.5, # scale up as batch size inc. default is 1e-4
             # image_res=128,
             # lpips_loss_weighting=0.07
         ),

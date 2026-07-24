@@ -200,7 +200,7 @@ class GlobalIlluminationModel(torch.nn.Module):
             dpt_features=pred.dpt_features,
             dpt_out_channels=pred.dpt_out_channels,
             include_alpha=pred.include_alpha,
-            img_space_cross_attn_rope=pred.img_space_cross_attn_rope
+            spherical_cross_attn_rope=pred.spherical_cross_attn_rope
         )
 
 

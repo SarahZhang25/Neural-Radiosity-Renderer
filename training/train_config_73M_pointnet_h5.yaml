@@ -70,7 +70,7 @@ predictor:
   dpt_features: 128
   dpt_out_channels: [64, 128, 256, 512] 
   include_alpha: false
-  img_space_cross_attn_rope: true # make this explicit, even though defaults to true already
+  spherical_cross_attn_rope: true # make this explicit, even though defaults to true already
 
 training:
 #  According to the linear scaling rule, 

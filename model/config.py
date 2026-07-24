@@ -201,8 +201,8 @@ class PredictorConfig(_ConfigMixin):
     pe_type: Literal['rope_centroid', 'rope_obb', 'nerf'] = 'rope_obb'
     """Positional encoding for the predictor cross-attention."""
 
-    img_space_cross_attn_rope: bool = True
-    """Whether to project the 3D centroids of objects to the Z=-1 image plane and CamRay Z to 0 before RoPE to natively support 3D-to-2D spatial alignment."""
+    spherical_cross_attn_rope: bool = True
+    """Whether to project the 3D centroids of objects and CamRays into a shared bounded spherical angular coordinate system for RoPE, natively supporting 3D-to-2D spatial alignment without projection singularities."""
 
     pe_num_freqs: int = 8
     """Number of frequency bands for the predictor positional encoding."""

@@ -35,14 +35,14 @@ class RadiancePredictor(nn.Module):
         dpt_features: Optional[int] = None,
         dpt_out_channels: Optional[List[int]] = None,
         include_alpha: bool = False,
-        img_space_cross_attn_rope: bool = False
+        spherical_cross_attn_rope: bool = False
     ):
         super().__init__()
 
         self.hidden_dim = hidden_dim
         self.patch_size = patch_size
         self.pe_type = pe_type
-        self.img_space_cross_attn_rope = img_space_cross_attn_rope
+        self.spherical_cross_attn_rope = spherical_cross_attn_rope
 
         if self.pe_type == 'nerf':
             self.pos_pe = NeRFEncoding(
@@ -126,24 +126,25 @@ class RadiancePredictor(nn.Module):
 
     def _apply_hybrid_rope_projection(self, ctx_pos: torch.Tensor, rope_ray_pos: torch.Tensor):
         """
-        Projects 3D object centroids and CamRay directions into a shared 2D image-space
-        coordinate system for RoPE, while preserving absolute depth in the Z channel.
+        Projects 3D object centroids and CamRay directions into a shared spherical angular 
+        coordinate system for RoPE, avoiding projection singularities while preserving absolute depth.
         
-        Objects (X, Y, Z) -> (-X/Z, -Y/Z, -Z)
-        CamRays (u, v, -1) -> (u, v, 0)
+        Objects (X, Y, Z) -> (atan2(X, -Z), atan2(Y, -Z), -Z)
+        CamRays (u, v, -1) -> (atan(u), atan(v), 0)
         """
-        # Objects: map (X, Y, Z) to (-X/Z, -Y/Z, -Z)
-        z_coord = ctx_pos[..., 2:3]
-        z_safe = torch.where(z_coord.abs() < 1e-5, torch.sign(z_coord) * 1e-5 + 1e-5, z_coord)
-        proj_scale = -1.0 / z_safe
-        
-        # We only modify the first 3 dimensions (centroid)
+        # Objects: map (X, Y, Z) to angles and invert Z
         new_ctx_pos = ctx_pos.clone()
-        new_ctx_pos[..., 0:2] = new_ctx_pos[..., 0:2] * proj_scale
-        new_ctx_pos[..., 2:3] = -z_coord
+        x = ctx_pos[..., 0:1]
+        y = ctx_pos[..., 1:2]
+        z = ctx_pos[..., 2:3]
         
-        # CamRays: map (u, v, -1) to (u, v, 0)
+        new_ctx_pos[..., 0:1] = torch.atan2(x, -z)
+        new_ctx_pos[..., 1:2] = torch.atan2(y, -z)
+        new_ctx_pos[..., 2:3] = -z
+        
+        # CamRays: map (u, v) to angles
         new_rope_ray_pos = rope_ray_pos.clone()
+        new_rope_ray_pos[..., 0:2] = torch.atan(rope_ray_pos[..., 0:2])
         new_rope_ray_pos[..., 2:3] = 0.0
         
         return new_ctx_pos, new_rope_ray_pos
@@ -241,7 +242,7 @@ class RadiancePredictor(nn.Module):
                     torch.zeros(*rope_ray_pos.shape[:-1], 9, device=rope_ray_pos.device, dtype=rope_ray_pos.dtype)
                 ], dim=-1)  # (B, N_patches, 12)
 
-            if getattr(self, 'img_space_cross_attn_rope', False) and ctx_pos is not None and rope_ray_pos is not None:
+            if getattr(self, 'spherical_cross_attn_rope', False) and ctx_pos is not None and rope_ray_pos is not None:
                 ctx_pos, rope_ray_pos = self._apply_hybrid_rope_projection(ctx_pos, rope_ray_pos)
 
             if use_dpt_decoder:
